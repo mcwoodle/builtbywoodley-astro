@@ -1,18 +1,33 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry, render as renderEntry } from 'astro:content';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects');
 
   return projects.map((project) => ({
     params: { slug: project.id },
-    props: { project },
   }));
 }
 
-const { project } = Astro.props;
-const { Content } = await project.render();
+const { slug } = Astro.params;
+const project = await getEntry('projects', slug);
+
+let Content: any = null;
+
+if (typeof (project as any)?.deferredRender === 'function') {
+  const rendered = await (project as any).deferredRender();
+  Content = rendered.Content;
+} else if (typeof (project as any)?.render === 'function') {
+  const rendered = await (project as any).render();
+  Content = rendered.Content;
+}
+
+// Fallback: use astro:content `render()` helper if no local renderer was found.
+if (Content === null) {
+  const renderedFromHelper = await renderEntry(project);
+  Content = renderedFromHelper.Content;
+}
 ---
 
 <BaseLayout>
