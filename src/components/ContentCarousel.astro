@@ -25,26 +25,31 @@ const { projects } = Astro.props;
     <div class="carousel-track js-carousel-track">
       {projects.map((project) => (
         <article class="surface carousel-card js-carousel-card">
-          <div style="padding: var(--space-4);">
-            <p class="eyebrow" style="margin-bottom: var(--space-2);">
-              {project.data.projectType}
-            </p>
-            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">
-              {project.data.title}
-            </h3>
-            {project.data.description && (
-              <p
-                style="margin: 0 0 var(--space-3); font-size: 0.9rem; color: var(--color-text-muted);"
-              >
-                {project.data.description}
+          <a
+            href={`/projects/${project.slug}`}
+            style="display: block; color: inherit; text-decoration: none;"
+          >
+            <div style="padding: var(--space-4);">
+              <p class="eyebrow" style="margin-bottom: var(--space-2);">
+                {project.data.projectType}
               </p>
-            )}
-            <p
-              style="margin: 0; font-size: 0.8rem; color: var(--color-text-muted);"
-            >
-              {project.data.publishDate.toLocaleDateString()}
-            </p>
-          </div>
+              <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">
+                {project.data.title}
+              </h3>
+              {project.data.description && (
+                <p
+                  style="margin: 0 0 var(--space-3); font-size: 0.9rem; color: var(--color-text-muted);"
+                >
+                  {project.data.description}
+                </p>
+              )}
+              <p
+                style="margin: 0; font-size: 0.8rem; color: var(--color-text-muted);"
+              >
+                {project.data.publishDate.toLocaleDateString()}
+              </p>
+            </div>
+          </a>
         </article>
       ))}
     </div>

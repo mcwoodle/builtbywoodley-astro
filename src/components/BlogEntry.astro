@@ -16,7 +16,12 @@ const id = `project-${slug}`;
     <span>{project.data.publishDate.toLocaleDateString()}</span>
   </header>
   <h2 style="margin: 0 0 var(--space-2); font-size: 1.15rem;">
-    {project.data.title}
+    <a
+      href={`/projects/${slug}`}
+      style="color: inherit; text-decoration: none;"
+    >
+      {project.data.title}
+    </a>
   </h2>
   {project.data.description && (
     <p style="margin: 0 0 var(--space-3); color: var(--color-text-muted);">
