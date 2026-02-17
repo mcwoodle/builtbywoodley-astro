@@ -1,0 +1,53 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+type Props = {
+  projects: CollectionEntry<'projects'>[];
+};
+
+const { projects } = Astro.props;
+---
+
+<section class="section-shell js-carousel-section">
+  <div class="surface" style="padding: var(--space-5);">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4);">
+      <div>
+        <p class="eyebrow">Recently published</p>
+        <h2 style="margin: var(--space-2) 0 var(--space-1); font-size: 1.25rem;">
+          Videos & articles
+        </h2>
+        <p class="page-subtitle" style="margin: 0;">
+          A quick glance at what was shipped most recently before we dive into the full story.
+        </p>
+      </div>
+    </div>
+
+    <div class="carousel-track js-carousel-track">
+      {projects.map((project) => (
+        <article class="surface carousel-card js-carousel-card">
+          <div style="padding: var(--space-4);">
+            <p class="eyebrow" style="margin-bottom: var(--space-2);">
+              {project.data.projectType}
+            </p>
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">
+              {project.data.title}
+            </h3>
+            {project.data.description && (
+              <p
+                style="margin: 0 0 var(--space-3); font-size: 0.9rem; color: var(--color-text-muted);"
+              >
+                {project.data.description}
+              </p>
+            )}
+            <p
+              style="margin: 0; font-size: 0.8rem; color: var(--color-text-muted);"
+            >
+              {project.data.publishDate.toLocaleDateString()}
+            </p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
