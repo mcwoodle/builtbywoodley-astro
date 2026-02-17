@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await project.render();
+---
+
+<BaseLayout>
+  <main>
+    <article class="section-shell">
+      <div class="surface" style="padding: var(--space-5);">
+        <header class="project-meta" style="margin-bottom: var(--space-4);">
+          <span>{project.data.projectType}</span>
+          <span>{project.data.publishDate.toLocaleDateString()}</span>
+        </header>
+        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
+          {project.data.title}
+        </h1>
+        {project.data.description && (
+          <p class="page-subtitle" style="margin-bottom: var(--space-4);">
+            {project.data.description}
+          </p>
+        )}
+        <Content />
+      </div>
+    </article>
+  </main>
+</BaseLayout>
+
