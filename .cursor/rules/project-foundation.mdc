@@ -1,0 +1,45 @@
+---
+description: Core architectural and content conventions for the GSAP-storyscrolling personal site
+alwaysApply: true
+---
+
+# Project Foundation
+
+## Goals
+
+- Single-page, scroll-driven narrative that feels modern and focused.
+- Content is sourced from Astro content collections (`projects`) using MDX.
+- The layout is designed to support future Static HTML Chunking (start with one chunk).
+
+## Architecture
+
+- Keep **layout**, **data**, and **behavior** clearly separated:
+  - Layout: `BaseLayout` and section-level components (header, carousel, blog entries).
+  - Data: Astro content collections and simple mapping logic.
+  - Behavior: scroll orchestration and client-side enhancements in dedicated scripts.
+- Treat each major section (header, carousel, blog entries) as an **independent, composable unit**:
+  - Avoid cross-section DOM reach-ins; communicate via data/props, not selectors.
+  - Make it easy to reorder or wrap sections without breaking behavior.
+
+## Content Model
+
+- Use Astro content collections with Zod schemas for all project content.
+- All project data should come from MDX files in `src/content/projects/`.
+- Avoid duplicating frontmatter data in components; derive UI from the collection entries.
+- Prefer **typed access** (via the content collection types) whenever possible.
+
+## Routing & Deep Linking
+
+- The main narrative lives at `/` (single-page scroll experience).
+- Dynamic routes (e.g. `/projects/[slug]`) are for **deep linking**:
+  - They should resolve to the main page and scroll to the right section.
+  - Each rendered project section must expose a **stable ID** based on the slug.
+
+## Static HTML Chunking Readiness
+
+- Start with a **single static HTML chunk** for the main page.
+- Design sections so they can be split into multiple chunks later without major refactors:
+  - Keep data loading at the page/layout level; pass slices down to sections.
+  - Avoid tight coupling between section rendering and global scroll orchestration.
+- New sections should be addable via configuration (arrays of section definitions) rather than hard-coded branching and one-off layout logic.
+

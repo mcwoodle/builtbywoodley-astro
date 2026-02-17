@@ -1,17 +1,36 @@
 ---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import ContentCarousel from '../components/ContentCarousel.astro';
+import BlogEntry from '../components/BlogEntry.astro';
+import { getCollection } from 'astro:content';
 
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+);
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout>
+  <main>
+    <Header />
+    <ContentCarousel projects={projects} />
+
+    <section class="section-shell">
+      <div class="surface" style="padding: var(--space-5);">
+        <p class="eyebrow" style="margin-bottom: var(--space-2);">
+          Full story
+        </p>
+        <h2 style="margin: 0 0 var(--space-3); font-size: 1.4rem;">
+          Project log
+        </h2>
+        <div class="grid-gap-md">
+          {projects.map((project) => (
+            <BlogEntry project={project}>
+              <!-- Placeholder: MDX-rich content can be injected here later. -->
+            </BlogEntry>
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
