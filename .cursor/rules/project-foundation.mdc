@@ -21,6 +21,11 @@ alwaysApply: true
   - Avoid cross-section DOM reach-ins; communicate via data/props, not selectors.
   - Make it easy to reorder or wrap sections without breaking behavior.
 
+- Treat every **blog entry** as an independent, composable unit:
+  - `BlogEntry` should remain a presentational shell that receives all needed data via props.
+  - Avoid hidden coupling between entries; they must not depend on sibling or global state to render correctly.
+  - It should be safe to render a single entry in isolation (e.g., in a different section or route) without behavioral changes.
+
 ## Content Model
 
 - Use Astro content collections with Zod schemas for all project content.
@@ -31,9 +36,11 @@ alwaysApply: true
 ## Routing & Deep Linking
 
 - The main narrative lives at `/` (single-page scroll experience).
-- Dynamic routes (e.g. `/projects/[slug]`) are for **deep linking**:
-  - They should resolve to the main page and scroll to the right section.
-  - Each rendered project section must expose a **stable ID** based on the slug.
+- Every blog entry **must also be independently accessible** via its own URL.
+- Dynamic routes (e.g. `/projects/[slug]`) serve full, standalone entry pages:
+  - They render complete HTML on the server so crawlers and users without JavaScript can read the content.
+  - They should use the content collection entry as the single source of truth (no duplicated markdown).
+  - Stable IDs on the main page (e.g. `project-[slug]`) still support scroll-based deep linking from those URLs if desired.
 
 ## Static HTML Chunking Readiness
 
