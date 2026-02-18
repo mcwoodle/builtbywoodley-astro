@@ -3,38 +3,44 @@ import type { CollectionEntry } from 'astro:content';
 
 type Props = {
   project: CollectionEntry<'projects'>;
+  /** When true, only the slot (main content) is rendered; no meta, title, description, or tags. */
+  contentOnly?: boolean;
 };
 
-const { project } = Astro.props;
+const { project, contentOnly = false } = Astro.props;
 const slug = project.id;
 const id = `project-${slug}`;
 
 ---
 
 <article id={id} class="project-entry js-project-entry surface">
-  <header class="project-meta">
-    <span>{project.data.projectType}</span>
-    <span>{project.data.publishDate.toLocaleDateString()}</span>
-  </header>
-  <h2 style="margin: 0 0 var(--space-2); font-size: 1.15rem;">
-    <a
-      href={`/projects/${slug}`}
-      style="color: inherit; text-decoration: none;"
-    >
-      {project.data.title}
-    </a>
-  </h2>
-  {project.data.description && (
-    <p style="margin: 0 0 var(--space-3); color: var(--color-text-muted);">
-      {project.data.description}
-    </p>
-  )}
-  {project.data.tags.length > 0 && (
-    <div class="tags-row" style="margin-bottom: var(--space-3);">
-      {project.data.tags.map((tag) => (
-        <span class="tag-chip">{tag}</span>
-      ))}
-    </div>
+  {!contentOnly && (
+    <>
+      <header class="project-meta">
+        <span>{project.data.projectType}</span>
+        <span>{project.data.publishDate.toLocaleDateString()}</span>
+      </header>
+      <h2 style="margin: 0 0 var(--space-2); font-size: 1.15rem;">
+        <a
+          href={`/projects/${slug}`}
+          style="color: inherit; text-decoration: none;"
+        >
+          {project.data.title}
+        </a>
+      </h2>
+      {project.data.description && (
+        <p style="margin: 0 0 var(--space-3); color: var(--color-text-muted);">
+          {project.data.description}
+        </p>
+      )}
+      {project.data.tags.length > 0 && (
+        <div class="tags-row" style="margin-bottom: var(--space-3);">
+          {project.data.tags.map((tag) => (
+            <span class="tag-chip">{tag}</span>
+          ))}
+        </div>
+      )}
+    </>
   )}
   <slot />
 </article>
