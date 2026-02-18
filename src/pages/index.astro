@@ -3,10 +3,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import ContentCarousel from '../components/ContentCarousel.astro';
 import BlogEntry from '../components/BlogEntry.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render as renderEntry } from 'astro:content';
 
 const projects = (await getCollection('projects')).sort(
   (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+);
+
+async function getContent(project: (typeof projects)[number]) {
+  if (typeof (project as any)?.deferredRender === 'function') {
+    const rendered = await (project as any).deferredRender();
+    return rendered.Content;
+  }
+  if (typeof (project as any)?.render === 'function') {
+    const rendered = await (project as any).render();
+    return rendered.Content;
+  }
+  const renderedFromHelper = await renderEntry(project);
+  return renderedFromHelper.Content;
+}
+
+const projectsWithContent = await Promise.all(
+  projects.map(async (project) => ({
+    project,
+    Content: await getContent(project),
+  })),
 );
 ---
 
@@ -24,9 +44,9 @@ const projects = (await getCollection('projects')).sort(
           Project log
         </h2>
         <div class="grid-gap-md">
-          {projects.map((project) => (
-            <BlogEntry project={project}>
-              <!-- Placeholder: MDX-rich content can be injected here later. -->
+          {projectsWithContent.map(({ project, Content }) => (
+            <BlogEntry project={project} contentOnly>
+              <Content />
             </BlogEntry>
           ))}
         </div>
