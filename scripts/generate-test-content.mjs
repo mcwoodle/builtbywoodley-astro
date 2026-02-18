@@ -79,7 +79,7 @@ function generateEntry(index) {
   const month = 1 + (index % 12);
   const day = 1 + (index % 25);
   const publishDate = new Date(year, month - 1, day);
-  const slug = `test-${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}-${title.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`;
+  const slug = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}-${title.toLowerCase().replace(/\s+/g, '-').slice(0, 30)}`;
 
   const frontmatter = [
     '---',
@@ -110,6 +110,14 @@ function generateEntry(index) {
 
 // Ensure directory exists
 fs.mkdirSync(projectsDir, { recursive: true });
+
+// Remove existing MDX files so we don't keep old test-prefixed names
+const existing = fs.readdirSync(projectsDir);
+for (const name of existing) {
+  if (name.endsWith('.mdx')) {
+    fs.unlinkSync(path.join(projectsDir, name));
+  }
+}
 
 // Copy shared cover image
 if (fs.existsSync(sourceFavicon)) {
