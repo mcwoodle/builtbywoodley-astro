@@ -6,7 +6,15 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "test-dev": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro dev",
+    "test-build": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro build",
+    "test-preview": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro preview",
+    "generate-test-content": "node scripts/generate-test-content.mjs",
     "astro": "astro"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "cross-env": "^7.0.3"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",

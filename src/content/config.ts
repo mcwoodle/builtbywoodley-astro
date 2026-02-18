@@ -1,8 +1,11 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+const PROJECTS_BASE =
+  process.env.CONTENT_PROJECTS_BASE ?? './src/content/projects';
+
 const projects = defineCollection({
-  loader: glob({ pattern: '**/*.mdx', base: './src/content/projects' }),
+  loader: glob({ pattern: '**/*.mdx', base: PROJECTS_BASE }),
 
   // Strict frontmatter schema: keeps content consistent and enables typed access
   schema: ({ image }) =>
