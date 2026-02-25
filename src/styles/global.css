@@ -46,6 +46,24 @@ main {
   padding: var(--space-7) var(--space-4) var(--space-8);
 }
 
+main.home-main {
+  max-width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.main-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-inline: var(--space-4);
+}
+
+.carousel-wrapper {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding-inline: var(--space-4);
+}
+
 .section-shell {
   margin-bottom: var(--space-7);
 }
@@ -119,14 +137,30 @@ main {
 .carousel-track {
   display: flex;
   gap: var(--space-4);
-  overflow-x: auto;
   padding-bottom: var(--space-2);
-  scroll-snap-type: x mandatory;
+  justify-content: center;
 }
 
 .carousel-card {
+  flex: 1;
   min-width: 260px;
-  scroll-snap-align: start;
+  max-width: 320px;
+}
+
+.carousel-card:nth-child(n+4) {
+  display: none;
+}
+
+@media (min-width: 1040px) {
+  .carousel-card:nth-child(4) {
+    display: block;
+  }
+}
+
+@media (min-width: 1300px) {
+  .carousel-card:nth-child(5) {
+    display: block;
+  }
 }
 
 .project-entry {
@@ -168,6 +202,16 @@ main {
     padding-inline: var(--space-3);
   }
 
+  main.home-main {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .main-inner,
+  .carousel-wrapper {
+    padding-inline: var(--space-3);
+  }
+
   .surface {
     border-radius: var(--radius-md);
   }
@@ -180,4 +224,3 @@ main {
     min-width: 220px;
   }
 }
-
