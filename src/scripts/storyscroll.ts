@@ -29,7 +29,7 @@ window.addEventListener('load', () => {
       scrollTrigger: {
         trigger: carousel,
         start: 'top top',
-        end: '+=200%',
+        end: '+=50%',
         pin: true,
         scrub: true,
       },
