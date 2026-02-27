@@ -1,17 +1,13 @@
 # Design System
 
-## Visual Style
+## Visual Identity & Mood:
 
-- Aim for a **modern, sleek, calm** aesthetic (think Stripe/Apple rather than playful).
-- Use a limited palette:
-  - 1 primary accent color.
-  - 1 secondary accent (optional).
-  - Neutral grays for backgrounds, borders, and body text.
-- Prefer generous whitespace and clear hierarchy over decorative elements.
+- Palette: Warm, welcoming, tactile, and earthy. Strictly avoid stark, clinical pure white or brutalist high-contrast dark modes. Use creamy off-whites (like oatmeal or soft beige) for backgrounds, accented by rich, cinematic colors (warm greys, deep wood tones, muted olives, or terracotta).
+- Aesthetic: High-end editorial magazine meets modern digital craftsmanship. It should feel human, optimistic, and grounded.
+- Typography: Clean, highly legible, modern typography with a structured, grid-based layout that utilizes ample negative space so the content can breathe.
 
 ## Typography
 
-- Use a single primary sans-serif typeface for both UI and body text.
 - Define a simple type scale:
   - Display / hero text.
   - Section headings.
