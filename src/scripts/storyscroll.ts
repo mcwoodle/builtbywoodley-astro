@@ -20,7 +20,7 @@ requestAnimationFrame(raf);
 // Let ScrollTrigger react to Lenis-powered scroll updates
 lenis.on('scroll', ScrollTrigger.update);
 
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
   const carousel = document.querySelector<HTMLElement>('.js-carousel-section');
   const entries = document.querySelectorAll<HTMLElement>('.js-project-entry');
 
@@ -55,6 +55,12 @@ window.addEventListener('load', () => {
         },
       );
     });
+  }
+
+  // Reveal the projects log now that ScrollTrigger has set up pin-spacing
+  const projectsLog = document.querySelector<HTMLElement>('.js-projects-log');
+  if (projectsLog) {
+    projectsLog.style.opacity = '1';
   }
 });
 
