@@ -1,4 +1,6 @@
-# Project Rules
+---
+trigger: always_on
+---
 
 For the design system conventions, see @../../.ai/rules/design-system.md.
 
