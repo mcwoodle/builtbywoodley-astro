@@ -1,8 +1,8 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { CollectionEntry } from "astro:content";
 
 type Props = {
-  project: CollectionEntry<'projects'>;
+  project: CollectionEntry<"projects">;
   /** When true, only the slot (main content) is rendered; no meta, title, description, or tags. */
   contentOnly?: boolean;
 };
@@ -10,38 +10,31 @@ type Props = {
 const { project, contentOnly = false } = Astro.props;
 const slug = project.id;
 const id = `project-${slug}`;
-
 ---
 
 <article id={id} class="project-entry js-project-entry surface">
-  {!contentOnly && (
-    <>
-      <header class="project-meta">
-        <span>{project.data.projectType}</span>
-        <span>{project.data.publishDate.toLocaleDateString()}</span>
-      </header>
-      <h2 class="m-0 mb-2 text-[1.15rem]">
-        <a
-          href={`/projects/${slug}`}
-          class="text-inherit no-underline"
-        >
-          {project.data.title}
-        </a>
-      </h2>
-      {project.data.description && (
-        <p class="m-0 mb-3 text-[#a1a1b0]">
-          {project.data.description}
-        </p>
-      )}
-      {project.data.tags.length > 0 && (
-        <div class="tags-row mb-3">
-          {project.data.tags.map((tag) => (
-            <span class="tag-chip">{tag}</span>
-          ))}
-        </div>
-      )}
-    </>
-  )}
+  {
+    !contentOnly && (
+      <>
+        <header class="project-meta">
+          <span>{project.data.projectType}</span>
+          <span>{project.data.publishDate.toLocaleDateString()}</span>
+        </header>
+        <h2 class="project-title">
+          <a href={`/projects/${slug}`}>{project.data.title}</a>
+        </h2>
+        {project.data.description && (
+          <p class="project-description">{project.data.description}</p>
+        )}
+        {project.data.tags.length > 0 && (
+          <div class="tags-row" style="margin-bottom: var(--space-3);">
+            {project.data.tags.map((tag) => (
+              <span class="tag-chip">{tag}</span>
+            ))}
+          </div>
+        )}
+      </>
+    )
+  }
   <slot />
 </article>
-

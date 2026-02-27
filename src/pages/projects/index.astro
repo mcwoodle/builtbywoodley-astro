@@ -1,59 +1,45 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
 
-const projects = (await getCollection('projects')).sort(
-  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime(),
+const projects = (await getCollection("projects")).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
 );
 ---
 
 <BaseLayout>
   <main>
     <section class="section-shell">
-      <div class="surface p-6">
-        <p class="eyebrow mb-2">
+      <div class="surface section-inner">
+        <p class="eyebrow" style="margin-bottom: var(--space-2);">
           Projects index
         </p>
-        <h1 class="page-heading mb-3">
+        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
           All projects
         </h1>
-        <p class="page-subtitle mb-4">
+        <p class="page-subtitle" style="margin-bottom: var(--space-5);">
           A crawlable index of every project entry, each with its own URL.
         </p>
 
-        <ul class="list-none p-0 m-0">
-          {projects.map((project) => (
-            <li
-              class="mb-3 pb-3 border-b border-[#232332]"
-            >
-              <a
-                href={`/projects/${project.id}`}
-                class="text-inherit no-underline block"
-              >
-                <h2
-                  class="m-0 mb-1 text-[1.05rem]"
-                >
-                  {project.data.title}
-                </h2>
-                <p
-                  class="m-0 mb-1 text-[0.8rem] text-[#a1a1b0]"
-                >
-                  {project.data.projectType} ·{' '}
-                  {project.data.publishDate.toLocaleDateString()}
-                </p>
-                {project.data.description && (
-                  <p
-                    class="m-0 text-[0.9rem] text-[#a1a1b0]"
-                  >
-                    {project.data.description}
+        <ul class="project-list">
+          {
+            projects.map((project) => (
+              <li class="project-list-item">
+                <a href={`/projects/${project.id}`}>
+                  <h2 class="project-list-title">{project.data.title}</h2>
+                  <p class="project-list-meta">
+                    {project.data.projectType} ·{" "}
+                    {project.data.publishDate.toLocaleDateString()}
                   </p>
-                )}
-              </a>
-            </li>
-          ))}
+                  {project.data.description && (
+                    <p class="project-list-desc">{project.data.description}</p>
+                  )}
+                </a>
+              </li>
+            ))
+          }
         </ul>
       </div>
     </section>
   </main>
 </BaseLayout>
-

@@ -1,58 +1,51 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { CollectionEntry } from "astro:content";
 
 type Props = {
-  projects: CollectionEntry<'projects'>[];
+  projects: CollectionEntry<"projects">[];
 };
 
 const { projects } = Astro.props;
 ---
 
 <section class="section-shell js-carousel-section">
-  <div class="surface p-6">
-    <div class="flex justify-between items-baseline gap-3 mb-4">
+  <div class="surface section-inner">
+    <div class="section-header">
       <div>
         <p class="eyebrow">Recently published</p>
-        <h2 class="my-2 text-[1.25rem]">
-          Videos & articles
-        </h2>
-        <p class="page-subtitle m-0">
-          A quick glance at what was shipped most recently before we dive into the full story.
+        <h2 class="section-heading">Videos & articles</h2>
+        <p class="page-subtitle" style="margin: 0;">
+          A quick glance at what was shipped most recently before we dive into
+          the full story.
         </p>
       </div>
     </div>
 
     <div class="carousel-track js-carousel-track">
-      {projects.map((project) => (
-        <article class="surface carousel-card js-carousel-card">
-          <a
-            href={`/projects/${project.id}`}
-            class="block text-inherit no-underline"
-          >
-            <div class="p-4">
-              <p class="eyebrow mb-2">
-                {project.data.projectType}
-              </p>
-              <h3 class="m-0 mb-2 text-[1.05rem]">
-                {project.data.title}
-              </h3>
-              {project.data.description && (
-                <p
-                  class="m-0 mb-3 text-[0.9rem] text-[#a1a1b0]"
-                >
-                  {project.data.description}
+      {
+        projects.map((project) => (
+          <article class="surface carousel-card js-carousel-card">
+            <a
+              href={`/projects/${project.id}`}
+              class="carousel-card-link"
+              style="display: block; color: inherit; text-decoration: none;"
+            >
+              <div class="carousel-card-inner">
+                <p class="eyebrow" style="margin-bottom: var(--space-2);">
+                  {project.data.projectType}
                 </p>
-              )}
-              <p
-                class="m-0 text-[0.8rem] text-[#a1a1b0]"
-              >
-                {project.data.publishDate.toLocaleDateString()}
-              </p>
-            </div>
-          </a>
-        </article>
-      ))}
+                <h3 class="carousel-card-title">{project.data.title}</h3>
+                {project.data.description && (
+                  <p class="carousel-card-desc">{project.data.description}</p>
+                )}
+                <p class="carousel-card-date">
+                  {project.data.publishDate.toLocaleDateString()}
+                </p>
+              </div>
+            </a>
+          </article>
+        ))
+      }
     </div>
   </div>
 </section>
-
