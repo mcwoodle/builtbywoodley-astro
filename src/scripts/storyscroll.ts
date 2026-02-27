@@ -6,7 +6,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const lenis = new Lenis({
   smoothWheel: true,
-  smoothTouch: false,
+  syncTouch: false,
   duration: 1.1,
 });
 
