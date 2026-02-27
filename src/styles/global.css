@@ -138,11 +138,17 @@ main.home-main {
 /* ─────────────────────────────────────────────
    Surfaces & Cards
    ───────────────────────────────────────────── */
+
+/* Small interactive cards (carousel, etc.) — subtle lift off page */
 .surface {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-subtle);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
+}
+
+/* Large section containers — no visible boundary, content sits on the page */
+.surface-section {
+  padding: var(--space-6);
 }
 
 /* ─────────────────────────────────────────────
@@ -244,19 +250,16 @@ main.home-main {
    Project Entry / Blog Entry
    ───────────────────────────────────────────── */
 .project-entry {
-  padding: var(--space-5);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-subtle);
-  margin-bottom: var(--space-4);
-  transition: box-shadow 0.25s ease, border-color 0.25s ease;
-}
-
-.project-entry:hover {
-  box-shadow: var(--shadow-card);
-  border-color: rgba(120, 100, 80, 0.25);
+  padding: var(--space-5) 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .project-entry:last-of-type {
+  border-bottom: none;
   margin-bottom: 0;
 }
 
@@ -305,6 +308,8 @@ main.home-main {
   flex: 1;
   min-width: 260px;
   max-width: 320px;
+  border: none;
+  box-shadow: var(--shadow-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
