@@ -1,0 +1,72 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout>
+  <main>
+    <article class="section-shell">
+      <div class="surface-section">
+        <header style="margin-bottom: var(--space-4);">
+          <h1 class="page-heading">404 - Page Not Found</h1>
+          <p class="page-subtitle" style="margin-top: var(--space-2);">
+            The page you're looking for doesn't exist or has been moved.
+          </p>
+        </header>
+
+        <div style="margin-bottom: var(--space-6);">
+          <a href="/" class="primary-button" style="display: inline-block; padding: var(--space-2) var(--space-4); background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; text-decoration: none; font-weight: 500;">
+            Return to Home
+          </a>
+        </div>
+
+        <!-- Developer details section (hidden by default unless JS populates it) -->
+        <details id="dev-details" style="display: none; margin-top: var(--space-8); padding: var(--space-4); background-color: rgba(0,0,0,0.03); border-radius: 6px; font-family: monospace; font-size: 0.9em;">
+          <summary style="cursor: pointer; color: var(--color-text-muted); margin-bottom: var(--space-2);">Developer Info</summary>
+          <div style="margin-top: var(--space-3);">
+            <p style="margin-bottom: var(--space-2);"><strong>Requested Path:</strong> <span id="error-path"></span></p>
+            <p style="margin-bottom: var(--space-2);"><strong>Error Code:</strong> <span id="error-code">None</span></p>
+            <p style="margin-bottom: 0;"><strong>Resource:</strong> <span id="error-resource">N/A</span></p>
+          </div>
+        </details>
+      </div>
+    </article>
+  </main>
+</BaseLayout>
+
+<script>
+  // Client-side script to extract error details for developers
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const resource = params.get('resource');
+    
+    const devDetailsEl = document.getElementById('dev-details');
+    const pathEl = document.getElementById('error-path');
+    const codeEl = document.getElementById('error-code');
+    const resourceEl = document.getElementById('error-resource');
+    
+    // Always show the path that was requested
+    if (pathEl) {
+      // If we were redirected here, the path might be different than the original.
+      // But if we landed here natively via Astro's 404 handling, pathname is the failed path.
+      pathEl.textContent = window.location.pathname;
+    }
+    
+    let hasDevInfo = false;
+    
+    if (code) {
+      if (codeEl) codeEl.textContent = code;
+      hasDevInfo = true;
+    }
+    
+    if (resource) {
+      if (resourceEl) resourceEl.textContent = resource;
+      hasDevInfo = true;
+    }
+    
+    // If we're in development mode (localhost) or we have explicit error params, show the details box
+    if (devDetailsEl && (hasDevInfo || window.location.hostname === 'localhost')) {
+      devDetailsEl.style.display = 'block';
+    }
+  });
+</script>
