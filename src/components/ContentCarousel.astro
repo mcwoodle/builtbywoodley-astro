@@ -2,10 +2,12 @@
 import type { CollectionEntry } from "astro:content";
 
 type Props = {
-  projects: CollectionEntry<"projects">[];
+  projects: (CollectionEntry<"projects"> | CollectionEntry<"mockedProjects">)[];
+  /** Base URL for project links. Defaults to production blog path. */
+  linkPrefix?: string;
 };
 
-const { projects } = Astro.props;
+const { projects, linkPrefix = "/blog/projects/" } = Astro.props;
 ---
 
 <section class="section-shell js-carousel-section">
@@ -26,7 +28,7 @@ const { projects } = Astro.props;
         projects.map((project) => (
           <article class="surface carousel-card js-carousel-card">
             <a
-              href={`/projects/${project.id}`}
+              href={`${linkPrefix}${project.id}`}
               class="carousel-card-link"
               style="display: block; color: inherit; text-decoration: none;"
             >

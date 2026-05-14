@@ -2,12 +2,14 @@
 import type { CollectionEntry } from "astro:content";
 
 type Props = {
-  project: CollectionEntry<"projects">;
+  project: CollectionEntry<"projects"> | CollectionEntry<"mockedProjects">;
   /** When true, only the slot (main content) is rendered; no meta, title, description, or tags. */
   contentOnly?: boolean;
+  /** Base URL for project links. Defaults to production blog path. */
+  linkPrefix?: string;
 };
 
-const { project, contentOnly = false } = Astro.props;
+const { project, contentOnly = false, linkPrefix = "/blog/projects/" } = Astro.props;
 const slug = project.id;
 const id = `project-${slug}`;
 ---
@@ -21,7 +23,7 @@ const id = `project-${slug}`;
           <span>{project.data.publishDate.toLocaleDateString()}</span>
         </header>
         <h2 class="project-title">
-          <a href={`/projects/${slug}`}>{project.data.title}</a>
+          <a href={`${linkPrefix}${slug}`}>{project.data.title}</a>
         </h2>
         {project.data.description && (
           <p class="project-description">{project.data.description}</p>

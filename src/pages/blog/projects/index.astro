@@ -1,0 +1,45 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const projects = (await getCollection("projects")).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
+);
+---
+
+<BaseLayout>
+  <main>
+    <section class="section-shell">
+      <div class="surface-section">
+        <p class="eyebrow" style="margin-bottom: var(--space-2);">
+          Projects index
+        </p>
+        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
+          All projects
+        </h1>
+        <p class="page-subtitle" style="margin-bottom: var(--space-5);">
+          A crawlable index of every project entry, each with its own URL.
+        </p>
+
+        <ul class="project-list">
+          {
+            projects.map((project) => (
+              <li class="project-list-item">
+                <a href={`/blog/projects/${project.id}`}>
+                  <h2 class="project-list-title">{project.data.title}</h2>
+                  <p class="project-list-meta">
+                    {project.data.projectType} ·{" "}
+                    {project.data.publishDate.toLocaleDateString()}
+                  </p>
+                  {project.data.description && (
+                    <p class="project-list-desc">{project.data.description}</p>
+                  )}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
