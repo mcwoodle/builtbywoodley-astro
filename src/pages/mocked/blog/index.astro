@@ -1,28 +1,11 @@
 ---
-import BaseLayout from "../../../layouts/BaseLayout.astro";
-import Header from "../../../components/Header.astro";
-import ContentCarousel from "../../../components/ContentCarousel.astro";
-import ProjectLogSection from "../../../components/ProjectLogSection.astro";
-
-const collectionName = "mockedProjects";
-const linkPrefix = "/mocked/blog/projects/";
+import BlogPageLayout from "../../../layouts/BlogPageLayout.astro";
 ---
 
-<BaseLayout>
-  <main class="home-main">
-    <div class="main-inner">
-      <Header subtitle="Mocked test content and projects for development." />
-    </div>
-
-    <div class="carousel-wrapper">
-      <ContentCarousel collectionName={collectionName} linkPrefix={linkPrefix} />
-    </div>
-
-    <ProjectLogSection 
-      eyebrow="Mocked Story (Test Content)" 
-      title="Mocked Project log"
-      collectionName={collectionName}
-      linkPrefix={linkPrefix}
-    />
-  </main>
-</BaseLayout>
+<BlogPageLayout
+  collectionName="mockedProjects"
+  linkPrefix="/mocked/blog/projects/"
+  headerSubtitle="Mocked test content and projects for development."
+  logEyebrow="Mocked Story (Test Content)"
+  logTitle="Mocked Project log"
+/>
