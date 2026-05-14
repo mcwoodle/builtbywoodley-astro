@@ -1,37 +1,18 @@
 ---
 import ProjectPageLayout from "../../../../layouts/ProjectPageLayout.astro";
-import { getCollection, getEntry, render as renderEntry } from "astro:content";
+import { getProjectPaths, renderProjectContent } from "../../../../utils/content";
 
 export async function getStaticPaths() {
-  const projects = await getCollection("mockedProjects");
-
-  return projects.map((project) => ({
-    params: { slug: project.id },
-  }));
+  return getProjectPaths("mockedProjects");
 }
 
-const { slug } = Astro.params;
-const project = await getEntry("mockedProjects", slug);
+const { project } = Astro.props;
 
 if (!project) {
-  return Astro.redirect(`/404?code=PROJECT_NOT_FOUND&resource=${slug}`);
+  return Astro.redirect(`/404?code=PROJECT_NOT_FOUND`);
 }
 
-let Content: any = null;
-
-if (typeof (project as any)?.deferredRender === "function") {
-  const rendered = await (project as any).deferredRender();
-  Content = rendered.Content;
-} else if (typeof (project as any)?.render === "function") {
-  const rendered = await (project as any).render();
-  Content = rendered.Content;
-}
-
-// Fallback: use astro:content `render()` helper if no local renderer was found.
-if (Content === null) {
-  const renderedFromHelper = await renderEntry(project);
-  Content = renderedFromHelper.Content;
-}
+const Content = await renderProjectContent(project);
 ---
 
 <ProjectPageLayout project={project}>
