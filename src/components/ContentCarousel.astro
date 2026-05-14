@@ -3,12 +3,12 @@ import { getCollection } from "astro:content";
 
 type Props = {
   collectionName?: "projects" | "mockedProjects";
-  linkPrefix?: string;
+  linkPrefix: string;
 };
 
 const { 
   collectionName = "projects", 
-  linkPrefix = collectionName === "mockedProjects" ? "/mocked/blog/projects/" : "/blog/projects/"
+  linkPrefix 
 } = Astro.props;
 
 const projects = (await getCollection(collectionName)).sort(
