@@ -1,7 +1,10 @@
 ---
+type Props = {
+  subtitle: string;
+};
+
+const { subtitle } = Astro.props;
 const siteTitle = "Built by Woodley";
-const siteSubtitle =
-  "Stuff that I've made, with pictures or a video to go with it.";
 ---
 
 <header class="section-shell">
@@ -12,7 +15,7 @@ const siteSubtitle =
     </div>
     <h1 class="page-heading">{siteTitle}</h1>
     <p class="page-subtitle">
-      {siteSubtitle}
+      {subtitle}
     </p>
   </div>
 </header>
