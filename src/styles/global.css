@@ -294,6 +294,14 @@ main.home-main {
   font-size: var(--fs-small);
 }
 
+.post-end-mark {
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  margin: var(--space-6) auto 0;
+  opacity: 0.8;
+}
+
 /* ─────────────────────────────────────────────
    Carousel
    ───────────────────────────────────────────── */
