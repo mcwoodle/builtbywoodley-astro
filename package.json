@@ -6,9 +6,6 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test-dev": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro dev",
-    "test-build": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro build",
-    "test-preview": "cross-env CONTENT_PROJECTS_BASE=./test/content/projects astro preview",
     "astro": "astro"
   },
   "devDependencies": {

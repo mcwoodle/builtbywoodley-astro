@@ -1,66 +1,25 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Header from "../components/Header.astro";
-import ContentCarousel from "../components/ContentCarousel.astro";
-import BlogEntry from "../components/BlogEntry.astro";
-import { getCollection, render as renderEntry } from "astro:content";
-
-const projects = (await getCollection("projects")).sort(
-  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
-);
-
-async function getContent(project: typeof projects[number]) {
-  if (typeof (project as any)?.deferredRender === "function") {
-    const rendered = await (project as any).deferredRender();
-    return rendered.Content;
-  }
-  if (typeof (project as any)?.render === "function") {
-    const rendered = await (project as any).render();
-    return rendered.Content;
-  }
-  const renderedFromHelper = await renderEntry(project);
-  return renderedFromHelper.Content;
-}
-
-const projectsWithContent = await Promise.all(
-  projects.map(async (project) => ({
-    project,
-    Content: await getContent(project),
-  }))
-);
 ---
 
 <BaseLayout>
-  <main class="home-main">
-    <div class="main-inner">
-      <Header />
-    </div>
-
-    <div class="carousel-wrapper">
-      <ContentCarousel projects={projects.slice(0, 5)} />
-    </div>
-
-    <div class="main-inner">
-      <section
-        class="section-shell js-projects-log"
-        style="opacity: 0; transition: opacity 0.3s ease;"
-      >
-        <div class="surface-section">
-          <p class="eyebrow" style="margin-bottom: var(--space-2);">
-            Full story
-          </p>
-          <h2 class="section-heading">Project log</h2>
-          <div class="grid-gap-md">
-            {
-              projectsWithContent.map(({ project, Content }) => (
-                <BlogEntry project={project} contentOnly>
-                  <Content />
-                </BlogEntry>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-    </div>
+  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
+    <h1 class="page-heading" style="margin-bottom: var(--space-5); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
+    <nav style="display: flex; gap: var(--space-4); flex-wrap: wrap; justify-content: center;">
+      <a href="/mocked/blog" class="pill" style="padding: var(--space-3) var(--space-5); font-size: var(--fs-body); border-radius: var(--radius-md); transition: all 0.2s ease; border-color: var(--color-accent);">
+        Mocked Blog
+      </a>
+      <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer" class="pill" style="padding: var(--space-3) var(--space-5); font-size: var(--fs-body); border-radius: var(--radius-md); transition: all 0.2s ease; border-color: var(--color-accent);">
+        LinkedIn
+      </a>
+    </nav>
   </main>
 </BaseLayout>
+
+<style>
+  a.pill:hover {
+    background: var(--color-accent);
+    color: white;
+    transform: translateY(-2px);
+  }
+</style>

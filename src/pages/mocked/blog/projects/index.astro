@@ -1,8 +1,8 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
+import BaseLayout from "../../../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 
-const projects = (await getCollection("projects")).sort(
+const projects = (await getCollection("mockedProjects")).sort(
   (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
 );
 ---
@@ -12,20 +12,20 @@ const projects = (await getCollection("projects")).sort(
     <section class="section-shell">
       <div class="surface-section">
         <p class="eyebrow" style="margin-bottom: var(--space-2);">
-          Projects index
+          Mocked Projects index
         </p>
         <h1 class="page-heading" style="margin-bottom: var(--space-3);">
-          All projects
+          All mocked projects
         </h1>
         <p class="page-subtitle" style="margin-bottom: var(--space-5);">
-          A crawlable index of every project entry, each with its own URL.
+          A crawlable index of every mocked project entry.
         </p>
 
         <ul class="project-list">
           {
             projects.map((project) => (
               <li class="project-list-item">
-                <a href={`/projects/${project.id}`}>
+                <a href={`/mocked/blog/projects/${project.id}`}>
                   <h2 class="project-list-title">{project.data.title}</h2>
                   <p class="project-list-meta">
                     {project.data.projectType} ·{" "}
