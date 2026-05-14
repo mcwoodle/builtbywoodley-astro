@@ -1,0 +1,22 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+}
+
+const { eyebrow, title } = Astro.props;
+---
+
+<div class="main-inner">
+  <section class="section-shell js-projects-log">
+    <div class="surface-section">
+      <p class="eyebrow" style="margin-bottom: var(--space-2);">
+        {eyebrow}
+      </p>
+      <h2 class="section-heading">{title}</h2>
+      <div class="grid-gap-md">
+        <slot />
+      </div>
+    </div>
+  </section>
+</div>
