@@ -1,45 +1,10 @@
 ---
-import BaseLayout from "../../../../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
-
-const projects = (await getCollection("mockedProjects")).sort(
-  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
-);
+import ProjectsIndexLayout from "../../../../layouts/ProjectsIndexLayout.astro";
 ---
 
-<BaseLayout>
-  <main>
-    <section class="section-shell">
-      <div class="surface-section">
-        <p class="eyebrow" style="margin-bottom: var(--space-2);">
-          Mocked Projects index
-        </p>
-        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
-          All mocked projects
-        </h1>
-        <p class="page-subtitle" style="margin-bottom: var(--space-5);">
-          A crawlable index of every mocked project entry.
-        </p>
-
-        <ul class="project-list">
-          {
-            projects.map((project) => (
-              <li class="project-list-item">
-                <a href={`/mocked/blog/projects/${project.id}`}>
-                  <h2 class="project-list-title">{project.data.title}</h2>
-                  <p class="project-list-meta">
-                    {project.data.projectType} ·{" "}
-                    {project.data.publishDate.toLocaleDateString()}
-                  </p>
-                  {project.data.description && (
-                    <p class="project-list-desc">{project.data.description}</p>
-                  )}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-    </section>
-  </main>
-</BaseLayout>
+<ProjectsIndexLayout
+  eyebrow="Mocked Projects index"
+  title="All mocked projects"
+  subtitle="A crawlable index of every mocked project entry."
+  linkPrefix="/mocked/blog/projects/"
+/>
