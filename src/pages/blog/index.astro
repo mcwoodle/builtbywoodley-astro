@@ -5,6 +5,7 @@ import ContentCarousel from "../components/ContentCarousel.astro";
 import ProjectLogSection from "../components/ProjectLogSection.astro";
 
 const collectionName = "projects";
+const linkPrefix = "/blog/projects/";
 ---
 
 <BaseLayout>
@@ -14,13 +15,14 @@ const collectionName = "projects";
     </div>
 
     <div class="carousel-wrapper">
-      <ContentCarousel collectionName={collectionName} />
+      <ContentCarousel collectionName={collectionName} linkPrefix={linkPrefix} />
     </div>
 
     <ProjectLogSection 
       eyebrow="Full story" 
       title="Project log" 
       collectionName={collectionName} 
+      linkPrefix={linkPrefix}
     />
   </main>
 </BaseLayout>

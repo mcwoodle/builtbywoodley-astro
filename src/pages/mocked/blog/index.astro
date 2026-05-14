@@ -5,6 +5,7 @@ import ContentCarousel from "../../../components/ContentCarousel.astro";
 import ProjectLogSection from "../../../components/ProjectLogSection.astro";
 
 const collectionName = "mockedProjects";
+const linkPrefix = "/mocked/blog/projects/";
 ---
 
 <BaseLayout>
@@ -14,13 +15,14 @@ const collectionName = "mockedProjects";
     </div>
 
     <div class="carousel-wrapper">
-      <ContentCarousel collectionName={collectionName} />
+      <ContentCarousel collectionName={collectionName} linkPrefix={linkPrefix} />
     </div>
 
     <ProjectLogSection 
       eyebrow="Mocked Story (Test Content)" 
       title="Mocked Project log"
       collectionName={collectionName}
+      linkPrefix={linkPrefix}
     />
   </main>
 </BaseLayout>
