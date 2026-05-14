@@ -3,7 +3,7 @@ import type { CollectionEntry } from "astro:content";
 
 type Props = {
   project: CollectionEntry<"projects"> | CollectionEntry<"mockedProjects">;
-  /** When true, only the slot (main content) is rendered; no meta, title, description, or tags. */
+  /** When true, only the main content and title are rendered; no meta, description, or tags. */
   contentOnly?: boolean;
   /** Base URL for project links. Defaults to production blog path. */
   linkPrefix?: string;
@@ -15,6 +15,9 @@ const id = `project-${slug}`;
 ---
 
 <article id={id} class="project-entry js-project-entry">
+  <h2 class="project-title" style="margin-bottom: var(--space-3);">
+    <a href={`${linkPrefix}${slug}`}>{project.data.title}</a>
+  </h2>
   {
     !contentOnly && (
       <>
@@ -22,9 +25,6 @@ const id = `project-${slug}`;
           <span>{project.data.projectType}</span>
           <span>{project.data.publishDate.toLocaleDateString()}</span>
         </header>
-        <h2 class="project-title">
-          <a href={`${linkPrefix}${slug}`}>{project.data.title}</a>
-        </h2>
         {project.data.description && (
           <p class="project-description">{project.data.description}</p>
         )}
