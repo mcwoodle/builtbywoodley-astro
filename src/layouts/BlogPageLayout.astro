@@ -1,0 +1,41 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Header from "../components/Header.astro";
+import ContentCarousel from "../components/ContentCarousel.astro";
+import ProjectLogSection from "../components/ProjectLogSection.astro";
+
+interface Props {
+  collectionName: "projects" | "mockedProjects";
+  linkPrefix: string;
+  headerSubtitle: string;
+  logEyebrow: string;
+  logTitle: string;
+}
+
+const { 
+  collectionName, 
+  linkPrefix, 
+  headerSubtitle, 
+  logEyebrow, 
+  logTitle 
+} = Astro.props;
+---
+
+<BaseLayout>
+  <main class="home-main">
+    <div class="main-inner">
+      <Header subtitle={headerSubtitle} />
+    </div>
+
+    <div class="carousel-wrapper">
+      <ContentCarousel collectionName={collectionName} linkPrefix={linkPrefix} />
+    </div>
+
+    <ProjectLogSection 
+      eyebrow={logEyebrow} 
+      title={logTitle} 
+      collectionName={collectionName} 
+      linkPrefix={linkPrefix}
+    />
+  </main>
+</BaseLayout>

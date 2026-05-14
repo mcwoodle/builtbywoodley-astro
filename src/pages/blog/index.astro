@@ -1,28 +1,11 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import Header from "../components/Header.astro";
-import ContentCarousel from "../components/ContentCarousel.astro";
-import ProjectLogSection from "../components/ProjectLogSection.astro";
-
-const collectionName = "projects";
-const linkPrefix = "/blog/projects/";
+import BlogPageLayout from "../../layouts/BlogPageLayout.astro";
 ---
 
-<BaseLayout>
-  <main class="home-main">
-    <div class="main-inner">
-      <Header subtitle="Stuff that I've made, with pictures or a video to go with it." />
-    </div>
-
-    <div class="carousel-wrapper">
-      <ContentCarousel collectionName={collectionName} linkPrefix={linkPrefix} />
-    </div>
-
-    <ProjectLogSection 
-      eyebrow="Full story" 
-      title="Project log" 
-      collectionName={collectionName} 
-      linkPrefix={linkPrefix}
-    />
-  </main>
-</BaseLayout>
+<BlogPageLayout
+  collectionName="projects"
+  linkPrefix="/blog/projects/"
+  headerSubtitle="Stuff that I've made, with pictures or a video to go with it."
+  logEyebrow="Full story"
+  logTitle="Project log"
+/>
