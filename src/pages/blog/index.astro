@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Header from "../components/Header.astro";
 import ContentCarousel from "../components/ContentCarousel.astro";
 import BlogEntry from "../components/BlogEntry.astro";
+import ProjectLogSection from "../components/ProjectLogSection.astro";
 import { getCollection, render as renderEntry } from "astro:content";
 
 const projects = (await getCollection("projects")).sort(
@@ -40,27 +41,14 @@ const projectsWithContent = await Promise.all(
       <ContentCarousel projects={projects.slice(0, 5)} />
     </div>
 
-    <div class="main-inner">
-      <section
-        class="section-shell js-projects-log"
-        style="opacity: 0; transition: opacity 0.3s ease;"
-      >
-        <div class="surface-section">
-          <p class="eyebrow" style="margin-bottom: var(--space-2);">
-            Full story
-          </p>
-          <h2 class="section-heading">Project log</h2>
-          <div class="grid-gap-md">
-            {
-              projectsWithContent.map(({ project, Content }) => (
-                <BlogEntry project={project} contentOnly>
-                  <Content />
-                </BlogEntry>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-    </div>
+    <ProjectLogSection eyebrow="Full story" title="Project log">
+      {
+        projectsWithContent.map(({ project, Content }) => (
+          <BlogEntry project={project} contentOnly>
+            <Content />
+          </BlogEntry>
+        ))
+      }
+    </ProjectLogSection>
   </main>
 </BaseLayout>

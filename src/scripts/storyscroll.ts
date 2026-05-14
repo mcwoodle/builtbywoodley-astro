@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
         trigger: carousel,
         start: 'top top',
         end: '+=50%',
-        pin: true,
         scrub: true,
       },
       opacity: 0.25,
@@ -57,10 +56,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Reveal the projects log now that ScrollTrigger has set up pin-spacing
-  const projectsLog = document.querySelector<HTMLElement>('.js-projects-log');
-  if (projectsLog) {
-    projectsLog.style.opacity = '1';
-  }
 });
 
