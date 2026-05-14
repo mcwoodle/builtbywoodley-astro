@@ -38,5 +38,5 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return next();
   }
 
-  return context.redirect('/');
+  return context.redirect(`/404?code=PROJECT_NOT_FOUND&resource=${slug}`);
 };
