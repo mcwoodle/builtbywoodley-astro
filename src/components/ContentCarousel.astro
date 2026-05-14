@@ -1,13 +1,19 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import { getCollection } from "astro:content";
 
 type Props = {
-  projects: (CollectionEntry<"projects"> | CollectionEntry<"mockedProjects">)[];
-  /** Base URL for project links. Defaults to production blog path. */
+  collectionName?: "projects" | "mockedProjects";
   linkPrefix?: string;
 };
 
-const { projects, linkPrefix = "/blog/projects/" } = Astro.props;
+const { 
+  collectionName = "projects", 
+  linkPrefix = collectionName === "mockedProjects" ? "/mocked/blog/projects/" : "/blog/projects/"
+} = Astro.props;
+
+const projects = (await getCollection(collectionName)).sort(
+  (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
+).slice(0, 5);
 ---
 
 <section class="section-shell js-carousel-section">
