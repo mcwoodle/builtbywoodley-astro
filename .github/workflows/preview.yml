@@ -1,0 +1,130 @@
+name: PR Preview (Cloudflare Workers)
+
+# Builds the site and uploads a *preview* version of the Worker for every pull
+# request, then posts the unique preview URL back as a comment on the PR.
+#
+# This uses `wrangler versions upload` (not `deploy`), so production traffic on
+# `mainline` is never affected — each upload gets its own immutable preview URL.
+#
+# One-time setup required:
+#   - Repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must exist
+#     (already used by deploy.yml).
+#   - The API token needs the "Workers Scripts: Edit" permission.
+#   - Preview URLs must be enabled for the Worker:
+#       Cloudflare dashboard ▸ Workers & Pages ▸ builtbywoodley ▸ Settings ▸
+#       Domains & Routes ▸ enable "Preview URLs".
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Supersede in-progress runs for the same PR so the comment always reflects the
+# latest commit and we don't waste build minutes on stale commits.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    # Pull requests from forks cannot read repository secrets, so the upload
+    # would fail with a confusing error. Skip them rather than fail noisily.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Upload preview version
+        id: upload
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Match deploy.yml: pin wrangler 4.x so it can't drift to 3.x.
+          wranglerVersion: "4"
+          command: >-
+            versions upload
+            --message "PR #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }}"
+
+      - name: Resolve preview URL
+        id: preview
+        env:
+          # Bind action outputs to env vars to avoid shell injection from
+          # interpolating ${{ ... }} directly into the script body.
+          DEPLOY_URL: ${{ steps.upload.outputs.deployment-url }}
+          CMD_OUTPUT: ${{ steps.upload.outputs.command-output }}
+        run: |
+          set -euo pipefail
+          url="${DEPLOY_URL:-}"
+          # Fallback: parse the preview URL out of wrangler's stdout if the
+          # action did not populate deployment-url.
+          if [ -z "$url" ]; then
+            url="$(printf '%s' "$CMD_OUTPUT" \
+              | grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' \
+              | head -n1 || true)"
+          fi
+          if [ -z "$url" ]; then
+            echo "::error::Could not determine the preview URL from wrangler output."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on the PR
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.url }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-preview -->';
+            const { PREVIEW_URL, COMMIT_SHA } = process.env;
+            const body = [
+              marker,
+              '### ⚡ Cloudflare preview deployed',
+              '',
+              `| | |`,
+              `| --- | --- |`,
+              `| **Preview URL** | ${PREVIEW_URL} |`,
+              `| **Commit** | \`${COMMIT_SHA}\` |`,
+              '',
+              '_Updated automatically on every push to this PR._',
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            // Upsert: reuse our existing comment if present so the PR doesn't
+            // accumulate one comment per push.
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 },
+            );
+            const existing = comments.find(
+              (c) => c.body && c.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
