@@ -13,10 +13,10 @@ jobs:
       deployments: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -28,12 +28,12 @@ jobs:
         run: npm run build
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # wrangler-action@v3 bundles wrangler 3.x, which requires a `main`
-          # entry-point and cannot deploy an assets-only Worker. Pin v4, which
-          # supports static-assets Workers (matches local `wrangler` 4.x).
+          # wrangler-action@v4 bundles wrangler 4.x, which supports
+          # assets-only Workers (matches local `wrangler` 4.x). Keep the
+          # explicit pin so the deployed wrangler can't drift back to 3.x.
           wranglerVersion: "4"
           command: deploy
