@@ -1,6 +1,6 @@
 ---
-import ProjectPageLayout from "../../layouts/ProjectPageLayout.astro";
-import { getProjectPaths, renderProjectContent } from "../../utils/content";
+import ProjectPageLayout from "../../../layouts/ProjectPageLayout.astro";
+import { getProjectPaths, renderProjectContent } from "../../../utils/content";
 
 export async function getStaticPaths() {
   return getProjectPaths("projects");
