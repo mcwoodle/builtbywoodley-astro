@@ -31,6 +31,7 @@ permissions:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # Pull requests from forks cannot read repository secrets, so the upload
     # would fail with a confusing error. Skip them rather than fail noisily.
     if: github.event.pull_request.head.repo.full_name == github.repository
@@ -71,9 +72,11 @@ jobs:
           CMD_OUTPUT: ${{ steps.upload.outputs.command-output }}
         run: |
           set -euo pipefail
+          # `versions upload` does not reliably populate the action's
+          # deployment-url output, so parsing the "Version Preview URL" out of
+          # wrangler's stdout is the primary mechanism here; DEPLOY_URL is just
+          # a best-effort shortcut if a future action version starts setting it.
           url="${DEPLOY_URL:-}"
-          # Fallback: parse the preview URL out of wrangler's stdout if the
-          # action did not populate deployment-url.
           if [ -z "$url" ]; then
             url="$(printf '%s' "$CMD_OUTPUT" \
               | grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' \
