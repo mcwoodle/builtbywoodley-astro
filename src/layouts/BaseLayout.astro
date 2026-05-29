@@ -1,4 +1,6 @@
 ---
+import TopNav from '../components/TopNav.astro';
+
 const title = "Built by Woodley";
 const description = "Stuff that I've built";
 ---
@@ -22,6 +24,7 @@ const description = "Stuff that I've built";
     <link rel="stylesheet" href="/src/styles/global.css" />
   </head>
   <body>
+    <TopNav />
     <slot />
     <script type="module" src="/src/scripts/storyscroll.ts"></script>
   </body>
