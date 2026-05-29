@@ -32,4 +32,8 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler-action@v3 bundles wrangler 3.x, which requires a `main`
+          # entry-point and cannot deploy an assets-only Worker. Pin v4, which
+          # supports static-assets Workers (matches local `wrangler` 4.x).
+          wranglerVersion: "4"
           command: deploy
