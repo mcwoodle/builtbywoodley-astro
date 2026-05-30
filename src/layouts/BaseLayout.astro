@@ -9,6 +9,23 @@ const description = "Stuff that I've built";
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Apply the saved (or system-preferred) theme before first paint to
+         avoid a flash of the wrong theme. Must stay inline and ahead of the
+         stylesheet. -->
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var prefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || (prefersDark ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          /* If storage/matchMedia is unavailable, fall back to the light default. */
+        }
+      })();
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
