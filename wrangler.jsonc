@@ -2,6 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "builtbywoodley",
   "compatibility_date": "2026-05-29",
+
+  // Enable per-version preview URLs (served on *.workers.dev) so the PR
+  // preview workflow (wrangler versions upload) can resolve a URL to post.
+  // Independent of production, which stays on the custom domains below; this
+  // is a deployment-level setting that applies on the next production deploy.
+  "preview_urls": true,
   "assets": {
     "directory": "./dist"
   },
