@@ -1,0 +1,73 @@
+---
+// A fixed top-right button that switches between the light and dark themes.
+// The actual theme is applied by setting data-theme on <html>; the no-flash
+// init that reads the saved preference lives in BaseLayout's <head> so the
+// correct theme is set before first paint.
+---
+
+<button
+  type="button"
+  class="theme-toggle"
+  aria-label="Toggle dark theme"
+  aria-pressed="false"
+>
+  <!-- Shown in light mode: tap to switch to dark. -->
+  <svg
+    class="icon-moon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+  <!-- Shown in dark mode: tap to switch to light. -->
+  <svg
+    class="icon-sun"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+</button>
+
+<script>
+  const STORAGE_KEY = 'theme';
+  const root = document.documentElement;
+  const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
+
+  function syncPressedState() {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    toggle?.setAttribute('aria-pressed', String(isDark));
+  }
+
+  syncPressedState();
+
+  toggle?.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Ignore storage failures (e.g. private mode); theme still applies for
+      // the current page.
+    }
+    syncPressedState();
+  });
+</script>
