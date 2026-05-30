@@ -5,7 +5,6 @@ description: "A small homelab for backups, media, and self-hosted apps, built fr
 coverImage: "./placeholder-cover.svg"
 projectType: "tech-setup"
 tags: ["home-server", "network"]
-videoUrl: "https://www.youtube.com/watch?v=KrGxabJ1L6Y"
 ---
 
 I wanted one place for family photos, backups, and a few self-hosted services—without paying a cloud tax every month. So I turned an old desktop and some spare drives into a simple home server running TrueNAS (now Scale) in a VM and Docker for everything else.
@@ -13,7 +12,5 @@ I wanted one place for family photos, backups, and a few self-hosted services—
 ![Server rack](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80)
 
 The host is a refurbished business PC with an i5 and 32GB RAM. I added a multi-bay enclosure for the data drives and set up ZFS mirroring for the important datasets. Backups go to the NAS from our laptops on a schedule; photos and media are served to the rest of the house over the LAN.
-
-<iframe width="100%" height="400" src="https://www.youtube.com/embed/KrGxabJ1L6Y" title="Home server overview" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 I run Pi-hole in a container for network-wide blocking, plus a couple of small web apps. Everything backs up to an external drive weekly. Power draw is low, and the whole setup lives in a closet with decent airflow.
