@@ -2,14 +2,14 @@
 title: "Home Server and NAS Setup"
 publishDate: 2024-03-03
 description: "A small homelab for backups, media, and self-hosted apps, built from a used desktop and a few drives."
-coverImage: "./placeholder-cover.svg"
+coverImage: "./images/home_server_cover.png"
 projectType: "tech-setup"
 tags: ["home-server", "network"]
 ---
 
 I wanted one place for family photos, backups, and a few self-hosted services—without paying a cloud tax every month. So I turned an old desktop and some spare drives into a simple home server running TrueNAS (now Scale) in a VM and Docker for everything else.
 
-![Server rack](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80)
+![Server rack](./images/home_server_1.png)
 
 The host is a refurbished business PC with an i5 and 32GB RAM. I added a multi-bay enclosure for the data drives and set up ZFS mirroring for the important datasets. Backups go to the NAS from our laptops on a schedule; photos and media are served to the rest of the house over the LAN.
 
