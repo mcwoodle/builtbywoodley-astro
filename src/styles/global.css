@@ -397,6 +397,42 @@ main.home-main {
   border: none;
   box-shadow: var(--shadow-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+}
+
+/* Cover preview: the interesting part of the image stays opaque up top and
+   fades into the card surface toward the bottom, blending into the text. */
+.carousel-card-media {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  /* Tuck the text up into the faded edge for a seamless image-to-card blend */
+  margin-bottom: calc(var(--space-5) * -1);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+}
+
+.carousel-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Per-card framing comes from the post's coverFocus / coverZoom */
+  object-position: var(--cover-focus, center);
+  transform: scale(var(--cover-zoom, 1));
+  transform-origin: var(--cover-focus, center);
 }
 
 .carousel-card:hover {
@@ -421,6 +457,7 @@ main.home-main {
 }
 
 .carousel-card-inner {
+  position: relative;
   padding: var(--space-4);
 }
 

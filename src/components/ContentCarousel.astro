@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
 
 type Props = {
   collectionName?: "projects" | "mockedProjects";
@@ -38,6 +39,20 @@ const projects = (await getCollection(collectionName)).sort(
               class="carousel-card-link"
               style="display: block; color: inherit; text-decoration: none;"
             >
+              {project.data.coverImage?.format !== "svg" && (
+                <div
+                  class="carousel-card-media"
+                  style={`--cover-focus: ${project.data.coverFocus}; --cover-zoom: ${project.data.coverZoom};`}
+                >
+                  <Image
+                    src={project.data.coverImage}
+                    alt=""
+                    widths={[320, 640]}
+                    sizes="320px"
+                    loading="lazy"
+                  />
+                </div>
+              )}
               <div class="carousel-card-inner">
                 <p class="eyebrow" style="margin-bottom: var(--space-2);">
                   {project.data.projectType}
