@@ -17,8 +17,7 @@ const projects = (await getCollection(collectionName)).sort(
   <div class="surface-section">
     <div class="section-header">
       <div>
-        <!-- <p class="eyebrow">Latest Stuff</p> -->
-        <h2 class="section-heading">Latest Stuff</h2>
+        <h2 class="section-heading">Posts</h2>
         <!-- <p class="page-subtitle" style="margin: 0;">
           A quick glance at what was shipped most recently before we dive into
           the full story.
@@ -66,5 +65,88 @@ const projects = (await getCollection(collectionName)).sort(
         ))
       }
     </div>
+
+    <div
+      class="carousel-slider js-carousel-slider"
+      role="scrollbar"
+      aria-orientation="horizontal"
+      aria-label="Scroll posts"
+      hidden
+    >
+      <div class="carousel-slider-track">
+        <div class="carousel-slider-thumb js-carousel-thumb"></div>
+      </div>
+    </div>
   </div>
 </section>
+
+<script>
+  // Minimalist slider control: reflects the carousel's horizontal scroll
+  // position and lets you drag (or click) anywhere on it to scroll.
+  type Carousel = { track: HTMLElement; slider: HTMLElement; thumb: HTMLElement };
+
+  function setupSlider({ track, slider, thumb }: Carousel) {
+    const MIN_THUMB = 28; // px — keep the handle grabbable even with many cards
+
+    const maxScroll = () => track.scrollWidth - track.clientWidth;
+
+    const render = () => {
+      const max = maxScroll();
+      if (max <= 1) {
+        slider.hidden = true;
+        return;
+      }
+      slider.hidden = false;
+      const trackW = slider.clientWidth;
+      const thumbW = Math.max(MIN_THUMB, (track.clientWidth / track.scrollWidth) * trackW);
+      const x = (track.scrollLeft / max) * (trackW - thumbW);
+      thumb.style.width = `${thumbW}px`;
+      thumb.style.transform = `translateX(${x}px)`;
+      slider.setAttribute("aria-valuenow", String(Math.round((track.scrollLeft / max) * 100)));
+    };
+
+    // Map a pointer x within the slider to a scroll position and apply it.
+    const scrollFromPointer = (clientX: number) => {
+      const rect = slider.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      track.scrollLeft = ratio * maxScroll();
+    };
+
+    let dragging = false;
+    slider.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      slider.classList.add("is-dragging");
+      slider.setPointerCapture(e.pointerId);
+      scrollFromPointer(e.clientX);
+    });
+    slider.addEventListener("pointermove", (e) => {
+      if (dragging) scrollFromPointer(e.clientX);
+    });
+    const end = (e: PointerEvent) => {
+      dragging = false;
+      slider.classList.remove("is-dragging");
+      if (slider.hasPointerCapture(e.pointerId)) slider.releasePointerCapture(e.pointerId);
+    };
+    slider.addEventListener("pointerup", end);
+    slider.addEventListener("pointercancel", end);
+
+    let ticking = false;
+    track.addEventListener("scroll", () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        render();
+        ticking = false;
+      });
+    });
+    window.addEventListener("resize", render);
+    render();
+  }
+
+  document.querySelectorAll<HTMLElement>(".js-carousel-section").forEach((section) => {
+    const track = section.querySelector<HTMLElement>(".js-carousel-track");
+    const slider = section.querySelector<HTMLElement>(".js-carousel-slider");
+    const thumb = section.querySelector<HTMLElement>(".js-carousel-thumb");
+    if (track && slider && thumb) setupSlider({ track, slider, thumb });
+  });
+</script>
