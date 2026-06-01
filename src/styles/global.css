@@ -398,6 +398,49 @@ main.home-main {
   -webkit-overflow-scrolling: touch;
   /* Room so the card hover-lift and shadows aren't clipped by the overflow */
   padding: var(--space-2) var(--space-1) var(--space-3);
+  /* Native scrollbar hidden — the custom slider control replaces it */
+  scrollbar-width: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom slider control under the carousel */
+.carousel-slider {
+  width: 100%;
+  max-width: 200px;
+  margin: var(--space-3) auto 0;
+  padding-block: var(--space-2);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.carousel-slider[hidden] {
+  display: none;
+}
+
+.carousel-slider-track {
+  position: relative;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-border-subtle);
+}
+
+.carousel-slider-thumb {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 40px;
+  border-radius: 999px;
+  background: var(--color-text-muted);
+  transition: background 0.2s ease;
+  will-change: transform;
+}
+
+.carousel-slider:hover .carousel-slider-thumb,
+.carousel-slider.is-dragging .carousel-slider-thumb {
+  background: var(--color-text);
 }
 
 .carousel-card {
