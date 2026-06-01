@@ -8,6 +8,10 @@ const projectSchema = ({ image }: { image: any }) =>
     description: z.string().optional(),
     // image() resolves local paths and passes them to Astro's image optimization
     coverImage: image(),
+    // Focal point + zoom for cropping the cover in card previews (CSS object-position / scale).
+    // Lets each post frame the "interesting part" of its image. Defaults keep the image centered.
+    coverFocus: z.string().default('center'),
+    coverZoom: z.number().min(1).default(1),
     // Enum keeps routing/filtering predictable; default avoids required field in every file
     projectType: z
       .enum(['woodworking', 'renovation', 'tech-setup', 'other'])

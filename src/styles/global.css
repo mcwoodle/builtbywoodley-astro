@@ -334,6 +334,8 @@ main.home-main {
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+  /* Keep anchored entries clear of the sticky top nav (no-JS fallback) */
+  scroll-margin-top: 72px;
 }
 
 .project-entry:last-of-type {
@@ -386,17 +388,104 @@ main.home-main {
 .carousel-track {
   display: flex;
   gap: var(--space-4);
-  padding-bottom: var(--space-2);
-  justify-content: center;
+  /* Horizontal scroll for the full set of posts; centers when they all fit
+     and falls back to start (safe) so no cards get clipped out of reach. */
+  justify-content: safe center;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+  /* Room so the card hover-lift and shadows aren't clipped by the overflow */
+  padding: var(--space-2) var(--space-1) var(--space-3);
+  /* Native scrollbar hidden — the custom slider control replaces it */
+  scrollbar-width: none;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom slider control under the carousel */
+.carousel-slider {
+  width: 100%;
+  max-width: 200px;
+  margin: var(--space-3) auto 0;
+  padding-block: var(--space-2);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.carousel-slider[hidden] {
+  display: none;
+}
+
+.carousel-slider-track {
+  position: relative;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-border-subtle);
+}
+
+.carousel-slider-thumb {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 40px;
+  border-radius: 999px;
+  background: var(--color-text-muted);
+  transition: background 0.2s ease;
+  will-change: transform;
+}
+
+.carousel-slider:hover .carousel-slider-thumb,
+.carousel-slider.is-dragging .carousel-slider-thumb {
+  background: var(--color-text);
 }
 
 .carousel-card {
-  flex: 1;
-  min-width: 260px;
-  max-width: 320px;
+  flex: 0 0 300px;
+  width: 300px;
   border: none;
   box-shadow: var(--shadow-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+/* Cover preview: the interesting part of the image stays opaque up top and
+   fades into the card surface toward the bottom, blending into the text. */
+.carousel-card-media {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  /* Tuck the text up into the faded edge for a seamless image-to-card blend */
+  margin-bottom: calc(var(--space-5) * -1);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+}
+
+.carousel-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Per-card framing comes from the post's coverFocus / coverZoom */
+  object-position: var(--cover-focus, center);
+  transform: scale(var(--cover-zoom, 1));
+  transform-origin: var(--cover-focus, center);
 }
 
 .carousel-card:hover {
@@ -404,23 +493,8 @@ main.home-main {
   box-shadow: var(--shadow-soft);
 }
 
-.carousel-card:nth-child(n+4) {
-  display: none;
-}
-
-@media (min-width: 1040px) {
-  .carousel-card:nth-child(4) {
-    display: block;
-  }
-}
-
-@media (min-width: 1300px) {
-  .carousel-card:nth-child(5) {
-    display: block;
-  }
-}
-
 .carousel-card-inner {
+  position: relative;
   padding: var(--space-4);
 }
 
@@ -586,12 +660,21 @@ main.home-main {
     border-radius: var(--radius-md);
   }
 
-  .carousel-track {
-    gap: var(--space-3);
+  /* Tighter section padding gives the swipeable carousel more room on phones */
+  .surface-section {
+    padding: var(--space-4);
   }
 
+  .carousel-track {
+    gap: var(--space-3);
+    scroll-padding-inline: var(--space-4);
+  }
+
+  /* Cards take most of the width so the next one peeks, signalling swipe */
   .carousel-card {
-    min-width: 220px;
+    flex-basis: 80vw;
+    width: 80vw;
+    max-width: 300px;
   }
 
   .section-inner {
