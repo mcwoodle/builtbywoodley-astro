@@ -334,6 +334,8 @@ main.home-main {
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+  /* Keep anchored entries clear of the sticky top nav (no-JS fallback) */
+  scroll-margin-top: 72px;
 }
 
 .project-entry:last-of-type {
