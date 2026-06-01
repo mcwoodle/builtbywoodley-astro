@@ -56,5 +56,69 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  setupCarouselScroll();
 });
+
+// ── Recent-stuff cards → in-page project log entries ─────────────────
+// A card click smooth-scrolls to the matching entry in the project log
+// (instead of opening its standalone page) and records the pre-click
+// scroll position so the Back button returns the reader exactly there.
+// The standalone page stays reachable only via the entry's title link.
+function setupCarouselScroll() {
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  // Leave room for the sticky top nav so the entry isn't tucked behind it.
+  const navOffset = () => {
+    const nav = document.querySelector<HTMLElement>('.top-nav');
+    return nav ? -(nav.clientHeight + 12) : 0;
+  };
+
+  const scrollToEntry = (id: string, immediate: boolean) => {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    lenis.scrollTo(el, { offset: navOffset(), immediate });
+    return true;
+  };
+
+  const cards = document.querySelectorAll<HTMLAnchorElement>(
+    '.js-carousel-card a[href^="#"]',
+  );
+
+  cards.forEach((card) => {
+    card.addEventListener('click', (event) => {
+      const id = (card.getAttribute('href') || '').slice(1);
+      if (!id || !document.getElementById(id)) return; // let the link fall through
+      event.preventDefault();
+      // Stash the current position on this entry, then push a new one so Back
+      // lands on the saved position and Forward returns to the entry.
+      history.replaceState({ scrollY: window.scrollY }, '', location.href);
+      history.pushState({ entryId: id }, '', `#${id}`);
+      scrollToEntry(id, false);
+    });
+  });
+
+  const restoreScroll = (y: number) => {
+    // immediate jumps without animation; re-assert next frame so the
+    // smooth-scroll RAF can't drift away from the restored position.
+    lenis.scrollTo(y, { immediate: true, force: true });
+    requestAnimationFrame(() => lenis.scrollTo(y, { immediate: true, force: true }));
+  };
+
+  window.addEventListener('popstate', (event) => {
+    const state = event.state as
+      | { scrollY?: number; entryId?: string }
+      | null;
+    if (state && typeof state.scrollY === 'number') {
+      restoreScroll(state.scrollY);
+    } else if (state && state.entryId) {
+      scrollToEntry(state.entryId, true);
+    } else if (location.hash.length > 1) {
+      scrollToEntry(location.hash.slice(1), true);
+    } else {
+      restoreScroll(0);
+    }
+  });
+}
 
