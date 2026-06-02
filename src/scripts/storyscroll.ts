@@ -46,25 +46,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = entry.querySelector<HTMLElement>('.project-title');
       const content = entry.querySelector<HTMLElement>('.project-content');
 
-      // Scroll-linked reveal: each element starts lower and fully transparent,
-      // then races upward far faster than the page scrolls and eases
-      // (exponentially) toward its resting spot — decelerating to 1:1 and fully
-      // opaque as the entry settles. Both finish at the same point ('top 40%').
+      // Each element is triggered by its OWN position so it starts fully below
+      // the fold: at 'top bottom' its natural top is on the viewport's bottom
+      // edge and the +120 start offset pushes it just off-screen. As you scroll
+      // it rises up from that bottom edge while fading in (expo.out) and
+      // decelerating to 1:1, settling opaque and in place.
       //
-      // The title only begins once the entry has risen well into view, leaving
-      // a deliberate gap first. The content is delayed further and covers that
-      // gap in half the scroll distance, so it catches the title at the finish.
+      // The content sits lower in the entry, so it reaches the bottom edge
+      // later than the title (a natural delay) and it covers its rise in half
+      // the scroll distance ('top bottom' -> 'top 70%' vs the title's
+      // 'top bottom' -> 'top 40%').
       if (title) {
         gsap.fromTo(
           title,
-          { opacity: 0, y: 110 },
+          { opacity: 0, y: 120 },
           {
             opacity: 1,
             y: 0,
             ease: 'expo.out',
             scrollTrigger: {
-              trigger: entry,
-              start: 'top 80%',
+              trigger: title,
+              start: 'top bottom',
               end: 'top 40%',
               scrub: true,
             },
@@ -74,15 +76,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (content) {
         gsap.fromTo(
           content,
-          { opacity: 0, y: 110 },
+          { opacity: 0, y: 120 },
           {
             opacity: 1,
             y: 0,
             ease: 'expo.out',
             scrollTrigger: {
-              trigger: entry,
-              start: 'top 60%',
-              end: 'top 40%',
+              trigger: content,
+              start: 'top bottom',
+              end: 'top 70%',
               scrub: true,
             },
           },
