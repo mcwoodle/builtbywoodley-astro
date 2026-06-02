@@ -44,24 +44,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reveal settings per element. Title and content are intentionally
     // identical right now so they animate in sync — give either block its own
     // values to make them independent again.
-    //   offsetVh: start offset as a fraction of the viewport height. Sized so
-    //     the element begins at the bottom edge (it equals the distance from
-    //     the element's start-trigger resting spot down to the bottom).
+    //   offsetVh: start offset as a fraction of the viewport height; small, so
+    //     the element only peeks above the bottom edge early on.
     //   start/end: ScrollTrigger positions, tracking the entry's natural 1:1
-    //     position (the entry is never transformed).
+    //     position (the entry is never transformed). Starting at 'top bottom'
+    //     (as the section enters) and ending around the middle stretches the
+    //     reveal over a long, slow range.
+    //   ease: fast at first, slowing as the section nears mid-viewport.
+    //
+    // Net effect: the title is only slightly visible at the bottom by the time
+    // the section takes up ~1/8 of the viewport, and finishes settling roughly
+    // halfway up.
     const reveal = {
-      title: { offsetVh: 0.25, start: 'top 75%', end: 'top 25%' },
-      content: { offsetVh: 0.25, start: 'top 75%', end: 'top 25%' },
+      title: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
+      content: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
     };
 
-    type RevealCfg = { offsetVh: number; start: string; end: string };
+    type RevealCfg = {
+      offsetVh: number;
+      start: string;
+      end: string;
+      ease: string;
+    };
     const animateReveal = (
       el: HTMLElement,
       entry: HTMLElement,
       cfg: RevealCfg,
     ) => {
       // Offset within the entry (measured before any transform is applied) so
-      // the start offset lands the element exactly on the bottom edge.
+      // both elements begin the same distance below the bottom edge.
       const delta = el.getBoundingClientRect().top - entry.getBoundingClientRect().top;
       gsap.fromTo(
         el,
@@ -69,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
           opacity: 1,
           y: 0,
-          ease: 'expo.out',
+          ease: cfg.ease,
           scrollTrigger: {
             trigger: entry,
             start: cfg.start,
