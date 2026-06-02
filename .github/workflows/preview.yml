@@ -1,7 +1,8 @@
 name: PR Preview (Cloudflare Workers)
 
 # Builds the site and uploads a *preview* version of the Worker for every pull
-# request, then posts the unique preview URL back as a comment on the PR.
+# request, then posts the unique preview URL as a new PR comment on each push
+# (so every revision keeps its own preview link in the timeline).
 #
 # This uses `wrangler versions upload` (not `deploy`), so production traffic on
 # `mainline` is never affected — each upload gets its own immutable preview URL.
@@ -18,11 +19,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# Supersede in-progress runs for the same PR so the comment always reflects the
-# latest commit and we don't waste build minutes on stale commits.
+# Serialize runs per PR (don't cancel in-progress ones) so every push gets its
+# own run that finishes and posts its own preview comment, even if pushes land
+# in quick succession.
 concurrency:
   group: preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -97,6 +99,7 @@ jobs:
           script: |
             const marker = '<!-- cloudflare-preview -->';
             const { PREVIEW_URL, COMMIT_SHA } = process.env;
+            const shortSha = COMMIT_SHA.slice(0, 7);
             const body = [
               marker,
               '### ⚡ Cloudflare preview deployed',
@@ -104,30 +107,16 @@ jobs:
               `| | |`,
               `| --- | --- |`,
               `| **Preview URL** | ${PREVIEW_URL} |`,
-              `| **Commit** | \`${COMMIT_SHA}\` |`,
+              `| **Commit** | \`${shortSha}\` |`,
               '',
-              '_Updated automatically on every push to this PR._',
+              '_Posted automatically for this commit. A new comment is added on every push._',
             ].join('\n');
 
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
 
-            // Upsert: reuse our existing comment if present so the PR doesn't
-            // accumulate one comment per push.
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              { owner, repo, issue_number, per_page: 100 },
-            );
-            const existing = comments.find(
-              (c) => c.body && c.body.includes(marker),
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner, repo, comment_id: existing.id, body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner, repo, issue_number, body,
-              });
-            }
+            // Post a fresh comment for every push so each revision keeps its own
+            // preview URL in the PR timeline (rather than overwriting one comment).
+            await github.rest.issues.createComment({
+              owner, repo, issue_number, body,
+            });
