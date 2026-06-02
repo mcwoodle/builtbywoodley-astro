@@ -37,22 +37,67 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (entries.length > 0) {
-    entries.forEach((entry) => {
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    // Reveal settings per element. Title and content are intentionally
+    // identical right now so they animate in sync — give either block its own
+    // values to make them independent again.
+    //   offsetVh: start offset as a fraction of the viewport height; small, so
+    //     the element only peeks above the bottom edge early on.
+    //   start/end: ScrollTrigger positions, tracking the entry's natural 1:1
+    //     position (the entry is never transformed). Starting at 'top bottom'
+    //     (as the section enters) and ending around the middle stretches the
+    //     reveal over a long, slow range.
+    //   ease: fast at first, slowing as the section nears mid-viewport.
+    //
+    // Net effect: the title is only slightly visible at the bottom by the time
+    // the section takes up ~1/8 of the viewport, and finishes settling roughly
+    // halfway up.
+    const reveal = {
+      title: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
+      content: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
+    };
+
+    type RevealCfg = {
+      offsetVh: number;
+      start: string;
+      end: string;
+      ease: string;
+    };
+    const animateReveal = (
+      el: HTMLElement,
+      entry: HTMLElement,
+      cfg: RevealCfg,
+    ) => {
+      // Offset within the entry (measured before any transform is applied) so
+      // both elements begin the same distance below the bottom edge.
+      const delta = el.getBoundingClientRect().top - entry.getBoundingClientRect().top;
       gsap.fromTo(
-        entry,
-        { opacity: 0, y: 40 },
+        el,
+        { opacity: 0, y: () => window.innerHeight * cfg.offsetVh - delta },
         {
           opacity: 1,
           y: 0,
-          ease: 'power2.out',
-          duration: 0.6,
+          ease: cfg.ease,
           scrollTrigger: {
             trigger: entry,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
+            start: cfg.start,
+            end: cfg.end,
+            scrub: true,
+            invalidateOnRefresh: true,
           },
         },
       );
+    };
+
+    entries.forEach((entry) => {
+      if (reduceMotion) return;
+      const title = entry.querySelector<HTMLElement>('.project-title');
+      const content = entry.querySelector<HTMLElement>('.project-content');
+      if (title) animateReveal(title, entry, reveal.title);
+      if (content) animateReveal(content, entry, reveal.content);
     });
   }
 
