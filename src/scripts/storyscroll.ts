@@ -46,16 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = entry.querySelector<HTMLElement>('.project-title');
       const content = entry.querySelector<HTMLElement>('.project-content');
 
-      // Each element is triggered by its OWN position so it starts fully below
-      // the fold: at 'top bottom' its natural top is on the viewport's bottom
-      // edge and the +120 start offset pushes it just off-screen. As you scroll
-      // it rises up from that bottom edge while fading in (expo.out) and
-      // decelerating to 1:1, settling opaque and in place.
+      // The entry is never transformed, so triggering off it makes start/end
+      // track each element's natural (1:1) resting position rather than its
+      // animated one.
       //
-      // The content sits lower in the entry, so it reaches the bottom edge
-      // later than the title (a natural delay) and it covers its rise in half
-      // the scroll distance ('top bottom' -> 'top 70%' vs the title's
-      // 'top bottom' -> 'top 40%').
+      // Title: begins revealing once its resting place is a quarter of the way
+      // up the viewport ('top 75%') and eases (expo.out) to 1:1 by the time
+      // that spot is three-quarters up ('top 25%').
       if (title) {
         gsap.fromTo(
           title,
@@ -65,14 +62,18 @@ document.addEventListener('DOMContentLoaded', () => {
             y: 0,
             ease: 'expo.out',
             scrollTrigger: {
-              trigger: title,
-              start: 'top bottom',
-              end: 'top 40%',
+              trigger: entry,
+              start: 'top 75%',
+              end: 'top 25%',
               scrub: true,
             },
           },
         );
       }
+      // Content: starts once the title is three-quarters of the way to its
+      // resting place. expo.out covers 3/4 of the distance at ~20% of the
+      // title's scroll range, which lands at 'top 65%'. It then settles over
+      // half the title's scroll distance (ends at 'top 40%').
       if (content) {
         gsap.fromTo(
           content,
@@ -82,9 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
             y: 0,
             ease: 'expo.out',
             scrollTrigger: {
-              trigger: content,
-              start: 'top bottom',
-              end: 'top 70%',
+              trigger: entry,
+              start: 'top 65%',
+              end: 'top 40%',
               scrub: true,
             },
           },
