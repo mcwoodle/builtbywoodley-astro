@@ -37,19 +37,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (entries.length > 0) {
+    const reduceMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
     entries.forEach((entry) => {
+      const targets = [
+        entry.querySelector<HTMLElement>('.project-title'),
+        entry.querySelector<HTMLElement>('.project-content'),
+      ].filter((el): el is HTMLElement => el !== null);
+      if (reduceMotion || targets.length === 0) return;
+
+      // Scroll-linked reveal: the title and content start lower and fully
+      // transparent, then race upward far faster than the page scrolls and
+      // ease (exponentially) toward their resting spot — decelerating to 1:1
+      // and fully opaque exactly as the entry settles into place. This fills
+      // the gap ahead of each post instead of leaving a large blank space.
       gsap.fromTo(
-        entry,
-        { opacity: 0, y: 40 },
+        targets,
+        { opacity: 0, y: 110 },
         {
           opacity: 1,
           y: 0,
-          ease: 'power2.out',
-          duration: 0.6,
+          ease: 'expo.out',
           scrollTrigger: {
             trigger: entry,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
+            start: 'top bottom',
+            end: 'top 45%',
+            scrub: true,
           },
         },
       );

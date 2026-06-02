@@ -38,6 +38,8 @@ const id = `project-${slug}`;
       </>
     )
   }
-  <slot />
+  <div class="project-content">
+    <slot />
+  </div>
   <div class="post-end-mark"></div>
 </article>
