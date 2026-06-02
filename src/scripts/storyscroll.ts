@@ -42,32 +42,52 @@ document.addEventListener('DOMContentLoaded', () => {
     ).matches;
 
     entries.forEach((entry) => {
-      const targets = [
-        entry.querySelector<HTMLElement>('.project-title'),
-        entry.querySelector<HTMLElement>('.project-content'),
-      ].filter((el): el is HTMLElement => el !== null);
-      if (reduceMotion || targets.length === 0) return;
+      if (reduceMotion) return;
+      const title = entry.querySelector<HTMLElement>('.project-title');
+      const content = entry.querySelector<HTMLElement>('.project-content');
 
-      // Scroll-linked reveal: the title and content start lower and fully
-      // transparent, then race upward far faster than the page scrolls and
-      // ease (exponentially) toward their resting spot — decelerating to 1:1
-      // and fully opaque exactly as the entry settles into place. This fills
-      // the gap ahead of each post instead of leaving a large blank space.
-      gsap.fromTo(
-        targets,
-        { opacity: 0, y: 110 },
-        {
-          opacity: 1,
-          y: 0,
-          ease: 'expo.out',
-          scrollTrigger: {
-            trigger: entry,
-            start: 'top bottom',
-            end: 'top 45%',
-            scrub: true,
+      // Scroll-linked reveal: each element starts lower and fully transparent,
+      // then races upward far faster than the page scrolls and eases
+      // (exponentially) toward its resting spot — decelerating to 1:1 and fully
+      // opaque as the entry settles. Both finish at the same point ('top 40%').
+      //
+      // The title only begins once the entry has risen well into view, leaving
+      // a deliberate gap first. The content is delayed further and covers that
+      // gap in half the scroll distance, so it catches the title at the finish.
+      if (title) {
+        gsap.fromTo(
+          title,
+          { opacity: 0, y: 110 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: 'expo.out',
+            scrollTrigger: {
+              trigger: entry,
+              start: 'top 80%',
+              end: 'top 40%',
+              scrub: true,
+            },
           },
-        },
-      );
+        );
+      }
+      if (content) {
+        gsap.fromTo(
+          content,
+          { opacity: 0, y: 110 },
+          {
+            opacity: 1,
+            y: 0,
+            ease: 'expo.out',
+            scrollTrigger: {
+              trigger: entry,
+              start: 'top 60%',
+              end: 'top 40%',
+              scrub: true,
+            },
+          },
+        );
+      }
     });
   }
 
