@@ -48,15 +48,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // The entry is never transformed, so triggering off it makes start/end
       // track each element's natural (1:1) resting position rather than its
-      // animated one.
-      //
-      // Title: begins revealing once its resting place is a quarter of the way
-      // up the viewport ('top 75%') and eases (expo.out) to 1:1 by the time
-      // that spot is three-quarters up ('top 25%').
+      // animated one. Measure each element's offset within the entry up front
+      // (before any transform is applied) so we can size the start offset.
+      const entryTop = entry.getBoundingClientRect().top;
+      const titleDelta = title
+        ? title.getBoundingClientRect().top - entryTop
+        : 0;
+      const contentDelta = content
+        ? content.getBoundingClientRect().top - entryTop
+        : 0;
+
+      // Start offset = distance from the element's resting spot at its start
+      // trigger down to the bottom edge, so each element begins right at the
+      // bottom of the window and rises up from there. Because the travel
+      // distance scales with the viewport, the per-scroll speed scales too.
+      // (recomputed on refresh/resize via invalidateOnRefresh.)
+
+      // Title: starts when its resting place is a quarter up the viewport
+      // ('top 75%') — so it begins a quarter-viewport below, at the bottom edge
+      // — and eases (expo.out) to 1:1 by the time that spot is three-quarters
+      // up ('top 25%').
       if (title) {
         gsap.fromTo(
           title,
-          { opacity: 0, y: 120 },
+          { opacity: 0, y: () => window.innerHeight * 0.25 - titleDelta },
           {
             opacity: 1,
             y: 0,
@@ -66,18 +81,20 @@ document.addEventListener('DOMContentLoaded', () => {
               start: 'top 75%',
               end: 'top 25%',
               scrub: true,
+              invalidateOnRefresh: true,
             },
           },
         );
       }
       // Content: starts once the title is three-quarters of the way to its
-      // resting place. expo.out covers 3/4 of the distance at ~20% of the
-      // title's scroll range, which lands at 'top 65%'. It then settles over
-      // half the title's scroll distance (ends at 'top 40%').
+      // resting place — expo.out covers 3/4 of the distance at ~20% of the
+      // title's scroll range, which lands at 'top 65%' — also rising from the
+      // bottom edge, and settles over half the title's scroll distance
+      // (ends at 'top 40%').
       if (content) {
         gsap.fromTo(
           content,
-          { opacity: 0, y: 120 },
+          { opacity: 0, y: () => window.innerHeight * 0.35 - contentDelta },
           {
             opacity: 1,
             y: 0,
@@ -87,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
               start: 'top 65%',
               end: 'top 40%',
               scrub: true,
+              invalidateOnRefresh: true,
             },
           },
         );
