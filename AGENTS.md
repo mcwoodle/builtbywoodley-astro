@@ -35,14 +35,18 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
   step is needed; set `SKIP_GITLEAKS_INSTALL=1` to opt out of the download.
 - **Dependency scanning** — `npm audit --audit-level=high` runs on PRs, pushes,
   and the weekly schedule. Keep `npm audit` clean of high/critical advisories or
-  CI will fail. (Once the repo is public, `dependency-review-action` can be added
-  back for richer PR diff-level reporting.)
-- **SAST** — CodeQL (`.github/workflows/codeql.yml`) analyzes JS/TS on PRs, pushes,
-  and weekly; results surface under Security ▸ Code scanning. The job is gated to
-  public repos (code scanning needs GitHub Advanced Security) and runs
-  automatically once the repo goes public.
+  CI will fail.
+- **HTTP security headers** — `public/_headers` ships a Content-Security-Policy
+  plus HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and
+  `Permissions-Policy`, which Cloudflare serves with every static asset.
 - **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
   GitHub Actions current.
+
+> **Private repo:** SAST via CodeQL code scanning needs GitHub Advanced Security
+> (free only on public repos), so it is not enabled here — the public-only CodeQL
+> workflow and `dependency-review-action` have been removed. If this repo ever goes
+> public, re-add a `github/codeql-action` workflow and `actions/dependency-review-action`
+> to restore SAST and PR dependency-diff reporting.
 
 ## Authoring
 

@@ -1,7 +1,8 @@
 version: 2
 updates:
-  # Keep npm dependencies current; drives Dependabot security PRs once the
-  # repo is public and Dependabot alerts are enabled.
+  # Keep npm dependencies current. Version-update PRs run on this private repo;
+  # enable Dependabot alerts + security updates in repo settings for
+  # advisory-driven PRs (both are free on private repos).
   - package-ecosystem: npm
     directory: "/"
     schedule:

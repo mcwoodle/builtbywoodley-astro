@@ -53,8 +53,7 @@ jobs:
       # Audit the resolved lockfile for known high/critical advisories. npm audit
       # works on private repos (unlike dependency-review-action, which requires
       # GitHub Advanced Security), so the same gate runs on PRs, pushes, and the
-      # weekly schedule. Re-add dependency-review-action for richer PR diff-level
-      # reporting once the repo is public.
+      # weekly schedule.
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
