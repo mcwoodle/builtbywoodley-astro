@@ -36,8 +36,8 @@ jobs:
           # latest diff. gitleaks-action scopes PR runs to the PR commits.
           fetch-depth: 0
       - name: Run gitleaks
-        # Pinned to the v2.3.9 commit SHA (Dependabot's github-actions
-        # ecosystem keeps this current). Fails the job on any finding.
+        # Pinned to a commit SHA (Dependabot's github-actions ecosystem keeps
+        # this current). Fails the job on any finding.
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
         env:
           # Free for personal/public repos — no license key required.
