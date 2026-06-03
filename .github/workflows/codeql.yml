@@ -22,6 +22,10 @@ jobs:
   analyze:
     name: Analyze (javascript-typescript)
     runs-on: ubuntu-latest
+    # Code scanning needs GitHub Advanced Security, which is free only on public
+    # repos. Skip while the repo is private; the job runs automatically once it
+    # goes public. Remove this guard if GHAS is enabled on a private plan.
+    if: ${{ !github.event.repository.private }}
     permissions:
       contents: read
       # Required to upload analysis results to the code-scanning API.
