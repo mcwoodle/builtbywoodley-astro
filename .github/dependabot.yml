@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Keep npm dependencies current; drives Dependabot security PRs once the
+  # repo is public and Dependabot alerts are enabled.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+
+  # Keep pinned GitHub Actions (incl. the SHA-pinned third-party actions in
+  # the security workflow) up to date.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci(deps)
