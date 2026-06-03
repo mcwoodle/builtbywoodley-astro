@@ -1,0 +1,67 @@
+name: Security
+
+# Secret + dependency scanning. Runs on PRs and pushes to mainline, plus a
+# weekly schedule so fresh advisories and a full-history secret rescan happen
+# even when the repo is quiet.
+on:
+  pull_request:
+  push:
+    branches:
+      - mainline
+  schedule:
+    # Mondays 07:13 UTC (off the hour to avoid scheduler congestion).
+    - cron: "13 7 * * 1"
+
+# Least privilege by default; jobs opt into more where needed.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Full history so scheduled/push runs scan every commit, not just the
+          # latest diff. gitleaks-action scopes PR runs to the PR commits.
+          fetch-depth: 0
+      - name: Run gitleaks
+        # Pinned to the v2.3.9 commit SHA (Dependabot's github-actions
+        # ecosystem keeps this current). Fails the job on any finding.
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+        env:
+          # Free for personal/public repos — no license key required.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencies:
+    name: Dependency scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # On pull requests, block any PR that introduces a high/critical
+      # vulnerable dependency (uses the dependency graph; free on public repos).
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48
+        with:
+          fail-on-severity: high
+
+      # On push/schedule, audit the resolved lockfile for known high/critical
+      # advisories so regressions in existing deps are caught too.
+      - name: Setup Node.js
+        if: github.event_name != 'pull_request'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: npm audit (high+)
+        if: github.event_name != 'pull_request'
+        run: npm audit --audit-level=high
