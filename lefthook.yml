@@ -1,0 +1,19 @@
+# Local git hooks, run by lefthook (installed via the `prepare` npm script).
+# The pre-commit hook scans staged changes for secrets with gitleaks before
+# they can be committed, mirroring the gitleaks job in CI so leaks are caught
+# locally first. The gitleaks binary is fetched + checksum-verified by
+# scripts/install-gitleaks.mjs into node_modules/.bin.
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      # `protect --staged` scans only what is about to be committed. The guard
+      # propagates gitleaks' exit code when the binary is present (so a finding
+      # still blocks the commit) and no-ops when it isn't (e.g. an unsupported
+      # platform where auto-install was skipped) — CI still enforces the scan.
+      run: >
+        if [ -x node_modules/.bin/gitleaks ]; then
+          node_modules/.bin/gitleaks protect --staged --redact --no-banner;
+        else
+          echo "gitleaks binary missing; skipping local scan (CI still enforces)";
+        fi
