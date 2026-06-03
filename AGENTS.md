@@ -33,9 +33,10 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
   which fetches a **checksum-verified, version-pinned** gitleaks binary into
   `node_modules/.bin` and installs the lefthook hooks (`lefthook.yml`). No manual
   step is needed; set `SKIP_GITLEAKS_INSTALL=1` to opt out of the download.
-- **Dependency scanning** — PRs get `dependency-review` (fails on high+); pushes
-  and the weekly schedule run `npm audit --audit-level=high`. Keep `npm audit`
-  clean of high/critical advisories or CI will fail.
+- **Dependency scanning** — `npm audit --audit-level=high` runs on PRs, pushes,
+  and the weekly schedule. Keep `npm audit` clean of high/critical advisories or
+  CI will fail. (Once the repo is public, `dependency-review-action` can be added
+  back for richer PR diff-level reporting.)
 - **SAST** — CodeQL (`.github/workflows/codeql.yml`) analyzes JS/TS on PRs, pushes,
   and weekly; results surface under Security ▸ Code scanning.
 - **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
