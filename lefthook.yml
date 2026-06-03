@@ -2,7 +2,7 @@
 # The pre-commit hook scans staged changes for secrets with gitleaks before
 # they can be committed, mirroring the gitleaks job in CI so leaks are caught
 # locally first. The gitleaks binary is fetched + checksum-verified by
-# scripts/install-gitleaks.mjs into node_modules/.bin.
+# scripts/setup-hooks.mjs into node_modules/.bin.
 pre-commit:
   parallel: true
   commands:
