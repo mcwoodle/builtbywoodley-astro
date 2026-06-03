@@ -6,11 +6,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "prepare": "node scripts/setup-hooks.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "lefthook": "^2.1.9"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
