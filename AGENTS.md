@@ -23,6 +23,24 @@ npm run dev
 npm run build
 ```
 
+## Security & CI
+
+Automated guardrails keep secrets and vulnerable dependencies out of the repo:
+
+- **Secret scanning** — `gitleaks` runs in CI (`.github/workflows/security.yml`)
+  and locally as a pre-commit hook. A staged secret blocks the commit.
+- **Local hooks** — `npm install` runs the `prepare` script (`scripts/setup-hooks.mjs`),
+  which fetches a **checksum-verified, version-pinned** gitleaks binary into
+  `node_modules/.bin` and installs the lefthook hooks (`lefthook.yml`). No manual
+  step is needed; set `SKIP_GITLEAKS_INSTALL=1` to opt out of the download.
+- **Dependency scanning** — PRs get `dependency-review` (fails on high+); pushes
+  and the weekly schedule run `npm audit --audit-level=high`. Keep `npm audit`
+  clean of high/critical advisories or CI will fail.
+- **SAST** — CodeQL (`.github/workflows/codeql.yml`) analyzes JS/TS on PRs, pushes,
+  and weekly; results surface under Security ▸ Code scanning.
+- **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
+  GitHub Actions current.
+
 ## Authoring
 
 ### Commit Messages
