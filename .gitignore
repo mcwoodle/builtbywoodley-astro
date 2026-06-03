@@ -13,9 +13,16 @@ yarn-error.log*
 pnpm-debug.log*
 debug.log*
 
-# environment variables
+# environment variables & secrets (never commit)
 .env
-.env.production
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# AI assistant / MCP configs that can embed API tokens
+.mcp.json
+.pi.mcp.json
 
 # macOS-specific files
 .DS_Store

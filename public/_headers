@@ -1,0 +1,26 @@
+# Security headers applied to every response Cloudflare serves for this site.
+# Cloudflare Workers static assets honor this file (same format as Pages), and
+# Astro copies public/ to dist/ at build time so it ships with each deploy.
+#
+# Rationale:
+#   X-Frame-Options + CSP frame-ancestors -> clickjacking protection
+#   X-Content-Type-Options                -> block MIME-type sniffing
+#   Referrer-Policy                       -> trim referrer leakage cross-origin
+#   Permissions-Policy                    -> deny browser features the site never uses
+#   Strict-Transport-Security             -> force HTTPS (add `; preload` and submit
+#                                            to hstspreload.org only once every
+#                                            subdomain is confirmed HTTPS-only)
+#   Cross-Origin-Opener-Policy            -> isolate the browsing context from popups
+#   Content-Security-Policy               -> lock sources to same-origin plus the
+#                                            Google Fonts origins the site loads.
+#                                            'unsafe-inline' is required for the
+#                                            inline theme-init script and the inline
+#                                            style attributes Astro emits.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; upgrade-insecure-requests
