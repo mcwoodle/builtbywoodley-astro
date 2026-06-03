@@ -24,6 +24,10 @@ jobs:
   gitleaks:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # gitleaks-action lists PR commits via the API on pull_request events.
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,22 +50,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # On pull requests, block any PR that introduces a high/critical
-      # vulnerable dependency (uses the dependency graph; free on public repos).
-      - name: Dependency review
-        if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48
-        with:
-          fail-on-severity: high
-
-      # On push/schedule, audit the resolved lockfile for known high/critical
-      # advisories so regressions in existing deps are caught too.
+      # Audit the resolved lockfile for known high/critical advisories. npm audit
+      # works on private repos (unlike dependency-review-action, which requires
+      # GitHub Advanced Security), so the same gate runs on PRs, pushes, and the
+      # weekly schedule. Re-add dependency-review-action for richer PR diff-level
+      # reporting once the repo is public.
       - name: Setup Node.js
-        if: github.event_name != 'pull_request'
         uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
       - name: npm audit (high+)
-        if: github.event_name != 'pull_request'
         run: npm audit --audit-level=high
