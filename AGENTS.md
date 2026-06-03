@@ -38,7 +38,9 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
   CI will fail. (Once the repo is public, `dependency-review-action` can be added
   back for richer PR diff-level reporting.)
 - **SAST** — CodeQL (`.github/workflows/codeql.yml`) analyzes JS/TS on PRs, pushes,
-  and weekly; results surface under Security ▸ Code scanning.
+  and weekly; results surface under Security ▸ Code scanning. The job is gated to
+  public repos (code scanning needs GitHub Advanced Security) and runs
+  automatically once the repo goes public.
 - **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
   GitHub Actions current.
 
