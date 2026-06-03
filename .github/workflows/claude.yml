@@ -12,11 +12,17 @@ on:
 
 jobs:
   claude:
+    # Only the repository owner can invoke Claude. On a public repo this prevents
+    # strangers from triggering runs on the owner's CLAUDE_CODE_OAUTH_TOKEN by
+    # commenting "@claude". To let collaborators in too, swap github.actor for an
+    # author_association check (OWNER/MEMBER/COLLABORATOR).
     if: |
+      github.actor == github.repository_owner && (
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
