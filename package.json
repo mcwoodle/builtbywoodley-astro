@@ -15,7 +15,7 @@
     "lefthook": "^2.1.9"
   },
   "dependencies": {
-    "@astrojs/mdx": "^6.0.1",
+    "@astrojs/mdx": "^6.0.2",
     "@studio-freight/lenis": "^1.0.42",
     "@tailwindcss/vite": "^4.3.0",
     "astro": "^6.4.3",
