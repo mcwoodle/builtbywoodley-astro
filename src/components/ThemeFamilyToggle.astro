@@ -1,0 +1,103 @@
+---
+// A button in the top nav that switches the theme *family* (the overall look)
+// between two options:
+//   • Editorial — the refined, airier default look.
+//   • Original  — the site's preserved original look.
+// This is independent of the light/dark/system brightness toggle next to it.
+// The family is applied by setting data-theme-family on <html>; the no-flash
+// init in BaseLayout's <head> sets it before first paint so the right look
+// shows immediately. A palette icon marks the control; the hover/focus tooltip
+// and aria-label state which look is active.
+---
+
+<button
+  type="button"
+  class="theme-family-toggle"
+  aria-label="Theme style: Editorial. Click to switch to Original."
+  data-tooltip="Editorial theme · click for Original"
+>
+  <!-- Palette: a swatch of looks to choose from. -->
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69
+         0-.44-.18-.83-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.66h2
+         c3.05 0 5.56-2.51 5.56-5.56C22 6.01 17.5 2 12 2z"></path>
+    <circle cx="6.5" cy="12.5" r="1.2" fill="currentColor" stroke="none"></circle>
+    <circle cx="9.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"></circle>
+    <circle cx="14.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"></circle>
+    <circle cx="17.5" cy="12.5" r="1.2" fill="currentColor" stroke="none"></circle>
+  </svg>
+</button>
+
+<script>
+  type Family = 'editorial' | 'original';
+
+  const STORAGE_KEY = 'theme-family';
+  const META: Record<Family, { tip: string; label: string }> = {
+    editorial: {
+      tip: 'Editorial theme · click for Original',
+      label: 'Theme style: Editorial. Click to switch to Original.',
+    },
+    original: {
+      tip: 'Original theme · click for Editorial',
+      label: 'Theme style: Original. Click to switch to Editorial.',
+    },
+  };
+
+  const root = document.documentElement;
+  const toggle = document.querySelector<HTMLButtonElement>('.theme-family-toggle');
+
+  function currentFamily(): Family {
+    return root.getAttribute('data-theme-family') === 'original'
+      ? 'original'
+      : 'editorial';
+  }
+
+  function applyFamily(family: Family) {
+    // Reuse the no-flash init's setter so the logic lives in one place; fall
+    // back to a direct set if it is somehow unavailable.
+    const apply = (
+      window as unknown as { __applyThemeFamily?: (f: string) => void }
+    ).__applyThemeFamily;
+    if (apply) apply(family);
+    else root.setAttribute('data-theme-family', family);
+  }
+
+  function syncButton() {
+    const meta = META[currentFamily()];
+    toggle?.setAttribute('aria-label', meta.label);
+    toggle?.setAttribute('data-tooltip', meta.tip);
+  }
+
+  syncButton();
+
+  // Flip Editorial ⇄ Original, recording the choice so it sticks.
+  toggle?.addEventListener('click', () => {
+    const next: Family = currentFamily() === 'editorial' ? 'original' : 'editorial';
+    applyFamily(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage unavailable (e.g. private mode); the family still applies here.
+    }
+    syncButton();
+  });
+
+  // Keep other open tabs consistent when the family changes in one of them.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== STORAGE_KEY) return;
+    const v = event.newValue;
+    if (v === 'editorial' || v === 'original') {
+      applyFamily(v);
+      syncButton();
+    }
+  });
+</script>

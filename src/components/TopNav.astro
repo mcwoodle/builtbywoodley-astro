@@ -1,10 +1,14 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import ThemeFamilyToggle from './ThemeFamilyToggle.astro';
 ---
 <nav class="top-nav">
   <div class="nav-inner">
     <a href="/" class="home-link">Home</a>
-    <ThemeToggle />
+    <div class="nav-actions">
+      <ThemeFamilyToggle />
+      <ThemeToggle />
+    </div>
   </div>
 </nav>
 
@@ -23,6 +27,11 @@ import ThemeToggle from './ThemeToggle.astro';
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
   }
   .home-link {
     font-family: var(--font-display);

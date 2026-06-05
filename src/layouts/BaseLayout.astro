@@ -20,8 +20,10 @@ const description = "Stuff that I've built";
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
+        var FAMILY_KEY = 'theme-family';
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
+        var FAMILIES = { editorial: 1, original: 1 };
 
         // The visitor's chosen mode. No saved value => 'system' (the default).
         function storedMode() {
@@ -32,6 +34,24 @@ const description = "Stuff that I've built";
             return 'system'; // Storage blocked (private mode, disabled cookies…).
           }
         }
+
+        // The visitor's chosen theme family (look). No saved value =>
+        // 'editorial' (the default, more refined look). 'original' restores
+        // the site's original appearance.
+        function storedFamily() {
+          try {
+            var v = localStorage.getItem(FAMILY_KEY);
+            return FAMILIES[v] ? v : 'editorial';
+          } catch (e) {
+            return 'editorial';
+          }
+        }
+
+        // Apply a family. Exposed so the family toggle reuses this exact logic.
+        function applyFamily(fam) {
+          root.setAttribute('data-theme-family', FAMILIES[fam] ? fam : 'editorial');
+        }
+        window.__applyThemeFamily = applyFamily;
 
         // The OS-/browser-level preference. `prefers-color-scheme` is the only
         // signal platforms expose, and it already layers OS then browser: it
@@ -56,12 +76,14 @@ const description = "Stuff that I've built";
         window.__applyThemeMode = applyMode;
 
         try {
+          applyFamily(storedFamily());
           applyMode(storedMode());
         } catch (e) {
           // Never leave the page unstyled.
           try {
             root.setAttribute('data-theme', 'light');
             root.setAttribute('data-theme-mode', 'system');
+            root.setAttribute('data-theme-family', 'editorial');
           } catch (e2) {}
         }
 
