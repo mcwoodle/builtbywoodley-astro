@@ -52,15 +52,20 @@
   const root = document.documentElement;
   const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
 
+  function currentTheme(): 'light' | 'dark' {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
   function syncPressedState() {
-    const isDark = root.getAttribute('data-theme') === 'dark';
-    toggle?.setAttribute('aria-pressed', String(isDark));
+    toggle?.setAttribute('aria-pressed', String(currentTheme() === 'dark'));
   }
 
   syncPressedState();
 
+  // Clicking records an explicit choice, which from now on overrides the
+  // detected OS/browser preference until it is changed again.
   toggle?.addEventListener('click', () => {
-    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
     try {
       localStorage.setItem(STORAGE_KEY, next);
@@ -69,5 +74,19 @@
       // the current page.
     }
     syncPressedState();
+  });
+
+  // The no-flash init dispatches `themechange` when it live-follows an OS/browser
+  // theme switch (only while no explicit choice is saved) — keep the button's
+  // pressed state in sync with it.
+  window.addEventListener('themechange', syncPressedState);
+
+  // Keep other open tabs consistent when the choice changes in one of them.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== STORAGE_KEY) return;
+    if (event.newValue === 'light' || event.newValue === 'dark') {
+      root.setAttribute('data-theme', event.newValue);
+      syncPressedState();
+    }
   });
 </script>

@@ -9,20 +9,67 @@ const description = "Stuff that I've built";
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Apply the saved (or system-preferred) theme before first paint to
-         avoid a flash of the wrong theme. Must stay inline and ahead of the
-         stylesheet. -->
+    <!-- Resolve and apply the colour theme before first paint to avoid a flash
+         of the wrong theme. Order of precedence:
+           1. An explicit choice the visitor saved via the toggle (localStorage).
+           2. The OS / browser preference (`prefers-color-scheme`), which already
+              reflects a browser-level override layered on top of the OS setting.
+           3. Light, as a last resort when nothing exposes a preference.
+         Must stay inline and ahead of the stylesheet. -->
     <script is:inline>
       (function () {
+        var STORAGE_KEY = 'theme';
+        var root = document.documentElement;
+
+        // An explicit, visitor-made choice. Absent => follow the system.
+        function storedChoice() {
+          try {
+            var v = localStorage.getItem(STORAGE_KEY);
+            return v === 'light' || v === 'dark' ? v : null;
+          } catch (e) {
+            return null; // Storage blocked (private mode, disabled cookies…).
+          }
+        }
+
+        // The OS-/browser-level preference. `prefers-color-scheme` is the only
+        // signal platforms expose, and it already layers OS then browser: it
+        // reports the OS setting (Windows, macOS, iOS, Android, ChromeOS,
+        // GNOME/KDE…) unless the browser overrides it (Firefox content-override,
+        // Chrome Auto Dark, per-site dark mode), in which case it reports that.
+        function systemTheme() {
+          if (!window.matchMedia) return 'light'; // Pre-2015 browser.
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+          if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+          return 'light'; // No preference exposed.
+        }
+
+        function apply(theme) {
+          root.setAttribute('data-theme', theme);
+        }
+
         try {
-          var stored = localStorage.getItem('theme');
-          var prefersDark =
-            window.matchMedia &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var theme = stored || (prefersDark ? 'dark' : 'light');
-          document.documentElement.setAttribute('data-theme', theme);
+          apply(storedChoice() || systemTheme());
         } catch (e) {
-          /* If storage/matchMedia is unavailable, fall back to the light default. */
+          apply('light'); // Never leave the page unstyled.
+        }
+
+        // While no explicit choice is saved, follow live OS/browser theme
+        // changes without needing a reload.
+        try {
+          var mql = window.matchMedia('(prefers-color-scheme: dark)');
+          var onChange = function (e) {
+            if (storedChoice()) return; // An explicit choice wins.
+            apply(e.matches ? 'dark' : 'light');
+            try {
+              window.dispatchEvent(new Event('themechange'));
+            } catch (err) {
+              /* Event constructor missing — purely cosmetic, ignore. */
+            }
+          };
+          if (mql.addEventListener) mql.addEventListener('change', onChange);
+          else if (mql.addListener) mql.addListener(onChange); // Safari <14, old Edge.
+        } catch (e) {
+          /* Change events unsupported; the initial theme is still applied. */
         }
       })();
     </script>
