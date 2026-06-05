@@ -186,6 +186,7 @@ main.home-main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   flex: none;
   width: 40px;
   height: 40px;
@@ -216,17 +217,65 @@ main.home-main {
   height: 20px;
 }
 
-/* Show the sun in dark mode (tap to go light), the moon otherwise. */
-.theme-toggle .icon-sun {
+/* One icon per selected mode: sun = light, moon = dark, monitor = system.
+   The no-flash init sets data-theme-mode before first paint so the right icon
+   shows immediately. System is the default-visible icon — it is also the
+   default mode and the fallback when JS or the attribute is absent. */
+.theme-toggle .icon-sun,
+.theme-toggle .icon-moon {
   display: none;
 }
 
-:root[data-theme="dark"] .theme-toggle .icon-sun {
+.theme-toggle .icon-system {
   display: block;
 }
 
-:root[data-theme="dark"] .theme-toggle .icon-moon {
+:root[data-theme-mode="light"] .theme-toggle .icon-system {
   display: none;
+}
+
+:root[data-theme-mode="light"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+:root[data-theme-mode="dark"] .theme-toggle .icon-system {
+  display: none;
+}
+
+:root[data-theme-mode="dark"] .theme-toggle .icon-moon {
+  display: block;
+}
+
+/* Tooltip explaining the current icon. Appears on hover/focus; its text is set
+   per mode via data-tooltip by the toggle script (and is present in the static
+   markup too, so it works before JS runs). aria-label carries the accessible
+   name for assistive tech. */
+.theme-toggle::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.theme-toggle:hover::after,
+.theme-toggle:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ─────────────────────────────────────────────

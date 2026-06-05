@@ -1,19 +1,21 @@
 ---
-// A fixed top-right button that switches between the light and dark themes.
-// The actual theme is applied by setting data-theme on <html>; the no-flash
-// init that reads the saved preference lives in BaseLayout's <head> so the
-// correct theme is set before first paint.
+// A button in the top nav that cycles the colour theme between three modes:
+// System (follow the OS/browser preference — the default), Light, and Dark.
+// The active mode is shown by the icon and explained by a hover/focus tooltip.
+// The theme is applied by setting data-theme (colours) and data-theme-mode
+// (icon) on <html>; the no-flash init in BaseLayout's <head> sets both before
+// first paint so the correct theme and icon show immediately.
 ---
 
 <button
   type="button"
   class="theme-toggle"
-  aria-label="Toggle dark theme"
-  aria-pressed="false"
+  aria-label="Theme: System (matches your device). Click to change."
+  data-tooltip="System theme · matches your device"
 >
-  <!-- Shown in light mode: tap to switch to dark. -->
+  <!-- System mode: follow the OS/browser preference (a monitor). -->
   <svg
-    class="icon-moon"
+    class="icon-system"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -22,9 +24,11 @@
     stroke-linejoin="round"
     aria-hidden="true"
   >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+    <line x1="8" y1="21" x2="16" y2="21"></line>
+    <line x1="12" y1="17" x2="12" y2="21"></line>
   </svg>
-  <!-- Shown in dark mode: tap to switch to light. -->
+  <!-- Light mode (a sun). -->
   <svg
     class="icon-sun"
     viewBox="0 0 24 24"
@@ -45,48 +49,94 @@
     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
   </svg>
+  <!-- Dark mode (a moon). -->
+  <svg
+    class="icon-moon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
 </button>
 
 <script>
+  type Mode = 'system' | 'light' | 'dark';
+
   const STORAGE_KEY = 'theme';
+  const ORDER: Mode[] = ['system', 'light', 'dark'];
+  const META: Record<Mode, { tip: string; label: string }> = {
+    system: {
+      tip: 'System theme · matches your device',
+      label: 'Theme: System (matches your device). Click to change.',
+    },
+    light: {
+      tip: 'Light theme',
+      label: 'Theme: Light. Click to change.',
+    },
+    dark: {
+      tip: 'Dark theme',
+      label: 'Theme: Dark. Click to change.',
+    },
+  };
+
   const root = document.documentElement;
   const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
 
-  function currentTheme(): 'light' | 'dark' {
-    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  function currentMode(): Mode {
+    const m = root.getAttribute('data-theme-mode');
+    return m === 'light' || m === 'dark' ? m : 'system';
   }
 
-  function syncPressedState() {
-    toggle?.setAttribute('aria-pressed', String(currentTheme() === 'dark'));
+  function applyMode(mode: Mode) {
+    // Reuse the no-flash init's resolver so the system→light/dark mapping lives
+    // in one place; fall back to a direct set if it is somehow unavailable.
+    const apply = (
+      window as unknown as { __applyThemeMode?: (m: string) => void }
+    ).__applyThemeMode;
+    if (apply) {
+      apply(mode);
+    } else {
+      root.setAttribute('data-theme-mode', mode);
+      if (mode === 'light' || mode === 'dark') root.setAttribute('data-theme', mode);
+    }
   }
 
-  syncPressedState();
+  function syncButton() {
+    const meta = META[currentMode()];
+    toggle?.setAttribute('aria-label', meta.label);
+    toggle?.setAttribute('data-tooltip', meta.tip);
+  }
 
-  // Clicking records an explicit choice, which from now on overrides the
-  // detected OS/browser preference until it is changed again.
+  syncButton();
+
+  // Cycle System → Light → Dark → System, recording the choice so it sticks.
   toggle?.addEventListener('click', () => {
-    const next = currentTheme() === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
+    const next = ORDER[(ORDER.indexOf(currentMode()) + 1) % ORDER.length];
+    applyMode(next);
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // Ignore storage failures (e.g. private mode); theme still applies for
-      // the current page.
+      // Storage unavailable (e.g. private mode); the mode still applies here.
     }
-    syncPressedState();
+    syncButton();
   });
 
   // The no-flash init dispatches `themechange` when it live-follows an OS/browser
-  // theme switch (only while no explicit choice is saved) — keep the button's
-  // pressed state in sync with it.
-  window.addEventListener('themechange', syncPressedState);
+  // switch in system mode — keep the button's label/tooltip in sync.
+  window.addEventListener('themechange', syncButton);
 
-  // Keep other open tabs consistent when the choice changes in one of them.
+  // Keep other open tabs consistent when the mode changes in one of them.
   window.addEventListener('storage', (event) => {
     if (event.key !== STORAGE_KEY) return;
-    if (event.newValue === 'light' || event.newValue === 'dark') {
-      root.setAttribute('data-theme', event.newValue);
-      syncPressedState();
+    const v = event.newValue;
+    if (v === 'system' || v === 'light' || v === 'dark') {
+      applyMode(v);
+      syncButton();
     }
   });
 </script>
