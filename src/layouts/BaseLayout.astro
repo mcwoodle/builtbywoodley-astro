@@ -10,24 +10,26 @@ const description = "Stuff that I've built";
 <html lang="en">
   <head>
     <!-- Resolve and apply the colour theme before first paint to avoid a flash
-         of the wrong theme. Order of precedence:
-           1. An explicit choice the visitor saved via the toggle (localStorage).
-           2. The OS / browser preference (`prefers-color-scheme`), which already
-              reflects a browser-level override layered on top of the OS setting.
-           3. Light, as a last resort when nothing exposes a preference.
+         of the wrong theme. The visitor's saved *mode* is one of:
+           • 'light' / 'dark' — an explicit fixed choice.
+           • 'system'         — follow the OS/browser preference. This is the
+                                default when nothing is saved.
+         data-theme holds the applied colour theme (always light/dark; drives the
+         CSS tokens). data-theme-mode holds the mode (drives the toggle icon).
          Must stay inline and ahead of the stylesheet. -->
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
         var root = document.documentElement;
+        var MODES = { light: 1, dark: 1, system: 1 };
 
-        // An explicit, visitor-made choice. Absent => follow the system.
-        function storedChoice() {
+        // The visitor's chosen mode. No saved value => 'system' (the default).
+        function storedMode() {
           try {
             var v = localStorage.getItem(STORAGE_KEY);
-            return v === 'light' || v === 'dark' ? v : null;
+            return MODES[v] ? v : 'system';
           } catch (e) {
-            return null; // Storage blocked (private mode, disabled cookies…).
+            return 'system'; // Storage blocked (private mode, disabled cookies…).
           }
         }
 
@@ -43,23 +45,32 @@ const description = "Stuff that I've built";
           return 'light'; // No preference exposed.
         }
 
-        function apply(theme) {
-          root.setAttribute('data-theme', theme);
+        // Apply a mode: the resolved colour theme (always light/dark) plus the
+        // mode itself. Exposed so the toggle reuses this exact resolution.
+        function applyMode(mode) {
+          var applied =
+            mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : systemTheme();
+          root.setAttribute('data-theme', applied);
+          root.setAttribute('data-theme-mode', mode);
         }
+        window.__applyThemeMode = applyMode;
 
         try {
-          apply(storedChoice() || systemTheme());
+          applyMode(storedMode());
         } catch (e) {
-          apply('light'); // Never leave the page unstyled.
+          // Never leave the page unstyled.
+          try {
+            root.setAttribute('data-theme', 'light');
+            root.setAttribute('data-theme-mode', 'system');
+          } catch (e2) {}
         }
 
-        // While no explicit choice is saved, follow live OS/browser theme
-        // changes without needing a reload.
+        // In system mode, follow live OS/browser theme changes without a reload.
         try {
           var mql = window.matchMedia('(prefers-color-scheme: dark)');
-          var onChange = function (e) {
-            if (storedChoice()) return; // An explicit choice wins.
-            apply(e.matches ? 'dark' : 'light');
+          var onChange = function () {
+            if (storedMode() !== 'system') return; // A fixed choice wins.
+            applyMode('system');
             try {
               window.dispatchEvent(new Event('themechange'));
             } catch (err) {
