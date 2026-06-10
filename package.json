@@ -10,7 +10,7 @@
     "prepare": "node scripts/setup-hooks.mjs"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.2",
     "cross-env": "^7.0.3",
     "lefthook": "^2.1.9"
   },
