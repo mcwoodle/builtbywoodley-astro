@@ -28,6 +28,8 @@
   --color-accent-hover: #9C4A2B;
   /* Soft accent wash for editorial rules, hovers and tints */
   --color-accent-soft: rgba(184, 92, 56, 0.10);
+  /* Whisper-faint dot for the editorial graph-paper ground */
+  --color-grid-dot: rgba(38, 32, 26, 0.05);
 
   /* Radii — a touch crisper than the original for a modern edge */
   --radius-md: 10px;
@@ -47,21 +49,23 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* Typography — families */
+  /* Typography — families. Editorial is a single-typeface system: Outfit
+     (the site's original sans) carries everything, and hierarchy comes from
+     weight, size, case and tracking rather than from mixing families. */
   --font-display: 'Outfit', sans-serif;
-  --font-body: 'Source Serif 4', Georgia, serif;
+  --font-body: 'Outfit', sans-serif;
 
   /* Typography — scale (larger display for editorial headlines) */
   --fs-display: clamp(2.6rem, 4.5vw, 3.6rem);
   --fs-heading: clamp(1.3rem, 2vw, 1.6rem);
-  --fs-body: 1.02rem;
+  --fs-body: 1rem;
   --fs-small: 0.85rem;
   --fs-xs: 0.75rem;
 
   /* Line heights */
   --lh-display: 1.08;
   --lh-heading: 1.3;
-  --lh-body: 1.75;
+  --lh-body: 1.7;
 
   color-scheme: light;
 }
@@ -79,6 +83,7 @@
   --color-accent: #E08A63;
   --color-accent-hover: #EFA079;
   --color-accent-soft: rgba(224, 138, 99, 0.14);
+  --color-grid-dot: rgba(235, 225, 210, 0.05);
 
   --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.38);
@@ -112,6 +117,9 @@
   /* Shadows */
   --shadow-soft: 0 8px 30px rgba(44, 36, 32, 0.08);
   --shadow-card: 0 2px 12px rgba(44, 36, 32, 0.06);
+
+  /* Typography — families (original pairs sans display with serif body) */
+  --font-body: 'Source Serif 4', Georgia, serif;
 
   /* Typography — scale */
   --fs-display: clamp(2.5rem, 4vw, 3.25rem);
@@ -755,23 +763,53 @@ main.home-main {
    existing markup (no structural HTML changes), which is what lets a visitor
    switch families and keep the very same content.
 
+   The look: a workshop "shop drawing". One typeface (Outfit) throughout, with
+   hierarchy from weight, size, case and tracking; quiet craft cues — a faint
+   graph-paper ground, scribed hairlines, measured tick marks — instead of
+   ornament. Restraint is the point: every cue should be felt, not noticed.
+
    The :root:not([data-theme-family="original"]) prefix also matches when the
    attribute is absent, so the editorial treatment is the safe default.
    ───────────────────────────────────────────── */
 
-/* Editorial headlines set in the body serif — elegant article titles against
-   the sans UI chrome (eyebrows, meta, nav stay Outfit). */
-:root:not([data-theme-family="original"]) .page-heading,
-:root:not([data-theme-family="original"]) .project-title,
-:root:not([data-theme-family="original"]) .project-list-title,
-:root:not([data-theme-family="original"]) .carousel-card-title {
-  font-family: var(--font-body);
-  font-weight: 600;
-  letter-spacing: -0.015em;
+/* The page ground carries a whisper of graph paper — the dot grid of a shop
+   drawing. Quiet enough to read as texture, not pattern; surfaces sit on top
+   with solid fills. */
+:root:not([data-theme-family="original"]) body {
+  background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 1.4px);
+  background-size: 28px 28px;
 }
 
+/* Selected text takes the accent wash — pencil-highlighter, not neon. */
+:root:not([data-theme-family="original"]) ::selection {
+  background: color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+/* Headlines pull heavier and tighter than the 600-weight default — the
+   single-typeface system needs weight, not a second family, for contrast.
+   text-wrap: balance keeps multi-line titles from ragged orphans. */
 :root:not([data-theme-family="original"]) .page-heading {
-  letter-spacing: -0.025em;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+:root:not([data-theme-family="original"]) .project-title,
+:root:not([data-theme-family="original"]) .project-list-title,
+:root:not([data-theme-family="original"]) .section-heading,
+:root:not([data-theme-family="original"]) .carousel-card-title {
+  text-wrap: balance;
+}
+
+/* A short scribe line ahead of eyebrows — the draftsman's leader line. */
+:root:not([data-theme-family="original"]) .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 1px;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+  background: var(--color-accent);
 }
 
 /* A hairline under section headers reads like a magazine section rule. */
@@ -794,19 +832,21 @@ main.home-main {
 }
 
 :root:not([data-theme-family="original"]) .js-projects-log .project-title {
-  font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
   line-height: 1.15;
 }
 
-/* The entry's running number, set as a tracked accent kicker above the title. */
+/* Each entry is labelled as a build — "BUILD 01" — a tracked accent kicker
+   that nods to the site's name without shouting it. */
 :root:not([data-theme-family="original"]) .js-projects-log .project-title::before {
-  content: counter(post, decimal-leading-zero);
+  content: "Build " counter(post, decimal-leading-zero);
   display: block;
   margin-bottom: var(--space-2);
   font-family: var(--font-display);
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.22em;
+  text-transform: uppercase;
   color: var(--color-accent);
 }
 
@@ -814,25 +854,44 @@ main.home-main {
    Constraining paragraphs (not images) gives the airy editorial text column. */
 :root:not([data-theme-family="original"]) .project-content,
 :root:not([data-theme-family="original"]) .prose {
-  font-size: 1.06rem;
-  line-height: 1.8;
+  font-size: 1.02rem;
+  line-height: 1.75;
 }
 
 :root:not([data-theme-family="original"]) .project-content > p,
 :root:not([data-theme-family="original"]) .prose > p {
   max-width: 68ch;
+  text-wrap: pretty;
 }
 
-/* Drop cap on the first paragraph — a classic editorial flourish. */
-:root:not([data-theme-family="original"]) .project-content > p:first-of-type::first-letter,
-:root:not([data-theme-family="original"]) .prose > p:first-of-type::first-letter {
-  float: left;
-  margin: 0.02em 0.12em 0 0;
-  font-family: var(--font-body);
+/* Opening lead-in — the editorial alternative to a drop cap. The first clause
+   of each entry (tagged at build time by rehype-lead-in, cut at a natural
+   clause boundary) is set as a tracked uppercase run with a pencil-thin
+   accent rule beneath: the scribed first line of a drawing. The span is
+   unstyled in the original family, which therefore renders unchanged. */
+:root:not([data-theme-family="original"]) .entry-leadin {
+  font-size: 0.88em;
   font-weight: 600;
-  font-size: 3.1em;
-  line-height: 0.72;
-  color: var(--color-accent);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+/* In-text links: underlined like a pencil annotation, warming on hover. */
+:root:not([data-theme-family="original"]) .project-content a,
+:root:not([data-theme-family="original"]) .prose a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+
+:root:not([data-theme-family="original"]) .project-content a:hover,
+:root:not([data-theme-family="original"]) .prose a:hover {
+  text-decoration-color: currentColor;
 }
 
 /* Images sit as framed plates within the text. */
@@ -843,31 +902,33 @@ main.home-main {
   margin-block: var(--space-5);
 }
 
-/* Pull-quotes get an accent rule and italic voice. */
+/* Pull-quotes get an accent rule and a medium voice (Outfit ships no italic,
+   so weight carries the change of register instead). */
 :root:not([data-theme-family="original"]) .project-content blockquote,
 :root:not([data-theme-family="original"]) .prose blockquote {
   margin: var(--space-5) 0;
   padding-left: var(--space-4);
-  border-left: 3px solid var(--color-accent);
-  font-style: italic;
+  border-left: 2px solid var(--color-accent);
+  font-weight: 500;
   color: var(--color-text-muted);
 }
 
-/* End mark → a quiet editorial break instead of the square dot. */
+/* End mark → a tiny rule(r). A baseline with minor ticks every 12px and
+   accent ticks at the ends and centre — the tape-measure sign-off on each
+   build. Layer order: accent ticks over minor ticks over the baseline. */
 :root:not([data-theme-family="original"]) .post-end-mark {
-  width: auto;
-  height: auto;
-  background: none;
-  margin-top: var(--space-7);
-  text-align: center;
+  --tick-color: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+  width: 121px;
+  height: 11px;
+  margin: var(--space-7) auto 0;
   opacity: 1;
-}
-
-:root:not([data-theme-family="original"]) .post-end-mark::before {
-  content: "• • •";
-  font-size: 0.7rem;
-  letter-spacing: 0.4em;
-  color: var(--color-accent);
+  background:
+    repeating-linear-gradient(to right, var(--color-accent) 0 1px, transparent 1px 60px)
+      left bottom / 100% 11px no-repeat,
+    repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 12px)
+      left bottom / 100% 6px no-repeat,
+    linear-gradient(var(--tick-color), var(--tick-color))
+      left bottom / 100% 1px no-repeat;
 }
 
 /* ── Carousel cards: cleaner, crisper, editorial ── */
@@ -880,7 +941,7 @@ main.home-main {
 }
 
 :root:not([data-theme-family="original"]) .carousel-card-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
 }
 
 /* ── Editorial responsive tweaks ── */
@@ -893,11 +954,6 @@ main.home-main {
   :root:not([data-theme-family="original"]) .project-content > p,
   :root:not([data-theme-family="original"]) .prose > p {
     max-width: none;
-  }
-
-  :root:not([data-theme-family="original"]) .project-content > p:first-of-type::first-letter,
-  :root:not([data-theme-family="original"]) .prose > p:first-of-type::first-letter {
-    font-size: 2.7em;
   }
 }
 
