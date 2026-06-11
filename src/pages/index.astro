@@ -1,9 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/view-transitions.css";
 ---
 
 <BaseLayout>
-  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
+  <main class="vt-home-hero" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
     <h1 class="page-heading" style="margin-bottom: var(--space-2); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
     <p class="page-subtitle" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
@@ -12,7 +13,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <a href="/mocked/blog" class="craft-link">
         <span class="craft-link-index" aria-hidden="true">01</span>
         <span>A Fake Blog</span>
-        <span class="craft-link-arrow" aria-hidden="true">→</span>
+        <span class="craft-link-arrow vt-craft-arrow" aria-hidden="true">→</span>
       </a>
       <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer" class="craft-link">
         <span class="craft-link-index" aria-hidden="true">02</span>
@@ -167,5 +168,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .craft-link[target="_blank"]:hover .craft-link-arrow,
   .craft-link[target="_blank"]:focus-visible .craft-link-arrow {
     transform: translate(2px, -2px);
+  }
+
+  /* On click the arrow shoots ahead — the first beat of the view transition
+     that then slides the whole hero out after it (view-transitions.css). */
+  .craft-link:active .craft-link-arrow {
+    transform: translateX(8px);
+    transition-duration: 0.1s;
+  }
+
+  .craft-link[target="_blank"]:active .craft-link-arrow {
+    transform: translate(5px, -5px);
   }
 </style>
