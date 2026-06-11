@@ -946,14 +946,50 @@ main.home-main {
 
 /* ── Editorial responsive tweaks ── */
 @media (max-width: 720px) {
+  /* Larger type on phones — the desktop scale reads small at arm's length. */
+  :root:not([data-theme-family="original"]) {
+    --fs-body: 1.0625rem;
+    --fs-small: 0.95rem;
+    --fs-xs: 0.8rem;
+  }
+
+  /* One gutter, not two: page padding and section padding both indent the
+     column on phones, wasting ~30px of a ~390px screen. Keep the page gutter
+     and collapse the section's, so text and plates own the width. */
+  :root:not([data-theme-family="original"]) main:not(.home-main) {
+    padding-inline: var(--space-4);
+  }
+
+  :root:not([data-theme-family="original"]) .main-inner {
+    padding-inline: var(--space-4);
+  }
+
+  :root:not([data-theme-family="original"]) .surface-section {
+    padding-inline: 0;
+  }
+
   :root:not([data-theme-family="original"]) .js-projects-log .grid-gap-md {
     gap: var(--space-7);
   }
 
-  /* Full-width text on phones; the measure cap only helps on wide screens. */
+  :root:not([data-theme-family="original"]) .js-projects-log .project-title {
+    font-size: 1.7rem;
+  }
+
+  /* Comfortable reading size for the narrow column. */
+  :root:not([data-theme-family="original"]) .project-content,
+  :root:not([data-theme-family="original"]) .prose {
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+
+  /* Full-width text on phones; the measure cap only helps on wide screens.
+     Greedy wrapping too — `pretty` leaves short, ragged lines on a narrow
+     column, which reads as wasted space along the right edge. */
   :root:not([data-theme-family="original"]) .project-content > p,
   :root:not([data-theme-family="original"]) .prose > p {
     max-width: none;
+    text-wrap: wrap;
   }
 }
 
