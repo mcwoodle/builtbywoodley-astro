@@ -65,46 +65,6 @@ import "../styles/view-transitions.css";
             <span class="craft-link-arrow" aria-hidden="true">↗</span>
           </a>
         </nav>
-
-        <!-- The sheet's title block — every proper shop drawing carries one
-             in the bottom-right corner. The homepage cut list is sheet 01;
-             this page closes the set. -->
-        <aside class="title-block" aria-label="Drawing title block">
-          <dl class="title-block-grid">
-            <div class="tb-cell tb-span-2">
-              <dt class="tb-label">Project</dt>
-              <dd class="tb-value">Built by Woodley</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Sheet</dt>
-              <dd class="tb-value">02 of 02</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Drawn by</dt>
-              <dd class="tb-value">M. Woodley</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Checked by</dt>
-              <dd class="tb-value">Two small inspectors</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Scale</dt>
-              <dd class="tb-value">1 : 1</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Material</dt>
-              <dd class="tb-value">Sawdust &amp; solder</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Finish</dt>
-              <dd class="tb-value">Still drying</dd>
-            </div>
-            <div class="tb-cell">
-              <dt class="tb-label">Revision</dt>
-              <dd class="tb-value">Ongoing</dd>
-            </div>
-          </dl>
-        </aside>
       </div>
     </section>
   </main>
@@ -118,70 +78,4 @@ import "../styles/view-transitions.css";
     margin-top: var(--space-6);
   }
 
-  /* ── Title block ──
-     The corner stamp of a real shop drawing: a hairline grid of labelled
-     fields, set bottom-right of the sheet. Cells separated by a 1px gap over
-     a border-coloured ground draw the rules without doubled borders. Tokens
-     only, so every theme family and mode renders its own palette. */
-  .title-block {
-    max-width: 480px;
-    margin-top: var(--space-7);
-    margin-left: auto;
-  }
-
-  .title-block-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    margin: 0;
-    border: 1px solid var(--color-border-subtle);
-    background: var(--color-border-subtle);
-    box-shadow: var(--shadow-card);
-  }
-
-  .tb-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-surface);
-  }
-
-  .tb-span-2 {
-    grid-column: span 2;
-  }
-
-  .tb-label {
-    font-family: var(--font-display);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-  }
-
-  .tb-value {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: var(--fs-small);
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: var(--color-text);
-  }
-
-  @media (max-width: 720px) {
-    /* The stamp spans the narrow sheet; two columns keep the fields legible. */
-    .title-block {
-      max-width: none;
-    }
-
-    .title-block-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* Nine cells over two columns leave a hole at the end of the stamp;
-       letting the last field run wide keeps every row closed. */
-    .tb-cell:last-child {
-      grid-column: span 2;
-    }
-  }
 </style>
