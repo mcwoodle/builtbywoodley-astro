@@ -29,3 +29,5 @@ debug.log*
 
 # jetbrains setting folder
 .idea/
+
+woodley.settings.local.json
