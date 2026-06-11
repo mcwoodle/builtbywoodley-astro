@@ -8,16 +8,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <p class="page-subtitle" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
     </p>
-    <nav style="display: flex; gap: var(--space-4); flex-wrap: wrap; justify-content: center;">
-      <a href="/mocked/blog" class="pill" style="padding: var(--space-3) var(--space-5); font-size: var(--fs-body); border-radius: var(--radius-md); transition: all 0.2s ease; border-color: var(--color-accent);">
-        A Fake Blog
+    <nav class="craft-links" aria-label="Featured links">
+      <a href="/mocked/blog" class="craft-link">
+        <span class="craft-link-index" aria-hidden="true">01</span>
+        <span>A Fake Blog</span>
+        <span class="craft-link-arrow" aria-hidden="true">→</span>
       </a>
-      <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer" class="pill" style="padding: var(--space-3) var(--space-5); font-size: var(--fs-body); border-radius: var(--radius-md); transition: all 0.2s ease; border-color: var(--color-accent);">
-        My LinkedIn
+      <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer" class="craft-link">
+        <span class="craft-link-index" aria-hidden="true">02</span>
+        <span>My LinkedIn</span>
+        <span class="craft-link-arrow" aria-hidden="true">↗</span>
       </a>
     </nav>
   </main>
-  
+
   <div style="position: absolute; bottom: var(--space-6); left: 0; right: 0; text-align: center; padding-bottom: var(--space-4);">
     <div style="display: flex; flex-direction: column; gap: var(--space-2); align-items: center;">
       <a href="mailto:matt@builtbywoodley.ca" class="text-muted text-small" style="font-family: var(--font-display); letter-spacing: 0.05em; transition: color 0.2s ease;">
@@ -31,9 +35,137 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <style>
-  a.pill:hover {
-    background: var(--color-accent);
-    color: white;
+  /* ── Cut-list links ──
+     The two homepage links are part tags off the build's cut list: numbered
+     like drawing details ("01", "02") with a short leader line, set in the
+     tracked uppercase voice of the shop-drawing look. On hover the tag lifts,
+     drafting crop marks register at the corners and a small tape-measure rule
+     draws in under the label — the same craft cues used elsewhere (eyebrow
+     scribe lines, the post-end ruler), kept quiet on purpose. Tokens only,
+     so every theme family and mode renders its own palette. */
+  .craft-links {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .craft-link {
+    --tick-color: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 14px var(--space-5);
+    border: 1px solid var(--color-border-subtle);
+    /* A touch crisper than the cards — a drawing tag has tighter corners. */
+    border-radius: calc(var(--radius-md) - 4px);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, border-color 0.2s ease,
+      box-shadow 0.2s ease, color 0.2s ease;
+  }
+
+  .craft-link:hover,
+  .craft-link:focus-visible {
     transform: translateY(-2px);
+    color: var(--color-text);
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border-subtle));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .craft-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  /* Drafting crop marks: L-shaped registration ticks just outside two
+     opposite corners, revealed on hover as if the tag were being dimensioned. */
+  .craft-link::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--color-accent), var(--color-accent)) top left / 10px 1px no-repeat,
+      linear-gradient(var(--color-accent), var(--color-accent)) top left / 1px 10px no-repeat,
+      linear-gradient(var(--color-accent), var(--color-accent)) bottom right / 10px 1px no-repeat,
+      linear-gradient(var(--color-accent), var(--color-accent)) bottom right / 1px 10px no-repeat;
+    opacity: 0;
+    transform: scale(0.94);
+    transition: opacity 0.25s ease, transform 0.3s ease;
+  }
+
+  .craft-link:hover::before,
+  .craft-link:focus-visible::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Tape-measure rule — the post-end ruler's little sibling: a baseline with
+     minor ticks that draws in left-to-right under the label on hover. */
+  .craft-link::after {
+    content: "";
+    position: absolute;
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: 5px;
+    height: 5px;
+    background:
+      repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 7px)
+        left bottom / 100% 4px no-repeat,
+      linear-gradient(var(--tick-color), var(--tick-color))
+        left bottom / 100% 1px no-repeat;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .craft-link:hover::after,
+  .craft-link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  /* Part number with a trailing leader line, echoing the eyebrow scribe and
+     the "Build 01" kickers in the project log. */
+  .craft-link-index {
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.18em;
+    color: var(--color-accent);
+  }
+
+  .craft-link-index::after {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 1px;
+    margin-left: var(--space-2);
+    background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  }
+
+  /* The arrow travels its direction of pull: along the grain for the on-site
+     link, up and out for the external one. */
+  .craft-link-arrow {
+    color: var(--color-accent);
+    transition: transform 0.2s ease;
+  }
+
+  .craft-link:hover .craft-link-arrow,
+  .craft-link:focus-visible .craft-link-arrow {
+    transform: translateX(3px);
+  }
+
+  .craft-link[target="_blank"]:hover .craft-link-arrow,
+  .craft-link[target="_blank"]:focus-visible .craft-link-arrow {
+    transform: translate(2px, -2px);
   }
 </style>
