@@ -167,6 +167,13 @@ body {
   min-height: 100%;
 }
 
+html {
+  /* Always reserve the scrollbar gutter so the centered layout (and the top
+     bar with it) doesn't shift sideways between pages that scroll (blog) and
+     pages that don't (home). No-op where scrollbars overlay content. */
+  scrollbar-gutter: stable;
+}
+
 /* ─────────────────────────────────────────────
    Base
    ───────────────────────────────────────────── */

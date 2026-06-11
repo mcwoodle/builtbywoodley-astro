@@ -1,10 +1,42 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
 import ThemeFamilyToggle from './ThemeFamilyToggle.astro';
+
+// Each page is statically built, so it knows at build time whether it *is*
+// the homepage. On the homepage the home control collapses into a "you are
+// here" dot; everywhere else it is the little house that leads back.
+const isHome = Astro.url.pathname === '/';
 ---
-<nav class="top-nav">
+<nav class="top-nav vt-top-nav">
   <div class="nav-inner">
-    <a href="/" class="home-link">Home</a>
+    <a
+      href="/"
+      class:list={['home-link', { 'is-home': isHome }]}
+      aria-label={isHome ? 'Home — you are here' : 'Back to home'}
+      aria-current={isHome ? 'page' : undefined}
+      data-tooltip={isHome ? 'You’re home' : 'Back to home'}
+    >
+      <!-- vt-home-mark: the dot ⇄ house morph across the home/blog view
+           transition (view-transitions.css) -->
+      <span class="home-mark vt-home-mark" aria-hidden="true">
+        <svg
+          class="home-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 10.5 12 3l9 7.5"></path>
+          <path d="M5 9.4V21h14V9.4"></path>
+          <!-- The doorway dot: the same accent dot the control collapses to
+               on the homepage. Lights up on hover — the dot lives here. -->
+          <circle class="home-door-dot" cx="12" cy="15" r="2" stroke="none"></circle>
+        </svg>
+        <span class="home-dot"></span>
+      </span>
+    </a>
     <div class="nav-actions">
       <ThemeFamilyToggle />
       <ThemeToggle />
@@ -27,20 +59,115 @@ import ThemeFamilyToggle from './ThemeFamilyToggle.astro';
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* The toggles are the tallest controls (40px + 1px borders). Pinning the
+       row to that height keeps the bar identical on every page no matter
+       what the controls inside are doing. */
+    min-height: 42px;
   }
   .nav-actions {
     display: flex;
     align-items: center;
     gap: var(--space-2);
   }
+
+  /* Icon-only home control. Same 40px round footprint as the theme toggles
+     so the bar's left edge is pixel-identical everywhere, but quieter: no
+     chip surface, just a muted mark that warms to the accent on hover. */
   .home-link {
-    font-family: var(--font-display);
-    font-weight: 600;
-    color: var(--color-text);
-    text-decoration: none;
-    font-size: var(--fs-heading);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease, transform 0.15s ease;
   }
-  .home-link:hover {
+  .home-link:hover,
+  .home-link:focus-visible {
     color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+  .home-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* The mark hugs its content so the view transition has true geometry to
+     morph: 20px house on inner pages, 7px dot at home. */
+  .home-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .home-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+  .home-door-dot {
+    fill: var(--color-accent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .home-link:hover .home-door-dot,
+  .home-link:focus-visible .home-door-dot {
+    opacity: 1;
+  }
+
+  /* At home the control is the "you are here" marker — the same 7px accent
+     dot as the blog header pill's (the one the cut-list arrow flies into). */
+  .home-dot {
+    display: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--color-accent);
+  }
+  .home-link.is-home .home-icon {
+    display: none;
+  }
+  .home-link.is-home .home-dot {
+    display: block;
+  }
+  /* A marker doesn't lift; it just glows a soft halo when prodded. */
+  .home-link.is-home:hover,
+  .home-link.is-home:focus-visible {
+    transform: none;
+  }
+  .home-link.is-home:hover .home-dot,
+  .home-link.is-home:focus-visible .home-dot {
+    box-shadow: 0 0 0 6px var(--color-accent-soft);
+  }
+
+  /* Tooltip — same recipe as the theme toggles' (global.css), anchored to
+     the left edge since this control sits at the bar's left end. */
+  .home-link::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 200;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--color-text);
+    color: var(--color-surface);
+    font-family: var(--font-display);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: var(--shadow-card);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .home-link:hover::after,
+  .home-link:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
   }
 </style>

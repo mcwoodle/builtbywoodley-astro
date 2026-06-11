@@ -31,6 +31,23 @@
   view-transition-name: craft-arrow;
 }
 
+/* The top bar is pinned. Naming it lifts it out of the root cross-fade, and
+   because the bar paints above the mains (z-index 100), its group stacks on
+   top — the sliding pages pass underneath it instead of over it. Old and new
+   bars are pixel-identical (the differing home mark is captured separately
+   below), so the bar simply stands still. */
+.vt-top-nav {
+  view-transition-name: top-nav;
+}
+
+/* The bar's home control: a "you are here" dot on the homepage, the house
+   icon everywhere else. One shared name morphs them in place — leaving home,
+   the dot grows into the way back; returning, the house settles back into
+   the marker. */
+.vt-home-mark {
+  view-transition-name: home-mark;
+}
+
 /* Forward: the hero exits along the arrow's line of pull… */
 ::view-transition-old(home-hero) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
@@ -53,6 +70,13 @@
 /* The arrow runs a touch longer than the page so it visibly leads the
    motion and is the last thing to settle. */
 ::view-transition-group(craft-arrow) {
+  animation-duration: 500ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The dot ⇄ house morph keeps the arrow's tempo so both accent marks settle
+   on the same beat. */
+::view-transition-group(home-mark) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
