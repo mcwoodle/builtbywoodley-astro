@@ -1,15 +1,18 @@
 /* ─────────────────────────────────────────────
-   Home ↔ Blog View Transition
-   Imported ONLY by the homepage and the mocked blog index. Cross-document
-   view transitions require BOTH the outgoing and incoming page to opt in, so
-   just that pair of pages animates; every other navigation stays a plain
-   page load. Browsers without the View Transition API ignore all of this.
+   Home ↔ Blog / Home ↔ About View Transitions
+   Imported ONLY by the homepage, the mocked blog index and the about page.
+   Cross-document view transitions require BOTH the outgoing and incoming
+   page to opt in, so just those pairs of pages animate; every other
+   navigation stays a plain page load. Browsers without the View Transition
+   API ignore all of this.
 
    The choreography plays off the cut-list tag's arrow: the page follows the
-   arrow's pull — the hero slides away to the left while the blog column
-   sweeps in from the right — and the arrow itself flies ahead of the page,
-   shrinking into the accent dot of the blog header's "Personal build log"
-   pill. The whole sequence mirrors on the way back.
+   arrow's pull — the hero slides away to the left while the destination
+   column sweeps in from the right — and the arrow itself flies ahead of the
+   page, shrinking into the accent dot of the destination header's pill. The
+   whole sequence mirrors on the way back. Both inner pages stage the same
+   named landing dot; a small inline script on the homepage (index.astro)
+   hands the arrow's name to whichever tag is actually travelled.
    ───────────────────────────────────────────── */
 
 @view-transition {
@@ -18,13 +21,21 @@
 
 /* Traveling pieces. A name that exists on only one side gets an enter/exit
    slide; the arrow/pill-dot pair shares one name across both documents, so
-   the browser morphs the clicked arrow into the header pill's dot. */
+   the browser morphs the clicked arrow into the header pill's dot. The blog
+   tag's arrow carries the name statically; the homepage retarget script
+   moves it to the About tag's arrow when that is the link travelled. */
 .vt-home-hero {
   view-transition-name: home-hero;
 }
 
 .vt-blog-page {
   view-transition-name: blog-page;
+}
+
+/* The about page rides the same rails as the blog: in from the right on the
+   way out, back out to the right on the way home. */
+.vt-about-page {
+  view-transition-name: about-page;
 }
 
 .vt-craft-arrow {
@@ -53,13 +64,15 @@
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
 }
 
-/* …while the blog column sweeps in behind it. */
-::view-transition-new(blog-page) {
+/* …while the destination column sweeps in behind it. */
+::view-transition-new(blog-page),
+::view-transition-new(about-page) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
 /* Back: the same move, mirrored. */
-::view-transition-old(blog-page) {
+::view-transition-old(blog-page),
+::view-transition-old(about-page) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
 }
 

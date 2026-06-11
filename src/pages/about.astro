@@ -1,0 +1,187 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+// Opts this page into the home ↔ about slide transition (the homepage imports
+// the same sheet; cross-document view transitions need both ends to opt in).
+import "../styles/view-transitions.css";
+---
+
+<BaseLayout>
+  <main class="vt-about-page">
+    <header class="section-shell">
+      <div class="surface-section">
+        <div class="pill">
+          <!-- vt-craft-arrow: where the About tag's arrow lands when the
+               view transition flies it up into this pill
+               (view-transitions.css + the homepage retarget script) -->
+          <span class="pill-dot vt-craft-arrow" aria-hidden="true"></span>
+          <span>About the builder</span>
+        </div>
+        <h1 class="page-heading">Matt Woodley</h1>
+        <p class="page-subtitle">
+          Builder, mentor, father — same toolbox, different benches.
+        </p>
+      </div>
+    </header>
+
+    <section class="section-shell">
+      <div class="surface-section">
+        <div class="prose">
+          <p>
+            <span class="entry-leadin">Most of what I build starts as a sketch</span>
+            on whatever paper is closest — a workbench, a set of shelves, a
+            smart-home setup that absolutely did not need to be this
+            complicated. This site is the journal that keeps those sketches
+            honest: what got measured, what got cut, and what got cut twice
+            anyway.
+          </p>
+          <p>
+            Off the bench, the other two thirds of the masthead: mentor by
+            habit, father by promotion. Both turn out to be the same craft —
+            hand over the tape measure, let them make the mark, and resist the
+            urge to take the pencil back.
+          </p>
+          <p>
+            The formal drawing of me — titles, dates, the parts that fit
+            neatly on one page — is filed on LinkedIn. The cut list picks up
+            where the homepage left off.
+          </p>
+        </div>
+
+        <!-- The cut list continues from the homepage's tags 01 and 02. -->
+        <nav class="craft-links about-links" aria-label="Elsewhere">
+          <a
+            href="https://www.linkedin.com/in/mattwoodley"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="craft-link craft-link-out"
+          >
+            <span class="craft-link-index" aria-hidden="true">03</span>
+            <span>My LinkedIn</span>
+            <span class="craft-link-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a href="mailto:matt@builtbywoodley.ca" class="craft-link craft-link-out">
+            <span class="craft-link-index" aria-hidden="true">04</span>
+            <span>Email Me</span>
+            <span class="craft-link-arrow" aria-hidden="true">↗</span>
+          </a>
+        </nav>
+
+        <!-- The sheet's title block — every proper shop drawing carries one
+             in the bottom-right corner. The homepage cut list is sheet 01;
+             this page closes the set. -->
+        <aside class="title-block" aria-label="Drawing title block">
+          <dl class="title-block-grid">
+            <div class="tb-cell tb-span-2">
+              <dt class="tb-label">Project</dt>
+              <dd class="tb-value">Built by Woodley</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Sheet</dt>
+              <dd class="tb-value">02 of 02</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Drawn by</dt>
+              <dd class="tb-value">M. Woodley</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Checked by</dt>
+              <dd class="tb-value">Two small inspectors</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Scale</dt>
+              <dd class="tb-value">1 : 1</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Material</dt>
+              <dd class="tb-value">Sawdust &amp; solder</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Finish</dt>
+              <dd class="tb-value">Still drying</dd>
+            </div>
+            <div class="tb-cell">
+              <dt class="tb-label">Revision</dt>
+              <dd class="tb-value">Ongoing</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  /* The about page's tags pick up the homepage numbering (01, 02 → 03, 04)
+     and sit flush with the text column rather than centered like the hero's. */
+  .about-links {
+    justify-content: flex-start;
+    margin-top: var(--space-6);
+  }
+
+  /* ── Title block ──
+     The corner stamp of a real shop drawing: a hairline grid of labelled
+     fields, set bottom-right of the sheet. Cells separated by a 1px gap over
+     a border-coloured ground draw the rules without doubled borders. Tokens
+     only, so every theme family and mode renders its own palette. */
+  .title-block {
+    max-width: 480px;
+    margin-top: var(--space-7);
+    margin-left: auto;
+  }
+
+  .title-block-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin: 0;
+    border: 1px solid var(--color-border-subtle);
+    background: var(--color-border-subtle);
+    box-shadow: var(--shadow-card);
+  }
+
+  .tb-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface);
+  }
+
+  .tb-span-2 {
+    grid-column: span 2;
+  }
+
+  .tb-label {
+    font-family: var(--font-display);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .tb-value {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-small);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--color-text);
+  }
+
+  @media (max-width: 720px) {
+    /* The stamp spans the narrow sheet; two columns keep the fields legible. */
+    .title-block {
+      max-width: none;
+    }
+
+    .title-block-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Nine cells over two columns leave a hole at the end of the stamp;
+       letting the last field run wide keeps every row closed. */
+    .tb-cell:last-child {
+      grid-column: span 2;
+    }
+  }
+</style>
