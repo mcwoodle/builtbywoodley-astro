@@ -41,63 +41,68 @@ document.addEventListener('DOMContentLoaded', () => {
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
-    // Reveal settings per element. Title and content are intentionally
-    // identical right now so they animate in sync — give either block its own
-    // values to make them independent again.
-    //   offsetVh: start offset as a fraction of the viewport height; small, so
-    //     the element only peeks above the bottom edge early on.
-    //   start/end: ScrollTrigger positions, tracking the entry's natural 1:1
-    //     position (the entry is never transformed). Starting at 'top bottom'
-    //     (as the section enters) and ending around the middle stretches the
-    //     reveal over a long, slow range.
-    //   ease: fast at first, slowing as the section nears mid-viewport.
-    //
-    // Net effect: the title is only slightly visible at the bottom by the time
-    // the section takes up ~1/8 of the viewport, and finishes settling roughly
-    // halfway up.
+    // Entry reveal — "scribe and settle". The entry rises as one block from a
+    // hand's-breadth below its slot, so no gap can open between title and
+    // body. Two beats play inside the block as it travels:
+    //   1. the title wipes in left-to-right — the same pencil-stroke cue as
+    //      the eyebrow scribe lines and the craft-link rule;
+    //   2. the body fades up trailing the title by lagPx, tucking flush as
+    //      the block lands (same ease, so the lag shrinks smoothly to zero).
+    // The scrub range tracks the entry's natural 1:1 position (the entry
+    // itself is never transformed) and ends mid-viewport, so an entry is
+    // fully resolved by the time it reaches the reading line.
     const reveal = {
-      title: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
-      content: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
-    };
-
-    type RevealCfg = {
-      offsetVh: number;
-      start: string;
-      end: string;
-      ease: string;
-    };
-    const animateReveal = (
-      el: HTMLElement,
-      entry: HTMLElement,
-      cfg: RevealCfg,
-    ) => {
-      // Offset within the entry (measured before any transform is applied) so
-      // both elements begin the same distance below the bottom edge.
-      const delta = el.getBoundingClientRect().top - entry.getBoundingClientRect().top;
-      gsap.fromTo(
-        el,
-        { opacity: 0, y: () => window.innerHeight * cfg.offsetVh - delta },
-        {
-          opacity: 1,
-          y: 0,
-          ease: cfg.ease,
-          scrollTrigger: {
-            trigger: entry,
-            start: cfg.start,
-            end: cfg.end,
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        },
-      );
+      offsetVh: 0.06, // block travel as a fraction of the viewport height
+      lagPx: 24, // extra travel on the body — its trailing distance
+      start: 'top bottom',
+      end: 'top 55%',
+      ease: 'power2.out',
     };
 
     entries.forEach((entry) => {
       if (reduceMotion) return;
       const title = entry.querySelector<HTMLElement>('.project-title');
-      const content = entry.querySelector<HTMLElement>('.project-content');
-      if (title) animateReveal(title, entry, reveal.title);
-      if (content) animateReveal(content, entry, reveal.content);
+      const body = [
+        entry.querySelector<HTMLElement>('.project-content'),
+        entry.querySelector<HTMLElement>('.post-end-mark'),
+      ].filter((el): el is HTMLElement => el !== null);
+      if (!title && body.length === 0) return;
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: entry,
+          start: reveal.start,
+          end: reveal.end,
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      if (title) {
+        tl.fromTo(
+          title,
+          { y: () => window.innerHeight * reveal.offsetVh },
+          { y: 0, ease: reveal.ease, duration: 1 },
+          0,
+        );
+        // Hard-edged on purpose: it reads as a stroke being drawn, not a fade.
+        tl.fromTo(
+          title,
+          { clipPath: 'inset(0% 100% 0% 0%)' },
+          { clipPath: 'inset(0% 0% 0% 0%)', ease: 'power1.inOut', duration: 0.4 },
+          0,
+        );
+      }
+
+      if (body.length > 0) {
+        tl.fromTo(
+          body,
+          { y: () => window.innerHeight * reveal.offsetVh + reveal.lagPx },
+          { y: 0, ease: reveal.ease, duration: 1 },
+          0,
+        );
+        tl.fromTo(body, { opacity: 0 }, { opacity: 1, ease: 'none', duration: 0.5 }, 0.1);
+      }
     });
   }
 
