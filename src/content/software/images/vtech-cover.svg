@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <rect width="1200" height="750" rx="16" fill="#2A1A3A"/>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="#352244" stroke="#6A4A8A" stroke-width="1"/>
+  <!-- BLE signal waves -->
+  <circle cx="600" cy="375" r="60" stroke="#8A6AAA" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <circle cx="600" cy="375" r="120" stroke="#8A6AAA" stroke-width="1" fill="none" opacity="0.4"/>
+  <circle cx="600" cy="375" r="180" stroke="#8A6AAA" stroke-width="0.8" fill="none" opacity="0.25"/>
+  <circle cx="600" cy="375" r="240" stroke="#8A6AAA" stroke-width="0.5" fill="none" opacity="0.15"/>
+  <!-- Central device icon -->
+  <rect x="575" y="340" width="50" height="70" rx="8" fill="#6A4A8A" stroke="#AA8ACC" stroke-width="1.5"/>
+  <circle cx="600" cy="365" r="8" fill="#CC99FF" opacity="0.7"/>
+  <rect x="590" y="385" width="20" height="3" rx="1.5" fill="#AA8ACC" opacity="0.5"/>
+  <rect x="590" y="392" width="20" height="3" rx="1.5" fill="#AA8ACC" opacity="0.5"/>
+  <text x="600" y="490" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="#E0D4F0" letter-spacing="0.02em">VTech Soother</text>
+  <text x="600" y="535" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#AA8ACC" letter-spacing="0.05em">Home Assistant BLE integration</text>
+</svg>

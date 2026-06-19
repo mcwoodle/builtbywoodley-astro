@@ -1,6 +1,6 @@
 import { getCollection, render as renderEntry } from "astro:content";
 
-export async function getProjectPaths(collectionName: "projects" | "mockedProjects") {
+export async function getProjectPaths(collectionName: "projects" | "mockedProjects" | "software") {
   const projects = await getCollection(collectionName);
   return projects.map((project) => ({
     params: { slug: project.id },

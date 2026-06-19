@@ -1,0 +1,34 @@
+---
+title: "VTech Soother Integration"
+publishDate: 2025-05-15
+description: "An unofficial Home Assistant custom integration for the VTech V-Hush Mini soother, providing local Bluetooth LE control without the vendor cloud."
+coverImage: "./images/vtech-cover.svg"
+tags: ["home-automation", "bluetooth", "reverse-engineering", "iot"]
+summary: "An unofficial Home Assistant custom integration that controls a BLE soother locally -- bypassing the vendor cloud to expose power, color, brightness, timers, and routines to HA automations."
+stack: ["Python", "Home Assistant", "BLE/bleak", "pytest", "ruff", "bandit", "uv"]
+order: 2
+---
+
+## Why this exists
+
+The VTech V-Hush Mini is a combined nightlight and sound machine. Out of the box, it is controllable only through the vendor's mobile app -- one Bluetooth connection at a time, no automation hooks, no way to integrate it into a broader smart home. If you want the soother to turn on when a door sensor trips, or dim in stages through the evening on a schedule, you are out of luck.
+
+This integration solves that. It is an **unofficial** Home Assistant custom component that controls the device **locally over Bluetooth LE**, bypassing VTech's cloud and phone app entirely. It exposes power, RGB color, brightness, a toddler lock, a sleep timer, and the device's on-board weekly routines -- all as native Home Assistant entities that participate in automations, scenes, and dashboards. The goal is straightforward: interoperability with hardware you own, built by observing BLE traffic. It ships no vendor software and is not affiliated with VTech.
+
+## Engineering approach
+
+The integration spans several HA entity platforms -- light, switch, sensors, number, select, and button -- built on `bleak` and `bleak-retry-connector` for resilient Bluetooth communication that works through ESPHome Bluetooth proxies.
+
+The BLE protocol required non-trivial reverse engineering. The device expects an access-right handshake before it will accept commands. It publishes state changes through BLE notifications, so physical button presses on the device sync back into Home Assistant as local push updates -- no polling needed. The implementation handles MTU-aware packet fragmentation and reassembly, bounded write timeouts to prevent hung connections, and background auto-reconnect when the device goes out of range and returns.
+
+The most interesting protocol detail is the routine payload. The device stores a weekly schedule of power/color/sound configurations, and the integration fully encodes and decodes that payload. Critically, it **preserves unknown bytes** -- fields the integration does not yet model are round-tripped intact so that writing a routine back to the device never clobbers data the integration cannot interpret. The protocol was reverse-engineered by capturing the official app's BLE traffic using an Android HCI snoop log, analyzing it in Wireshark, building a `bleak` prototype, and diffing to discover the missing handshake. All documentation is written from that primary research, with no vendor source code or binaries reproduced.
+
+## Agentic development
+
+This is where the project gets most interesting from a software-engineering perspective. The entire integration was a one-person, **AI-orchestrated** build. I acted as architect and reviewer; the implementation was driven by AI coding agents operating under a shared operating contract.
+
+A single `AGENTS.md` file defines the autonomous delivery loop: build before committing, always work on a feature branch, open a draft PR unprompted, monitor CI, push fixes until all checks pass, mark the PR ready for review unprompted, and leave the final merge to me. `CLAUDE.md` and `GEMINI.md` are thin pointers to that one source of truth, keeping the contract consistent regardless of which agent is working. The git history shows work genuinely split across multiple agents -- Claude Opus, Gemini, and Antigravity -- all following conventional-commit discipline with co-author trailers, with me steering scope and reviewing each PR.
+
+The most compelling piece is an **agent-driven hardware test loop**. An agent deploys integration and dashboard-card changes to a live Home Assistant host, restarts it, then **visually verifies** the rendered card using Playwright -- screenshot comparison plus console-error assertions -- before considering the change done. This closes the loop from code change to real device behavior, something that is normally a manual step in IoT development.
+
+Quality is gated by CI on every PR: pytest for unit tests, ruff for linting, bandit for security analysis, plus Home Assistant's own hassfest and HACS validation workflows to ensure the integration meets community standards. A secret-scanning regime prevents credentials from entering the repository.

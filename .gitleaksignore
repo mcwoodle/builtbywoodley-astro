@@ -1,0 +1,3 @@
+# Kepler.gl standalone bundle false positives (minified JS property names)
+public/viz/gta-crime-map.html:generic-api-key:386
+public/viz/gta-crime-map.html:generic-api-key:7379

@@ -1,0 +1,43 @@
+---
+title: "GTA Urban Analytics"
+publishDate: 2025-06-01
+description: "A Python pipeline that normalizes crime data from five GTA police services, joins census demographics, and renders an interactive kepler.gl map."
+coverImage: "./images/gta-cover.svg"
+tags: ["data-engineering", "geospatial", "visualization", "open-data"]
+summary: "Normalizes crime data from five GTA police services into one queryable dataset, joins census demographics for per-capita metrics, and renders an interactive 3D kepler.gl map."
+stack: ["Python", "pandas", "GeoPandas", "Pandera", "kepler.gl", "uv"]
+repoUrl: "https://github.com/mcwoodle/gta-urban-analytics"
+liveUrl: "/viz/gta-crime-map.html"
+order: 1
+---
+
+import { Image } from "astro:assets";
+import coverImage from "./images/gta-cover.svg";
+
+## Why this exists
+
+The five police services that cover the Greater Toronto Area -- Toronto, York, Peel, Halton, and Durham -- each publish crime data in their own format. Different schemas, different coordinate reference systems, different crime-type vocabularies, different update cadences. If you want to compare property crime rates in Mississauga against Markham, or see whether shootings cluster near transit hubs region-wide, you cannot do it with any single feed. The data exists, but it does not talk to itself.
+
+This pipeline fixes that. It normalizes all five sources into one unified schema, then joins Statistics Canada 2021 census data -- population and median household income by dissemination area -- so that crime counts become **per-capita rates**. The questions it answers: crime rate per 1,000 residents and violent-crime rate by municipality; property-versus-person breakdowns; location-type distribution (business, outdoor, residence); shootings and firearm discharges; and case clearance rates across regions. A methodological refinement worth noting: **anomaly filtering** excludes incidents within 500 metres of known regional outliers -- large malls, amusement parks, hospitals, GO transit stations -- that would otherwise inflate per-capita rates for the small dissemination areas they fall in.
+
+## Engineering approach
+
+The codebase is organized as a Python package following an Extract, Transform, Analyze, Visualize pipeline. The transform stage runs a 9-step pipeline that takes raw CSV/JSON from each police service and produces a single normalized dataset.
+
+**Schema validation** is the backbone. Pandera schemas gate every boundary in the pipeline -- typed, with `coerce=True` so that format inconsistencies are resolved deterministically. Invalid rows are not silently dropped; they are quarantined to a separate CSV with a `validation_errors` column that explains exactly why each row failed. This means I can audit data quality without re-running the pipeline.
+
+Cross-region ID collisions are a real problem when merging five datasets. Each region prefixes its `source_identifier` on ingest, and a pytest test specifically guards the known Peel-versus-Halton `OBJECTID=1` collision that would otherwise corrupt joins. The coordinate systems require real CRS reprojection -- York Region publishes in UTM Zone 17N, which goes through pyproj to WGS84 before it can merge with the other sources.
+
+Enrichment is idempotent and re-runnable. GeoPandas `sjoin` performs point-in-polygon assignment, attaching crime counts and per-capita rates to census dissemination areas. The entire workflow is reproducible through `uv` -- `uv run download`, `uv run transform`, `uv run analyze`, `uv run full-pipeline`, `uv run build-map`, `uv run pytest`. Tests run manually rather than through CI.
+
+## The visualization
+
+The map is a custom React and TypeScript single-page application built on kepler.gl, compiled with esbuild into a standalone HTML file. It renders four layers: a 3D GPU-aggregated crime hexbin that makes density immediately legible, a median-income choropleth, a crime-rate-per-1,000-residents choropleth, and shooting-to-municipality-centroid arcs that show firearm incident flow.
+
+The standalone build embeds its entire dataset inline -- gzip-compressed and base64-encoded, decoded in the browser via `DecompressionStream` -- over a Carto basemap. No external data fetch is needed at load time; the page is fully self-contained.
+
+<a href="/viz/gta-crime-map.html" target="_blank" rel="noopener">
+  <Image src={coverImage} alt="GTA Urban Analytics interactive crime map preview" width={1200} height={750} />
+</a>
+
+The link above opens the live, interactive kepler.gl map in a new view. It is a large interactive page (~22 MB with embedded data) and needs a moment to load and initialize.

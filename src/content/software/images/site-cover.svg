@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <rect width="1200" height="750" rx="16" fill="#3A2A1A"/>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="#4A3828" stroke="#8A6A4A" stroke-width="1"/>
+  <!-- Graph paper dots -->
+  <pattern id="dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+    <circle cx="14" cy="14" r="1" fill="#6A5A4A" opacity="0.3"/>
+  </pattern>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="url(#dots)"/>
+  <!-- Browser window chrome -->
+  <rect x="200" y="150" width="800" height="450" rx="8" fill="#2A1E14" stroke="#8A6A4A" stroke-width="1"/>
+  <rect x="200" y="150" width="800" height="32" rx="8" fill="#4A3828"/>
+  <rect x="200" y="174" width="800" height="8" fill="#4A3828"/>
+  <circle cx="220" cy="166" r="5" fill="#C2694F" opacity="0.7"/>
+  <circle cx="238" cy="166" r="5" fill="#B8924A" opacity="0.7"/>
+  <circle cx="256" cy="166" r="5" fill="#6A9A5A" opacity="0.7"/>
+  <!-- Content lines -->
+  <rect x="240" y="210" width="300" height="16" rx="3" fill="#8A6A4A" opacity="0.4"/>
+  <rect x="240" y="245" width="720" height="8" rx="2" fill="#6A5A4A" opacity="0.25"/>
+  <rect x="240" y="262" width="680" height="8" rx="2" fill="#6A5A4A" opacity="0.25"/>
+  <rect x="240" y="279" width="700" height="8" rx="2" fill="#6A5A4A" opacity="0.25"/>
+  <rect x="240" y="310" width="220" height="120" rx="6" fill="#4A3828" stroke="#6A5A4A" stroke-width="0.5"/>
+  <rect x="480" y="310" width="220" height="120" rx="6" fill="#4A3828" stroke="#6A5A4A" stroke-width="0.5"/>
+  <rect x="720" y="310" width="220" height="120" rx="6" fill="#4A3828" stroke="#6A5A4A" stroke-width="0.5"/>
+  <text x="600" y="510" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="#E8D8C8" letter-spacing="0.02em">Built by Woodley</text>
+  <text x="600" y="555" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#AA8A6A" letter-spacing="0.05em">Astro + Tailwind + Cloudflare Workers</text>
+</svg>
