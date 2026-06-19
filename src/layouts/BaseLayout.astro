@@ -2,6 +2,13 @@
 import TopNav from '../components/TopNav.astro';
 import '../styles/global.css';
 
+interface Props {
+  /** Hide the sticky TopNav — for full-bleed pages that supply their own
+      navigation chrome (e.g. the framed map's floating home tab). */
+  hideNav?: boolean;
+}
+const { hideNav = false } = Astro.props;
+
 const title = "Built by Woodley";
 const description = "Stuff that I've built";
 ---
@@ -121,7 +128,7 @@ const description = "Stuff that I've built";
     />
   </head>
   <body>
-    <TopNav />
+    {!hideNav && <TopNav />}
     <slot />
     <script>
       import '../scripts/storyscroll';

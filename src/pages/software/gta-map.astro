@@ -1,18 +1,29 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-// Framed view of the GTA Urban Analytics kepler.gl map. The site's TopNav
-// (from BaseLayout) sits above a full-bleed iframe of the standalone map at
-// /viz/gta-crime-map. The iframe is here purely for *component isolation* —
-// the kepler.gl app loads its own third-party libraries under the relaxed
-// /viz/* CSP, kept off this page's strict CSP — and is not meant to read as a
-// visually boxed embed. Same-origin framing works because /viz/* responds
-// with `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN`, and this
-// page's `default-src 'self'` permits the same-origin frame.
+// Full-bleed framed view of the GTA Urban Analytics kepler.gl map. The site's
+// standard TopNav is hidden here (`hideNav`); in its place a single floating
+// "home tab" overlays the map, top-center. The map itself is an iframe of the
+// standalone build at /viz/gta-crime-map — kept isolated so it retains the
+// relaxed /viz/* CSP off this page's strict CSP. Same-origin framing is
+// permitted by `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN` on
+// /viz/*, and this page's `default-src 'self'`.
 ---
 
-<BaseLayout>
+<BaseLayout hideNav>
   <main class="map-shell">
+    <!-- Floating home tab. It hangs from the top edge (square top, rounded
+         bottom) and reuses the site's house glyph; on hover the door-dot
+         lights up — "the light's on at home." -->
+    <a class="home-tab" href="/" aria-label="Home — builtbywoodley.ca">
+      <svg class="home-tab__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5"></path>
+        <path d="M5 9.4V21h14V9.4"></path>
+        <circle class="home-tab__door" cx="12" cy="15" r="2"></circle>
+      </svg>
+      <span class="home-tab__label">builtbywoodley.ca</span>
+    </a>
+
     <iframe
       class="map-frame"
       src="/viz/gta-crime-map"
@@ -24,17 +35,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <style is:global>
-  /* Full-bleed map: the sticky TopNav keeps its natural height and the iframe
-     fills the entire window beneath it, edge to edge. This page is its own
-     non-scrolling viewport. Page-scoped — Astro emits these styles only with
-     this route, so the rest of the site is untouched.
-
-     Two global.css rules are deliberately overridden here:
-       • `main { max-width: 960px; margin: 0 auto; padding: ... }` — the
-         centered article box that would otherwise shrink the map. The
-         `.map-shell` class beats the bare `main` selector on specificity.
-       • `html { scrollbar-gutter: stable }` — reserves a right-edge gutter we
-         don't want when the page can't scroll. */
+  /* This route is its own non-scrolling, full-window surface. Override
+     global.css's centered `main` box (max-width/margin/padding) and the
+     reserved scrollbar gutter so the map reaches every edge. Page-scoped:
+     Astro emits these styles only with this route. */
   html {
     height: 100%;
     overflow: hidden;
@@ -44,12 +48,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     height: 100%;
     margin: 0;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
   .map-shell {
-    flex: 1;
-    min-height: 0;
+    position: relative;
+    height: 100%;
     max-width: none;
     margin: 0;
     padding: 0;
@@ -59,5 +61,107 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     width: 100%;
     height: 100%;
     border: 0;
+  }
+</style>
+
+<style>
+  /* ── Floating home tab ──────────────────────────────────────────────── */
+  .home-tab {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.95rem;
+
+    /* Hangs from the top edge: square top corners, rounded bottom, no top border. */
+    border: 1px solid color-mix(in srgb, var(--color-border-subtle, #cfcabc) 70%, transparent);
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+
+    /* Frosted glass so it stays legible over a light or dark basemap. */
+    background: color-mix(in srgb, var(--color-surface, #fff) 72%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(1.15);
+    backdrop-filter: blur(12px) saturate(1.15);
+    box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.35);
+
+    color: var(--color-text-muted, #5b5648);
+    font-family: var(--font-display, system-ui, sans-serif);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-decoration: none;
+
+    transition:
+      padding 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+      color 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.28s ease;
+  }
+
+  .home-tab__icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .home-tab__icon path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  /* The doorway: quiet at rest, the "light" that comes on at home on hover. */
+  .home-tab__door {
+    fill: currentColor;
+    stroke: none;
+    opacity: 0.35;
+    transition: opacity 0.25s ease, fill 0.25s ease, filter 0.25s ease;
+  }
+  .home-tab__label {
+    transition: color 0.2s ease;
+  }
+
+  /* Hover / keyboard focus: the tab pulls down and grows, the glass brightens,
+     and the door-dot lights up in the accent with a soft glow. */
+  .home-tab:hover,
+  .home-tab:focus-visible {
+    padding: 0.66rem 1.2rem 0.6rem;
+    transform: translateX(-50%) translateY(2px);
+    color: var(--color-text, #1c1a15);
+    background: color-mix(in srgb, var(--color-surface, #fff) 88%, transparent);
+    border-color: color-mix(in srgb, var(--color-accent, #c2683c) 55%, transparent);
+    box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.45);
+  }
+  .home-tab:hover .home-tab__door,
+  .home-tab:focus-visible .home-tab__door {
+    fill: var(--color-accent, #c2683c);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent, #c2683c) 70%, transparent));
+  }
+  .home-tab:focus-visible {
+    outline: 2px solid var(--color-accent, #c2683c);
+    outline-offset: 2px;
+  }
+
+  /* Respect reduced-motion: keep the colour cue (the door lights up), drop the
+     size/position movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-tab {
+      transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .home-tab:hover,
+    .home-tab:focus-visible {
+      padding: 0.5rem 0.95rem;
+      transform: translateX(-50%);
+    }
   }
 </style>
