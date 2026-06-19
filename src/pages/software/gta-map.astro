@@ -24,30 +24,40 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <style is:global>
-  /* One viewport-tall column: the sticky TopNav keeps its natural height and
-     the map iframe flexes to fill everything beneath it. Scoped to this page
-     only (Astro emits page styles per-route), so the rest of the site is
-     unaffected. */
-  html,
+  /* Full-bleed map: the sticky TopNav keeps its natural height and the iframe
+     fills the entire window beneath it, edge to edge. This page is its own
+     non-scrolling viewport. Page-scoped — Astro emits these styles only with
+     this route, so the rest of the site is untouched.
+
+     Two global.css rules are deliberately overridden here:
+       • `main { max-width: 960px; margin: 0 auto; padding: ... }` — the
+         centered article box that would otherwise shrink the map. The
+         `.map-shell` class beats the bare `main` selector on specificity.
+       • `html { scrollbar-gutter: stable }` — reserves a right-edge gutter we
+         don't want when the page can't scroll. */
+  html {
+    height: 100%;
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
   body {
     height: 100%;
-  }
-  body {
+    margin: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
-    margin: 0;
   }
   .map-shell {
-    flex: 1 1 auto;
-    display: flex;
+    flex: 1;
     min-height: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
   }
   .map-frame {
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: 0;
-    border: 0;
     display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
   }
 </style>
