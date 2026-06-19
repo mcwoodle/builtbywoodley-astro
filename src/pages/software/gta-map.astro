@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// Framed view of the GTA Urban Analytics kepler.gl map. The site's TopNav
+// (from BaseLayout) sits above a full-bleed iframe of the standalone map at
+// /viz/gta-crime-map. The iframe is here purely for *component isolation* —
+// the kepler.gl app loads its own third-party libraries under the relaxed
+// /viz/* CSP, kept off this page's strict CSP — and is not meant to read as a
+// visually boxed embed. Same-origin framing works because /viz/* responds
+// with `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN`, and this
+// page's `default-src 'self'` permits the same-origin frame.
+---
+
+<BaseLayout>
+  <main class="map-shell">
+    <iframe
+      class="map-frame"
+      src="/viz/gta-crime-map"
+      title="GTA Urban Analytics — interactive kepler.gl crime map"
+      loading="eager"
+      allowfullscreen
+    ></iframe>
+  </main>
+</BaseLayout>
+
+<style is:global>
+  /* One viewport-tall column: the sticky TopNav keeps its natural height and
+     the map iframe flexes to fill everything beneath it. Scoped to this page
+     only (Astro emits page styles per-route), so the rest of the site is
+     unaffected. */
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    margin: 0;
+  }
+  .map-shell {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+  }
+  .map-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    display: block;
+  }
+</style>

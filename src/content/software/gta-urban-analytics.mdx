@@ -7,7 +7,7 @@ tags: ["data-engineering", "geospatial", "visualization", "open-data"]
 summary: "Normalizes crime data from five GTA police services into one queryable dataset, joins census demographics for per-capita metrics, and renders an interactive 3D kepler.gl map."
 stack: ["Python", "pandas", "GeoPandas", "Pandera", "kepler.gl", "uv"]
 repoUrl: "https://github.com/mcwoodle/gta-urban-analytics"
-liveUrl: "/viz/gta-crime-map.html"
+liveUrl: "/software/gta-map"
 order: 1
 ---
 
@@ -36,7 +36,7 @@ The map is a custom React and TypeScript single-page application built on kepler
 
 The standalone build embeds its entire dataset inline -- gzip-compressed and base64-encoded, decoded in the browser via `DecompressionStream` -- over a Carto basemap. No external data fetch is needed at load time; the page is fully self-contained.
 
-<a href="/viz/gta-crime-map.html" target="_blank" rel="noopener">
+<a href="/software/gta-map" target="_blank" rel="noopener">
   <Image src={coverImage} alt="GTA Urban Analytics interactive crime map preview" width={1200} height={750} />
 </a>
 
