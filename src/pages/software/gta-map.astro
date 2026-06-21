@@ -8,6 +8,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 // relaxed /viz/* CSP off this page's strict CSP. Same-origin framing is
 // permitted by `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN` on
 // /viz/*, and this page's `default-src 'self'`.
+//
+// Mobile progressive enhancement: a lightweight "lite" build of the map is
+// served to mobile/touch devices to avoid deck.gl GPU-aggregation crashes on
+// real mobile GPUs. A small toggle pill lets the user switch manually.
 ---
 
 <BaseLayout hideNav>
@@ -24,13 +28,104 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <span class="home-tab__label">builtbywoodley.ca</span>
     </a>
 
+    <!-- Map variant toggle — subtle frosted-glass pill, bottom-right corner.
+         Lets the user switch between the GPU-heavy full map and the
+         mobile-safe lite build. -->
+    <div class="map-toggle" role="group" aria-label="Map version">
+      <button
+        class="map-toggle__btn map-toggle__btn--active"
+        data-map="auto"
+        type="button"
+        aria-pressed="true"
+      >Auto</button>
+      <button
+        class="map-toggle__btn"
+        data-map="full"
+        type="button"
+        aria-pressed="false"
+      >Full</button>
+      <button
+        class="map-toggle__btn"
+        data-map="lite"
+        type="button"
+        aria-pressed="false"
+      >Lite</button>
+    </div>
+
+    <!-- Iframe rendered without src — the inline script below sets it based on
+         device detection to avoid loading the wrong map first. -->
     <iframe
+      id="map-frame"
       class="map-frame"
-      src="/viz/gta-crime-map"
       title="GTA Urban Analytics — interactive kepler.gl crime map"
       loading="eager"
       allowfullscreen
     ></iframe>
+
+    <!-- Fallback for users with JS disabled: load the full map directly. -->
+    <noscript>
+      <iframe
+        class="map-frame map-frame--noscript"
+        src="/viz/gta-crime-map"
+        title="GTA Urban Analytics — interactive kepler.gl crime map"
+        loading="eager"
+        allowfullscreen
+      ></iframe>
+    </noscript>
+
+    <script is:inline>
+      (function () {
+        var FULL = '/viz/gta-crime-map';
+        var LITE = '/viz/gta-crime-map-lite';
+
+        function isMobile() {
+          var touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+          var narrow = window.innerWidth < 820;
+          return touch || narrow;
+        }
+
+        function autoSrc() {
+          return isMobile() ? LITE : FULL;
+        }
+
+        var frame = document.getElementById('map-frame');
+        var currentMode = 'auto';
+        var currentSrc = autoSrc();
+        frame.src = currentSrc;
+
+        // Toggle buttons
+        var buttons = document.querySelectorAll('.map-toggle__btn');
+        function activate(mode) {
+          currentMode = mode;
+          var newSrc;
+          if (mode === 'auto') newSrc = autoSrc();
+          else if (mode === 'full') newSrc = FULL;
+          else newSrc = LITE;
+
+          if (newSrc !== currentSrc) {
+            currentSrc = newSrc;
+            frame.src = currentSrc;
+          }
+
+          for (var i = 0; i < buttons.length; i++) {
+            var btn = buttons[i];
+            var isActive = btn.getAttribute('data-map') === mode;
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            if (isActive) {
+              btn.classList.add('map-toggle__btn--active');
+            } else {
+              btn.classList.remove('map-toggle__btn--active');
+            }
+          }
+        }
+
+        for (var i = 0; i < buttons.length; i++) {
+          buttons[i].addEventListener('click', function () {
+            activate(this.getAttribute('data-map'));
+          });
+        }
+      })();
+    </script>
   </main>
 </BaseLayout>
 
@@ -61,6 +156,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     width: 100%;
     height: 100%;
     border: 0;
+  }
+  /* When JS is off, hide the script-driven iframe (which has no src) and show
+     the noscript one instead. The noscript iframe is absolutely positioned to
+     fill the shell, since noscript content appears in flow after the empty
+     script-driven iframe. */
+  .map-frame--noscript {
+    position: absolute;
+    inset: 0;
   }
 </style>
 
@@ -162,6 +265,80 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     .home-tab:focus-visible {
       padding: 0.5rem 0.95rem;
       transform: translateX(-50%);
+    }
+  }
+
+  /* ── Map variant toggle pill ────────────────────────────────────────── */
+  .map-toggle {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 10;
+
+    display: inline-flex;
+    gap: 1px;
+    padding: 3px;
+
+    border: 1px solid color-mix(in srgb, var(--color-border-subtle, #cfcabc) 60%, transparent);
+    border-radius: 10px;
+
+    /* Same frosted glass as the home tab. */
+    background: color-mix(in srgb, var(--color-surface, #fff) 65%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(1.15);
+    backdrop-filter: blur(12px) saturate(1.15);
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.3);
+
+    font-family: var(--font-display, system-ui, sans-serif);
+
+    transition:
+      opacity 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .map-toggle__btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+
+    padding: 0.3rem 0.55rem;
+    border-radius: 7px;
+
+    color: var(--color-text-muted, #5b5648);
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+
+    transition:
+      background 0.18s ease,
+      color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .map-toggle__btn:hover {
+    color: var(--color-text, #1c1a15);
+    background: color-mix(in srgb, var(--color-surface, #fff) 60%, transparent);
+  }
+
+  .map-toggle__btn--active {
+    color: var(--color-text, #1c1a15);
+    background: color-mix(in srgb, var(--color-surface, #fff) 85%, transparent);
+    box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.15);
+  }
+
+  .map-toggle__btn:focus-visible {
+    outline: 2px solid var(--color-accent, #c2683c);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map-toggle {
+      transition: none;
+    }
+    .map-toggle__btn {
+      transition: none;
     }
   }
 </style>
