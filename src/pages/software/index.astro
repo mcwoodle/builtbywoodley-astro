@@ -26,7 +26,7 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
     <div class="section-shell">
       <div class="grid-gap-md" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
         {sorted.map((entry) => (
-          <a href={`/software/${entry.id}`} style="text-decoration: none; color: inherit;">
+          <a href={entry.data.cardUrl ?? `/software/${entry.id}`} style="text-decoration: none; color: inherit;">
             <article class="surface" style="overflow: hidden; display: flex; flex-direction: column; height: 100%; transition: transform 0.25s ease, box-shadow 0.25s ease; border: 1px solid var(--color-border-subtle);">
               <div style="width: 100%; height: 200px; overflow: hidden;">
                 <Image
@@ -58,38 +58,6 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
       </div>
     </div>
 
-    <section class="section-shell">
-      <div class="surface-section" style="padding-top: 0;">
-        <div class="section-header">
-          <div>
-            <span class="eyebrow">Also in this section</span>
-          </div>
-        </div>
-        <nav class="craft-links software-secondary-links" aria-label="Related content">
-          <a href="/mocked/blog" class="craft-link">
-            <span class="craft-link-index" aria-hidden="true">01</span>
-            <span>A Fake Blog</span>
-            <span class="craft-link-arrow" aria-hidden="true">→</span>
-          </a>
-        </nav>
-        <p class="software-secondary-desc">
-          Mocked test content just to experiment with a hypothetical blog format.
-        </p>
-      </div>
-    </section>
   </main>
 </BaseLayout>
 
-<style>
-  /* Secondary links sit flush-left, echoing the about page's nav placement. */
-  .software-secondary-links {
-    justify-content: flex-start;
-  }
-
-  .software-secondary-desc {
-    margin: var(--space-3) 0 0;
-    font-size: var(--fs-small);
-    color: var(--color-text-muted);
-    max-width: 50ch;
-  }
-</style>

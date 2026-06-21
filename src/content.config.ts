@@ -32,6 +32,8 @@ const softwareSchema = ({ image }: { image: any }) =>
     repoUrl: z.string().url().optional(),
     // liveUrl is a site-relative path (e.g. /viz/...), not an absolute URL
     liveUrl: z.string().optional(),
+    // cardUrl overrides the default /software/<slug> link on the index card
+    cardUrl: z.string().optional(),
     order: z.number().default(0),
   });
 
