@@ -10,18 +10,13 @@ import "../styles/view-transitions.css";
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
     </p>
     <nav class="craft-links" aria-label="Featured links">
-      <a href="/mocked/blog" class="craft-link">
+      <a href="/about" class="craft-link">
         <span class="craft-link-index" aria-hidden="true">01</span>
-        <span>A Fake Blog</span>
+        <span>About Me</span>
         <span class="craft-link-arrow vt-craft-arrow" aria-hidden="true">→</span>
       </a>
-      <a href="/about" class="craft-link">
-        <span class="craft-link-index" aria-hidden="true">02</span>
-        <span>About Me</span>
-        <span class="craft-link-arrow js-about-arrow" aria-hidden="true">→</span>
-      </a>
       <a href="/software" class="craft-link">
-        <span class="craft-link-index" aria-hidden="true">03</span>
+        <span class="craft-link-index" aria-hidden="true">02</span>
         <span>Software Projects</span>
         <span class="craft-link-arrow" aria-hidden="true">→</span>
       </a>
@@ -39,37 +34,8 @@ import "../styles/view-transitions.css";
     </div>
   </div>
 
-  <!-- The flying arrow: vt-craft-arrow names the blog tag's arrow statically
-       (view-transitions.css). When the journey is home ⇄ about instead, hand
-       the name to the About tag's arrow so the morph follows the link actually
-       travelled — both inner pages stage the same named landing dot in their
-       header pill. pageswap fires just before the outgoing page is snapshotted
-       and pagereveal just before the incoming one first renders: the only two
-       moments a cross-document transition lets the names move. Browsers
-       missing the events (or the Navigation API) keep the static default. -->
-  <script is:inline>
-    (function () {
-      function aim(url) {
-        var blogArrow = document.querySelector('.vt-craft-arrow');
-        var aboutArrow = document.querySelector('.js-about-arrow');
-        if (!blogArrow || !aboutArrow || !url) return;
-        var toAbout = /^\/about\/?$/.test(new URL(url, location.href).pathname);
-        // The empty string clears the inline override, falling back to the
-        // stylesheet default — the blog arrow owns the name.
-        blogArrow.style.viewTransitionName = toAbout ? 'none' : '';
-        aboutArrow.style.viewTransitionName = toAbout ? 'craft-arrow' : '';
-      }
-      window.addEventListener('pageswap', function (e) {
-        if (e.viewTransition && e.activation && e.activation.entry) {
-          aim(e.activation.entry.url);
-        }
-      });
-      window.addEventListener('pagereveal', function (e) {
-        var act = window.navigation && window.navigation.activation;
-        if (e.viewTransition && act && act.from) {
-          aim(act.from.url);
-        }
-      });
-    })();
-  </script>
+  <!-- The flying arrow: vt-craft-arrow on the About tag's arrow (the only
+       remaining craft-link with a view-transition destination) morphs into the
+       accent dot in the About page's header pill (view-transitions.css). No
+       dynamic retargeting is needed now that there is a single arrow carrier. -->
 </BaseLayout>

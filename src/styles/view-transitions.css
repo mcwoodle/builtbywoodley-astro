@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────
-   Home ↔ Blog / Home ↔ About View Transitions
-   Imported ONLY by the homepage, the mocked blog index and the about page.
+   Home ↔ About (and Home ↔ Blog) View Transitions
+   Imported by the homepage, the mocked blog index, and the about page.
    Cross-document view transitions require BOTH the outgoing and incoming
    page to opt in, so just those pairs of pages animate; every other
    navigation stays a plain page load. Browsers without the View Transition
@@ -10,9 +10,9 @@
    arrow's pull — the hero slides away to the left while the destination
    column sweeps in from the right — and the arrow itself flies ahead of the
    page, shrinking into the accent dot of the destination header's pill. The
-   whole sequence mirrors on the way back. Both inner pages stage the same
-   named landing dot; a small inline script on the homepage (index.astro)
-   hands the arrow's name to whichever tag is actually travelled.
+   whole sequence mirrors on the way back. The About tag's arrow carries the
+   vt-craft-arrow name statically; the blog page retains its opt-in so
+   direct navigation to /mocked/blog still transitions cleanly.
    ───────────────────────────────────────────── */
 
 @view-transition {
