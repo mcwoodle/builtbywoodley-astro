@@ -33,12 +33,6 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
          mobile-safe lite build. -->
     <div class="map-toggle" role="group" aria-label="Map version">
       <button
-        class="map-toggle__btn map-toggle__btn--active"
-        data-map="auto"
-        type="button"
-        aria-pressed="true"
-      >Auto</button>
-      <button
         class="map-toggle__btn"
         data-map="full"
         type="button"
@@ -84,23 +78,17 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
           return touch || narrow;
         }
 
-        function autoSrc() {
-          return isMobile() ? LITE : FULL;
-        }
-
         var frame = document.getElementById('map-frame');
-        var currentMode = 'auto';
-        var currentSrc = autoSrc();
+        // Auto-detect initial map variant based on device capabilities
+        var initialMode = isMobile() ? 'lite' : 'full';
+        var currentSrc = initialMode === 'lite' ? LITE : FULL;
         frame.src = currentSrc;
 
         // Toggle buttons
         var buttons = document.querySelectorAll('.map-toggle__btn');
+
         function activate(mode) {
-          currentMode = mode;
-          var newSrc;
-          if (mode === 'auto') newSrc = autoSrc();
-          else if (mode === 'full') newSrc = FULL;
-          else newSrc = LITE;
+          var newSrc = mode === 'full' ? FULL : LITE;
 
           if (newSrc !== currentSrc) {
             currentSrc = newSrc;
@@ -118,6 +106,9 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
             }
           }
         }
+
+        // Set initial active state based on auto-detection
+        activate(initialMode);
 
         for (var i = 0; i < buttons.length; i++) {
           buttons[i].addEventListener('click', function () {
