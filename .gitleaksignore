@@ -3,3 +3,7 @@ public/viz/gta-crime-map.html:generic-api-key:386
 public/viz/gta-crime-map.html:generic-api-key:7379
 public/viz/gta-crime-map-lite.html:generic-api-key:386
 public/viz/gta-crime-map-lite.html:generic-api-key:7380
+# Commit-pinned fingerprints for the prior lite artifact (gitleaks CI scans all
+# PR commits, so old-revision false positives need their own entries)
+7bf841d943ca47c22a7be50f95db202366653bec:public/viz/gta-crime-map-lite.html:generic-api-key:385
+7bf841d943ca47c22a7be50f95db202366653bec:public/viz/gta-crime-map-lite.html:generic-api-key:7378
