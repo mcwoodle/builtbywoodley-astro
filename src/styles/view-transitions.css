@@ -36,20 +36,12 @@
 
 /* ── Named elements (shared morphs only) ───── */
 
-/* The active homepage button's seed dot (not the arrow) lifts out and flies
-   into the nav home dot, which then blooms into the house. Gated by direction
-   so only the relevant button's dot is named: the Software dot on slide-right
-   (Home->/software), the About dot on slide-down (Home->/about). The internal
-   flight name stays "arrow-fly" (the shared travel-name reused by the target
-   placeholder and the z-index/timing/keyframes below) — it now carries the
-   seed dot. The arrows are unnamed, so they stay in the root snapshot and pan
-   with the page. Back-nav reverses automatically (the type stays active). */
-html:active-view-transition-type(slide-right) .vt-seed-software {
-  view-transition-name: arrow-fly;
-}
-html:active-view-transition-type(slide-down) .vt-seed-about {
-  view-transition-name: arrow-fly;
-}
+/* The homepage button seed dots get their `view-transition-name: arrow-fly`
+   assigned deterministically in JS by the pageswap/pagereveal scripts in
+   index.astro, BEFORE the snapshot is captured. The previous type-gated CSS
+   assignment (e.g. `:active-view-transition-type(slide-right) .vt-seed-software`)
+   had to land on the OUTGOING snapshot during pageswap, which was timing-fragile
+   and intermittently skipped the dot so it never lifted into the flying group. */
 
 /* Shared-element morph: the "Builder | Mentor | Father" tagline. */
 html:active-view-transition-type(slide-down) .vt-tagline {

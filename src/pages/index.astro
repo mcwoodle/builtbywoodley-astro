@@ -48,51 +48,46 @@ import "../styles/view-transitions.css";
        slide-down, back-nav) so CSS picks the correct root-slide direction. -->
 
   <script is:inline>
-    /* Before the view-transition snapshot is taken, tag the transition
-       with direction types so CSS can pick the right root-slide
-       animations. "slide-right" for horizontal destinations (software,
-       blog), "slide-down" for vertical ones (about). "back-nav" is
-       added on traversals (browser back/forward) to reverse the slide
-       direction. */
+    /* Tag each homepage view transition with direction + home-edge types,
+       and deterministically lift the correct button's seed dot into the
+       flying "arrow-fly" group BEFORE the snapshot is captured. We assign
+       the seed's view-transition-name here in JS rather than via a
+       type-gated CSS rule because the CSS assignment on the OUTGOING
+       snapshot was timing-fragile and intermittently skipped the dot. */
+    function applySeed(toAbout) {
+      var sw = document.querySelector('.vt-seed-software');
+      var ab = document.querySelector('.vt-seed-about');
+      if (sw) sw.style.viewTransitionName = toAbout ? 'none' : 'arrow-fly';
+      if (ab) ab.style.viewTransitionName = toAbout ? 'arrow-fly' : 'none';
+    }
+
     window.addEventListener('pageswap', function (e) {
       if (!e.viewTransition) return;
-      var url = new URL(e.activation.entry.url);
-      var path = url.pathname;
-      if (path.startsWith('/about')) {
-        e.viewTransition.types.add('slide-down');
-      } else {
-        e.viewTransition.types.add('slide-right');
-      }
-      if (e.activation.navigationType === 'traverse') {
+      e.viewTransition.types.add('home-edge');
+      var entry = e.activation && e.activation.entry;
+      var path = entry ? new URL(entry.url).pathname : '';
+      var toAbout = path.indexOf('/about') === 0;
+      e.viewTransition.types.add(toAbout ? 'slide-down' : 'slide-right');
+      applySeed(toAbout);
+      if (e.activation && e.activation.navigationType === 'traverse') {
         e.viewTransition.types.add('back-nav');
       }
-      // The homepage is always one end of a home-edge nav, so the
-      // arrow-fly / dot->house choreography always applies here.
-      e.viewTransition.types.add('home-edge');
     });
 
-    /* When arriving back on the homepage (e.g. browser back), tag the
-       transition type based on where we came from so the root enter
-       animation matches. Also tag "back-nav" for traversals so CSS
-       reverses the slide direction. */
     window.addEventListener('pagereveal', function (e) {
       if (!e.viewTransition) return;
+      e.viewTransition.types.add('home-edge');
       var nav = navigation.activation;
-      if (!nav) return;
-      var from = nav.from;
+      var from = nav && nav.from;
       if (from) {
         var path = new URL(from.url).pathname;
-        if (path.startsWith('/about')) {
-          e.viewTransition.types.add('slide-down');
-        } else {
-          e.viewTransition.types.add('slide-right');
-        }
+        var toAbout = path.indexOf('/about') === 0;
+        e.viewTransition.types.add(toAbout ? 'slide-down' : 'slide-right');
+        applySeed(toAbout);
       }
-      if (nav.navigationType === 'traverse') {
+      if (nav && nav.navigationType === 'traverse') {
         e.viewTransition.types.add('back-nav');
       }
-      // The homepage is always one end of a home-edge nav.
-      e.viewTransition.types.add('home-edge');
     });
   </script>
 </BaseLayout>
