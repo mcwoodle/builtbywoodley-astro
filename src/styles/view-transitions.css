@@ -36,17 +36,18 @@
 
 /* ── Named elements (shared morphs only) ───── */
 
-/* The homepage button arrows fly up into the nav and BECOME the home icon.
-   Gated by type so only the arrow for the active direction is lifted: the
-   Software arrow on slide-right (Home->/software), the About arrow on
-   slide-down (Home->/about). On the homepage the nav dot is NOT named
-   home-mark (TopNav only adds vt-home-mark off the homepage), so the arrow
-   is the sole old-side home-mark and morphs cleanly into the destination
-   house. Back-nav reverses automatically (the type stays active). */
-html:active-view-transition-type(slide-right) .vt-craft-arrow-software {
+/* The active homepage button's seed dot (not the arrow) lifts out and flies
+   into the nav home dot, which then blooms into the house. Gated by direction
+   so only the relevant button's dot is named: the Software dot on slide-right
+   (Home->/software), the About dot on slide-down (Home->/about). The internal
+   flight name stays "arrow-fly" (the shared travel-name reused by the target
+   placeholder and the z-index/timing/keyframes below) — it now carries the
+   seed dot. The arrows are unnamed, so they stay in the root snapshot and pan
+   with the page. Back-nav reverses automatically (the type stays active). */
+html:active-view-transition-type(slide-right) .vt-seed-software {
   view-transition-name: arrow-fly;
 }
-html:active-view-transition-type(slide-down) .vt-craft-arrow {
+html:active-view-transition-type(slide-down) .vt-seed-about {
   view-transition-name: arrow-fly;
 }
 

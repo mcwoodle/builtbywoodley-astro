@@ -583,6 +583,21 @@ main.home-main {
   background: color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
+/* A registration dot in place of the part number. On the homepage it lifts
+   off and flies up to merge into the nav's home dot before that dot blooms
+   into the house (view-transitions.css). Sized to match .home-dot (7px). */
+.craft-link-seed {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+.craft-link:hover .craft-link-seed,
+.craft-link:focus-visible .craft-link-seed {
+  box-shadow: 0 0 0 4px var(--color-accent-soft);
+}
+
 /* The arrow travels its direction of pull: along the grain for on-site
    links, up and out for off-site ones (.craft-link-out). */
 .craft-link-arrow {
