@@ -4,7 +4,7 @@ import "../styles/view-transitions.css";
 ---
 
 <BaseLayout>
-  <main class="vt-home-hero" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
+  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
     <h1 class="page-heading" style="margin-bottom: var(--space-2); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
     <p class="page-subtitle vt-tagline" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
@@ -34,21 +34,22 @@ import "../styles/view-transitions.css";
     </div>
   </div>
 
-  <!-- View transitions:
-       - vt-craft-arrow on the About link's down-arrow morphs into the
-         pill-dot on the About page header.
-       - vt-craft-arrow-software on the Software link's right-arrow morphs
-         into the pill-dot on the Software page header.
-       - vt-tagline on the "Builder | Mentor | Father" subtitle morphs into
-         the smaller sub-header on the About page.
-       - The pageswap script below tags the document with data-vt-direction
-         so CSS can pick direction-specific hero exit animations. -->
+  <!-- View transitions — "panning canvas" model:
+       The whole page slides as the root snapshot. Named elements (tagline,
+       arrows, nav bar) are lifted out and morph independently.
+       - vt-craft-arrow: About link arrow morphs into About header pill-dot
+       - vt-craft-arrow-software: Software link arrow morphs into Software header pill-dot
+       - vt-tagline: "Builder | Mentor | Father" morphs into the About sub-header
+       The pageswap/pagereveal scripts below set VT types (slide-right,
+       slide-down, back-nav) so CSS picks the correct root-slide direction. -->
 
   <script is:inline>
     /* Before the view-transition snapshot is taken, tag the transition
-       with a type so CSS can pick direction-specific animations.
-       View Transition types (Level 2) are the standard mechanism for
-       per-navigation transitions in MPA view transitions. */
+       with direction types so CSS can pick the right root-slide
+       animations. "slide-right" for horizontal destinations (software,
+       blog), "slide-down" for vertical ones (about). "back-nav" is
+       added on traversals (browser back/forward) to reverse the slide
+       direction. */
     document.addEventListener('pageswap', function (e) {
       if (!e.viewTransition) return;
       var url = new URL(e.activation.entry.url);
@@ -58,13 +59,20 @@ import "../styles/view-transitions.css";
       } else {
         e.viewTransition.types.add('slide-right');
       }
+      if (e.activation.navigationType === 'traverse') {
+        e.viewTransition.types.add('back-nav');
+      }
     });
 
-    /* When arriving back on the homepage, tag the transition type based
-       on where we came from so the hero enter animation matches. */
+    /* When arriving back on the homepage (e.g. browser back), tag the
+       transition type based on where we came from so the root enter
+       animation matches. Also tag "back-nav" for traversals so CSS
+       reverses the slide direction. */
     document.addEventListener('pagereveal', function (e) {
       if (!e.viewTransition) return;
-      var from = navigation.activation && navigation.activation.from;
+      var nav = navigation.activation;
+      if (!nav) return;
+      var from = nav.from;
       if (from) {
         var path = new URL(from.url).pathname;
         if (path.startsWith('/about')) {
@@ -72,6 +80,9 @@ import "../styles/view-transitions.css";
         } else {
           e.viewTransition.types.add('slide-right');
         }
+      }
+      if (nav.navigationType === 'traverse') {
+        e.viewTransition.types.add('back-nav');
       }
     });
   </script>

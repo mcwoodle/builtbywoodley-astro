@@ -10,7 +10,7 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <BaseLayout>
-  <main class="vt-software-page">
+  <main>
     <header class="section-shell">
       <div class="surface-section">
         <div class="pill">
@@ -65,3 +65,24 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
   </main>
 </BaseLayout>
 
+<script is:inline>
+  /* Tag "slide-right" on all transitions from the Software page so CSS
+     uses the horizontal root-slide. On traversals (browser back/forward)
+     also add "back-nav" to reverse the slide direction. */
+  document.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-right');
+    if (e.activation.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
+  });
+
+  document.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-right');
+    var nav = navigation.activation;
+    if (nav && nav.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
+  });
+</script>

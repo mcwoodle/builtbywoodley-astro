@@ -1,18 +1,23 @@
 /* ─────────────────────────────────────────────
-   View Transitions
+   View Transitions — "panning canvas" model
    Imported by the homepage, the about page, the software page, and the
    mocked blog index. Cross-document view transitions require BOTH the
    outgoing and incoming page to opt in, so just those pairs animate;
    every other navigation stays a plain page load. Browsers without the
    View Transition API ignore all of this.
 
-   Choreography by destination:
-   - Home -> /software : the page slides in from the RIGHT (horizontal)
-   - Home -> /about    : the page slides in from the BOTTOM (vertical)
-   - Home -> /blog     : the page slides in from the RIGHT (horizontal)
-   Back-navigation mirrors each direction.
+   Mental model: all pages live on one large canvas laid out in a grid.
+   Navigating pans the viewport across that canvas. Both the outgoing
+   and incoming page translate together (same direction, same speed,
+   100% viewport travel) so they look like a single rigid surface.
 
-   Shared-element morphs:
+   Choreography by destination:
+   - Home -> /software : canvas pans LEFT  (home slides left, software enters right)
+   - Home -> /about    : canvas pans UP    (home slides up, about enters below)
+   - Home -> /blog     : canvas pans LEFT  (home slides left, blog enters right)
+   Back-navigation reverses each pan direction.
+
+   Shared-element morphs (lifted out of root, float independently):
    - craft-arrow       : the About link's down-arrow (↓) morphs into the
                           About page header's pill-dot
    - craft-arrow-sw    : the Software link's right-arrow (→) morphs into
@@ -26,26 +31,7 @@
   navigation: auto;
 }
 
-/* ── Named elements ─────────────────────────── */
-
-/* The home hero — exits on forward nav, enters on back nav. */
-.vt-home-hero {
-  view-transition-name: home-hero;
-}
-
-/* Destination pages — each gets its own name so we can assign
-   direction-specific keyframes. */
-.vt-blog-page {
-  view-transition-name: blog-page;
-}
-
-.vt-about-page {
-  view-transition-name: about-page;
-}
-
-.vt-software-page {
-  view-transition-name: software-page;
-}
+/* ── Named elements (shared morphs only) ───── */
 
 /* Shared-element morphs: the arrow/dot pairs. */
 .vt-craft-arrow {
@@ -61,9 +47,10 @@
   view-transition-name: tagline;
 }
 
-/* The top bar is pinned — naming it lifts it out of the root cross-fade.
+/* The top bar is pinned — naming it lifts it out of the root snapshot.
    Old and new bars are pixel-identical (the differing home mark is
-   captured separately below), so the bar stands still. */
+   captured separately below), so the bar stands still while the
+   page content slides underneath. */
 .vt-top-nav {
   view-transition-name: top-nav;
 }
@@ -74,56 +61,60 @@
   view-transition-name: home-mark;
 }
 
-/* ── HORIZONTAL transitions (blog, software) ── */
+/* ── Suppress default root cross-fade ──────── */
 
-/* Default forward: hero exits left, destination sweeps in from the right.
-   The pageswap script on the homepage sets data-vt-direction before the
-   snapshot, so we can override for vertical destinations below. */
-::view-transition-old(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
+/* By default the View Transition API cross-fades old and new root
+   snapshots. We replace that with directional slides. Disable the
+   default cross-fade (mix-blend-mode: normal prevents the additive
+   blend that causes ghosting, and we set our own keyframes). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* Prevent the default cross-fade blend */
+  mix-blend-mode: normal;
 }
 
-::view-transition-new(blog-page),
-::view-transition-new(software-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+/* ── HORIZONTAL root slide (slide-right) ───── */
+
+/* Forward: canvas pans LEFT.
+   Old root exits to the left, new root enters from the right. */
+html:active-view-transition-type(slide-right)::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
 }
 
-/* Back from horizontal destinations: page exits right, hero enters left. */
-::view-transition-old(blog-page),
-::view-transition-old(software-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
+html:active-view-transition-type(slide-right)::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-::view-transition-new(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+/* Back: canvas pans RIGHT (reverse).
+   Old root exits to the right, new root enters from the left. */
+html:active-view-transition-type(slide-right, back-nav)::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
 }
 
-/* ── VERTICAL transition (about) ───────────── */
-
-/* When the transition type is "slide-down" (navigating to /about), the
-   hero exits upward instead of to the left, and the about page enters
-   from below. The pageswap/pagereveal scripts on the homepage and about
-   page add the type to the ViewTransition object.
-   html:active-view-transition-type() is the CSS selector for VT types. */
-
-/* Forward: override hero exit to slide up when heading to /about. */
-html:active-view-transition-type(slide-down)::view-transition-old(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
+html:active-view-transition-type(slide-right, back-nav)::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
 }
 
-/* Forward: about page sweeps in from the bottom. */
-::view-transition-new(about-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+/* ── VERTICAL root slide (slide-down) ──────── */
+
+/* Forward: canvas pans UP.
+   Old root exits upward, new root enters from below. */
+html:active-view-transition-type(slide-down)::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
 }
 
-/* Back: about page exits downward. */
-::view-transition-old(about-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
+html:active-view-transition-type(slide-down)::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
 }
 
-/* Back from /about: hero returns from below (the reverse of exiting up). */
-html:active-view-transition-type(slide-down)::view-transition-new(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+/* Back: canvas pans DOWN (reverse).
+   Old root exits downward, new root enters from above. */
+html:active-view-transition-type(slide-down, back-nav)::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
+}
+
+html:active-view-transition-type(slide-down, back-nav)::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
 }
 
 /* ── Shared-element morph timing ────────────── */
@@ -143,70 +134,64 @@ html:active-view-transition-type(slide-down)::view-transition-new(home-hero) {
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The tagline morph: quicker than the page slide so the text settles
-   into place as the page finishes moving. */
+/* The tagline morph: slightly quicker than the page slide so the text
+   settles into place as the page finishes moving. */
 ::view-transition-group(tagline) {
-  animation-duration: 350ms;
+  animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Horizontal keyframes ───────────────────── */
+/* ── Keyframes ─────────────────────────────── */
+
+/* Horizontal: no opacity change — solid canvas pan. */
 
 @keyframes vt-out-left {
   to {
-    transform: translateX(-100vw);
-    opacity: 0;
+    transform: translateX(-100%);
   }
 }
 
 @keyframes vt-in-right {
   from {
-    transform: translateX(100vw);
-    opacity: 0;
+    transform: translateX(100%);
   }
 }
 
 @keyframes vt-out-right {
   to {
-    transform: translateX(100vw);
-    opacity: 0;
+    transform: translateX(100%);
   }
 }
 
 @keyframes vt-in-left {
   from {
-    transform: translateX(-100vw);
-    opacity: 0;
+    transform: translateX(-100%);
   }
 }
 
-/* ── Vertical keyframes ─────────────────────── */
+/* Vertical: no opacity change — solid canvas pan. */
 
 @keyframes vt-out-up {
   to {
-    transform: translateY(-100vh);
-    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 
 @keyframes vt-in-up {
   from {
-    transform: translateY(100vh);
-    opacity: 0;
+    transform: translateY(100%);
   }
 }
 
 @keyframes vt-out-down {
   to {
-    transform: translateY(100vh);
-    opacity: 0;
+    transform: translateY(100%);
   }
 }
 
 @keyframes vt-in-down {
   from {
-    transform: translateY(-100vh);
-    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 

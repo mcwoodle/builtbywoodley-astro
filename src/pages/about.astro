@@ -6,7 +6,7 @@ import "../styles/view-transitions.css";
 ---
 
 <BaseLayout>
-  <main class="vt-about-page">
+  <main>
     <header class="section-shell">
       <div class="surface-section">
         <div class="pill">
@@ -84,11 +84,24 @@ import "../styles/view-transitions.css";
 </BaseLayout>
 
 <script is:inline>
-  /* When leaving the About page back to home, tag the transition type
-     so CSS animates the about-page exit downward (reverse of sliding up). */
+  /* Tag "slide-down" on all transitions from the About page so CSS
+     uses the vertical root-slide. On traversals (browser back/forward)
+     also add "back-nav" to reverse the slide direction. */
   document.addEventListener('pageswap', function (e) {
     if (!e.viewTransition) return;
     e.viewTransition.types.add('slide-down');
+    if (e.activation.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
+  });
+
+  document.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-down');
+    var nav = navigation.activation;
+    if (nav && nav.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
   });
 </script>
 
