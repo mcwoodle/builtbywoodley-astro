@@ -1,10 +1,10 @@
 /* ─────────────────────────────────────────────
    View Transitions — "panning canvas" model
-   Imported by the homepage, the about page, the software page, and the
-   mocked blog index. Cross-document view transitions require BOTH the
-   outgoing and incoming page to opt in, so just those pairs animate;
-   every other navigation stays a plain page load. Browsers without the
-   View Transition API ignore all of this.
+   Imported by the homepage, the about page, the software page, detail
+   pages, and the mocked blog index. Cross-document view transitions
+   require BOTH the outgoing and incoming page to opt in, so just those
+   pairs animate; every other navigation stays a plain page load.
+   Browsers without the View Transition API ignore all of this.
 
    Mental model: all pages live on one large canvas laid out in a grid.
    Navigating pans the viewport across that canvas. Both the outgoing
@@ -15,16 +15,19 @@
    - Home -> /software : canvas pans LEFT  (home slides left, software enters right)
    - Home -> /about    : canvas pans UP    (home slides up, about enters below)
    - Home -> /blog     : canvas pans LEFT  (home slides left, blog enters right)
+   - /software -> detail : canvas pans LEFT (horizontal within software section)
    Back-navigation reverses each pan direction.
 
    Shared-element morphs (lifted out of root, float independently):
-   - craft-arrow       : the About link's down-arrow (↓) morphs into the
-                          About page header's pill-dot
-   - craft-arrow-sw    : the Software link's right-arrow (→) morphs into
-                          the Software page header's pill-dot
+   - home-mark         : the homepage button arrows fly up into the nav
+                          and BECOME the home icon (house). On the homepage
+                          the nav dot is NOT named, so the arrow is the sole
+                          old-side home-mark.
    - tagline           : the "Builder | Mentor | Father" subtitle on the
                           homepage morphs into the smaller sub-header on
                           the About page
+   - nav-crumb         : the breadcrumb text expands/collapses as you
+                          navigate into/out-of detail pages
    ───────────────────────────────────────────── */
 
 @view-transition {
@@ -33,20 +36,18 @@
 
 /* ── Named elements (shared morphs only) ───── */
 
-/* Shared-element morphs: the arrow/dot pairs.
-   Each is only lifted out of the root snapshot on the navigation where a
-   counterpart exists on the destination — gated by the active view-transition
-   type. On any other navigation the element keeps no view-transition-name, so
-   it stays part of the root and pans with the rest of the page instead of
-   orphaning (a named element with no match fades in place rather than moving).
-   The About arrow + tagline pair up only on slide-down (Home<->About); the
-   Software arrow pairs up only on slide-right (Home<->Software). */
-html:active-view-transition-type(slide-down) .vt-craft-arrow {
-  view-transition-name: craft-arrow;
-}
-
+/* The homepage button arrows fly up into the nav and BECOME the home icon.
+   Gated by type so only the arrow for the active direction is lifted: the
+   Software arrow on slide-right (Home->/software), the About arrow on
+   slide-down (Home->/about). On the homepage the nav dot is NOT named
+   home-mark (TopNav only adds vt-home-mark off the homepage), so the arrow
+   is the sole old-side home-mark and morphs cleanly into the destination
+   house. Back-nav reverses automatically (the type stays active). */
 html:active-view-transition-type(slide-right) .vt-craft-arrow-software {
-  view-transition-name: craft-arrow-sw;
+  view-transition-name: home-mark;
+}
+html:active-view-transition-type(slide-down) .vt-craft-arrow {
+  view-transition-name: home-mark;
 }
 
 /* Shared-element morph: the "Builder | Mentor | Father" tagline. */
@@ -66,6 +67,11 @@ html:active-view-transition-type(slide-down) .vt-tagline {
    house icon everywhere else. One shared name morphs them in place. */
 .vt-home-mark {
   view-transition-name: home-mark;
+}
+
+/* The breadcrumb crumb text (only present on detail pages). */
+.vt-nav-crumb {
+  view-transition-name: nav-crumb;
 }
 
 /* ── Suppress default root cross-fade ──────── */
@@ -126,16 +132,8 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
 
 /* ── Shared-element morph timing ────────────── */
 
-/* The arrows run a touch longer than the page so they visibly lead the
-   motion and are the last things to settle. */
-::view-transition-group(craft-arrow),
-::view-transition-group(craft-arrow-sw) {
-  animation-duration: 500ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* The dot/house morph keeps the arrow's tempo so both accent marks
-   settle on the same beat. */
+/* The dot/house morph keeps a slightly longer tempo so both accent marks
+   settle smoothly. */
 ::view-transition-group(home-mark) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -146,6 +144,18 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
 ::view-transition-group(tagline) {
   animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Breadcrumb crumb: gentle expand/collapse as you go deeper or shallower. */
+::view-transition-group(nav-crumb) {
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-new(nav-crumb) {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both crumb-expand;
+}
+::view-transition-old(nav-crumb) {
+  animation: 220ms ease both crumb-collapse;
 }
 
 /* ── Keyframes ─────────────────────────────── */
@@ -200,6 +210,15 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
   from {
     transform: translateY(-100%);
   }
+}
+
+/* Breadcrumb crumb expand/collapse */
+@keyframes crumb-expand {
+  from { opacity: 0; transform: translateX(-8px); clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; transform: none;            clip-path: inset(0 0 0 0); }
+}
+@keyframes crumb-collapse {
+  to { opacity: 0; transform: translateX(-8px); }
 }
 
 /* ── Reduced motion ─────────────────────────── */

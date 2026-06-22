@@ -1,5 +1,8 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
+// Opt detail pages into the view transition system so the breadcrumb
+// expand/collapse and the horizontal canvas pan animate correctly.
+import "../styles/view-transitions.css";
 
 interface Props {
   project: any;
@@ -43,3 +46,25 @@ const { project } = Astro.props;
     </article>
   </main>
 </BaseLayout>
+
+<script is:inline>
+  /* Tag "slide-right" on all transitions from detail pages so CSS
+     uses the horizontal root-slide. On traversals (browser back/forward)
+     also add "back-nav" to reverse the slide direction. */
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-right');
+    if (e.activation.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
+  });
+
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-right');
+    var nav = navigation.activation;
+    if (nav && nav.navigationType === 'traverse') {
+      e.viewTransition.types.add('back-nav');
+    }
+  });
+</script>
