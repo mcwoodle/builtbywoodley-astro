@@ -20,7 +20,7 @@ import "../../../styles/view-transitions.css";
   /* Tag "slide-right" on all transitions from the blog page so CSS
      uses the horizontal root-slide. On traversals (browser back/forward)
      also add "back-nav" to reverse the slide direction. */
-  document.addEventListener('pageswap', function (e) {
+  window.addEventListener('pageswap', function (e) {
     if (!e.viewTransition) return;
     e.viewTransition.types.add('slide-right');
     if (e.activation.navigationType === 'traverse') {
@@ -28,7 +28,7 @@ import "../../../styles/view-transitions.css";
     }
   });
 
-  document.addEventListener('pagereveal', function (e) {
+  window.addEventListener('pagereveal', function (e) {
     if (!e.viewTransition) return;
     e.viewTransition.types.add('slide-right');
     var nav = navigation.activation;

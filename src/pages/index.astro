@@ -50,7 +50,7 @@ import "../styles/view-transitions.css";
        blog), "slide-down" for vertical ones (about). "back-nav" is
        added on traversals (browser back/forward) to reverse the slide
        direction. */
-    document.addEventListener('pageswap', function (e) {
+    window.addEventListener('pageswap', function (e) {
       if (!e.viewTransition) return;
       var url = new URL(e.activation.entry.url);
       var path = url.pathname;
@@ -68,7 +68,7 @@ import "../styles/view-transitions.css";
        transition type based on where we came from so the root enter
        animation matches. Also tag "back-nav" for traversals so CSS
        reverses the slide direction. */
-    document.addEventListener('pagereveal', function (e) {
+    window.addEventListener('pagereveal', function (e) {
       if (!e.viewTransition) return;
       var nav = navigation.activation;
       if (!nav) return;

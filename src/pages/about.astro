@@ -87,7 +87,7 @@ import "../styles/view-transitions.css";
   /* Tag "slide-down" on all transitions from the About page so CSS
      uses the vertical root-slide. On traversals (browser back/forward)
      also add "back-nav" to reverse the slide direction. */
-  document.addEventListener('pageswap', function (e) {
+  window.addEventListener('pageswap', function (e) {
     if (!e.viewTransition) return;
     e.viewTransition.types.add('slide-down');
     if (e.activation.navigationType === 'traverse') {
@@ -95,7 +95,7 @@ import "../styles/view-transitions.css";
     }
   });
 
-  document.addEventListener('pagereveal', function (e) {
+  window.addEventListener('pagereveal', function (e) {
     if (!e.viewTransition) return;
     e.viewTransition.types.add('slide-down');
     var nav = navigation.activation;
