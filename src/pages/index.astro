@@ -62,6 +62,9 @@ import "../styles/view-transitions.css";
       if (e.activation.navigationType === 'traverse') {
         e.viewTransition.types.add('back-nav');
       }
+      // The homepage is always one end of a home-edge nav, so the
+      // arrow-fly / dot->house choreography always applies here.
+      e.viewTransition.types.add('home-edge');
     });
 
     /* When arriving back on the homepage (e.g. browser back), tag the
@@ -84,6 +87,8 @@ import "../styles/view-transitions.css";
       if (nav.navigationType === 'traverse') {
         e.viewTransition.types.add('back-nav');
       }
+      // The homepage is always one end of a home-edge nav.
+      e.viewTransition.types.add('home-edge');
     });
   </script>
 </BaseLayout>

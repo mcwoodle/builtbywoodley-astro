@@ -44,10 +44,10 @@
    is the sole old-side home-mark and morphs cleanly into the destination
    house. Back-nav reverses automatically (the type stays active). */
 html:active-view-transition-type(slide-right) .vt-craft-arrow-software {
-  view-transition-name: home-mark;
+  view-transition-name: arrow-fly;
 }
 html:active-view-transition-type(slide-down) .vt-craft-arrow {
-  view-transition-name: home-mark;
+  view-transition-name: arrow-fly;
 }
 
 /* Shared-element morph: the "Builder | Mentor | Father" tagline. */
@@ -67,6 +67,13 @@ html:active-view-transition-type(slide-down) .vt-tagline {
    house icon everywhere else. One shared name morphs them in place. */
 .vt-home-mark {
   view-transition-name: home-mark;
+}
+
+/* The transparent flight target over the home control on subpages. Gives
+   the arrow-fly group a destination geometry so the homepage button arrow
+   auto-travels up here while staying an arrow, then fades as it lands. */
+.vt-arrow-fly {
+  view-transition-name: arrow-fly;
 }
 
 /* The breadcrumb crumb text (only present on detail pages). */
@@ -132,11 +139,60 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
 
 /* ── Shared-element morph timing ────────────── */
 
+/* ── Paint order ────────────────────────────── */
+
+/* Lift the flying arrow and the home mark above the pinned top-nav so the
+   arrow flies OVER the bar instead of slipping behind it. Group z-index is
+   honored on ::view-transition-group() in Chromium 126+. */
+::view-transition-group(arrow-fly) { z-index: 60; }
+::view-transition-group(home-mark) { z-index: 50; }
+::view-transition-group(top-nav)   { z-index: 1; }
+
+/* ── Flying arrow (arrow-fly) ───────────────── */
+
+/* The arrow group travels from the homepage button up to the transparent
+   target over the home control. Position interpolates over 500ms to match
+   the dot/house morph below. */
+::view-transition-group(arrow-fly) {
+  animation-duration: 500ms;
+  animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1);
+}
+/* forward (leaving/arriving home): the arrow is the OLD image — stays a fully
+   opaque arrow across the travel, then vanishes right as it reaches the spot. */
+html:active-view-transition-type(home-edge)::view-transition-old(arrow-fly) {
+  animation: 500ms cubic-bezier(0.5, 0, 0.2, 1) both arrow-fly-travel;
+}
+html:active-view-transition-type(home-edge)::view-transition-new(arrow-fly) {
+  animation: 500ms linear both vt-hidden;
+}
+/* back-nav reverses the roles: the arrow is now the NEW image, flying back
+   down to the button — show it, hide the placeholder. Higher specificity
+   (two type pseudos) so it overrides the forward rules above. */
+html:active-view-transition-type(home-edge):active-view-transition-type(back-nav)::view-transition-old(arrow-fly) {
+  animation: 500ms linear both vt-hidden;
+}
+html:active-view-transition-type(home-edge):active-view-transition-type(back-nav)::view-transition-new(arrow-fly) {
+  animation: 500ms cubic-bezier(0.5, 0, 0.2, 1) both arrow-fly-travel-back;
+}
+
+/* ── Dot → house bloom (home-mark) ──────────── */
+
 /* The dot/house morph keeps a slightly longer tempo so both accent marks
    settle smoothly. */
 ::view-transition-group(home-mark) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Held to the end so the dot stays a dot while the arrow flies, then blooms
+   into the house exactly as the arrow lands. Scoped to home-edge so
+   subpage<->subpage navigations keep the plain default morph (no flicker).
+   The same keyframes read correctly both ways: on back-nav the OLD image is
+   the house and the NEW is the dot, and "hold old, bloom new" still works. */
+html:active-view-transition-type(home-edge)::view-transition-old(home-mark) {
+  animation: 500ms ease both home-mark-hold;
+}
+html:active-view-transition-type(home-edge)::view-transition-new(home-mark) {
+  animation: 500ms cubic-bezier(0.22, 1, 0.36, 1) both home-mark-bloom;
 }
 
 /* The tagline morph: slightly quicker than the page slide so the text
@@ -220,6 +276,18 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
 @keyframes crumb-collapse {
   to { opacity: 0; transform: translateX(-8px); }
 }
+
+/* Flying arrow: stays a fully opaque arrow across the travel, then vanishes
+   right as it reaches the spot (forward). Back-nav variant fades the arrow
+   in just after it leaves the home control and flies it back to the button. */
+@keyframes arrow-fly-travel { 0%, 70% { opacity: 1; } 90%, 100% { opacity: 0; } }
+@keyframes arrow-fly-travel-back { 0%, 8% { opacity: 0; } 22%, 100% { opacity: 1; } }
+@keyframes vt-hidden { from, to { opacity: 0; } }
+
+/* Dot -> house bloom: the old image (dot) holds, then the new image (house)
+   blooms in at the end as the arrow lands. */
+@keyframes home-mark-hold  { 0%, 66% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes home-mark-bloom { 0%, 58% { opacity: 0; } 100% { opacity: 1; } }
 
 /* ── Reduced motion ─────────────────────────── */
 

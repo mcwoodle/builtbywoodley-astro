@@ -26,9 +26,11 @@ const crumb = path.startsWith('/software/') && path !== '/software'
         data-tooltip={isHome ? 'You’re home' : 'Back to home'}
       >
         <!-- vt-home-mark: the dot / house morph across the home/subpage view
-             transition. On the homepage the dot is NOT named so the flying
-             arrow is the sole old-side home-mark and morphs cleanly. -->
-        <span class:list={['home-mark', { 'vt-home-mark': !isHome }]} aria-hidden="true">
+             transition. Named on EVERY page so the dot (homepage) morphs in
+             place into the house (subpages). The morph is delayed so the dot
+             holds, then blooms into the house exactly as the flying arrow
+             lands (see view-transitions.css, home-edge type). -->
+        <span class="home-mark vt-home-mark" aria-hidden="true">
           <svg
             class="home-icon"
             viewBox="0 0 24 24"
@@ -46,6 +48,14 @@ const crumb = path.startsWith('/software/') && path !== '/software'
           </svg>
           <span class="home-dot"></span>
         </span>
+        {!isHome && (
+          <!-- Transparent flight target: gives the arrow-fly view-transition
+               group a destination geometry over the home control so the
+               homepage button arrow auto-travels up here while staying an
+               arrow, then fades as it lands. Renders a box (opacity:0) but
+               does not affect layout or block clicks. -->
+          <span class="home-arrow-target vt-arrow-fly" aria-hidden="true"></span>
+        )}
       </a>
       {crumb && (
         <span class="crumb-separator" aria-hidden="true">&rsaquo;</span>
@@ -152,6 +162,24 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Transparent flight target for the arrow-fly view-transition group.
+     Centered over the home control at roughly the home-icon box size so
+     the flying arrow lands at icon scale. opacity:0 (NOT display:none /
+     visibility:hidden) so it still renders a box for the snapshot to
+     capture geometry; pointer-events:none and absolute positioning keep
+     it out of layout and out of the way of clicks. (.home-link is
+     position: relative, so this anchors to it.) */
+  .home-arrow-target {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    opacity: 0;
+    pointer-events: none;
   }
   .home-icon {
     display: block;
