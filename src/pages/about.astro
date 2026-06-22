@@ -10,15 +10,14 @@ import "../styles/view-transitions.css";
     <header class="section-shell">
       <div class="surface-section">
         <div class="pill">
-          <!-- vt-craft-arrow: where the About tag's arrow lands when the
-               view transition flies it up into this pill
-               (view-transitions.css + the homepage retarget script) -->
+          <!-- vt-craft-arrow: the About link's down-arrow morphs into this
+               dot during the home -> about view transition. -->
           <span class="pill-dot vt-craft-arrow" aria-hidden="true"></span>
           <span>About me</span>
         </div>
-        <h1 class="page-heading">Matt Woodley</h1>
-        <p class="page-subtitle">
-          Ontario, Canada
+        <h1 class="page-heading">About Me</h1>
+        <p class="page-subtitle vt-tagline" style="font-family: var(--font-display); font-size: clamp(0.85rem, 1.5vw, 1rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
+          Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Father
         </p>
       </div>
     </header>
@@ -83,6 +82,15 @@ import "../styles/view-transitions.css";
     </section>
   </main>
 </BaseLayout>
+
+<script is:inline>
+  /* When leaving the About page back to home, tag the transition type
+     so CSS animates the about-page exit downward (reverse of sliding up). */
+  document.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    e.viewTransition.types.add('slide-down');
+  });
+</script>
 
 <style>
   /* The about page's tags pick up the homepage numbering (01, 02 → 03, 04)

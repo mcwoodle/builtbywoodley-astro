@@ -1,78 +1,96 @@
 /* ─────────────────────────────────────────────
-   Home ↔ About (and Home ↔ Blog) View Transitions
-   Imported by the homepage, the mocked blog index, and the about page.
-   Cross-document view transitions require BOTH the outgoing and incoming
-   page to opt in, so just those pairs of pages animate; every other
-   navigation stays a plain page load. Browsers without the View Transition
-   API ignore all of this.
+   View Transitions
+   Imported by the homepage, the about page, the software page, and the
+   mocked blog index. Cross-document view transitions require BOTH the
+   outgoing and incoming page to opt in, so just those pairs animate;
+   every other navigation stays a plain page load. Browsers without the
+   View Transition API ignore all of this.
 
-   The choreography plays off the cut-list tag's arrow: the page follows the
-   arrow's pull — the hero slides away to the left while the destination
-   column sweeps in from the right — and the arrow itself flies ahead of the
-   page, shrinking into the accent dot of the destination header's pill. The
-   whole sequence mirrors on the way back. The About tag's arrow carries the
-   vt-craft-arrow name statically; the blog page retains its opt-in so
-   direct navigation to /mocked/blog still transitions cleanly.
+   Choreography by destination:
+   - Home -> /software : the page slides in from the RIGHT (horizontal)
+   - Home -> /about    : the page slides in from the BOTTOM (vertical)
+   - Home -> /blog     : the page slides in from the RIGHT (horizontal)
+   Back-navigation mirrors each direction.
+
+   Shared-element morphs:
+   - craft-arrow       : the About link's down-arrow (↓) morphs into the
+                          About page header's pill-dot
+   - craft-arrow-sw    : the Software link's right-arrow (→) morphs into
+                          the Software page header's pill-dot
+   - tagline           : the "Builder | Mentor | Father" subtitle on the
+                          homepage morphs into the smaller sub-header on
+                          the About page
    ───────────────────────────────────────────── */
 
 @view-transition {
   navigation: auto;
 }
 
-/* Traveling pieces. A name that exists on only one side gets an enter/exit
-   slide; the arrow/pill-dot pair shares one name across both documents, so
-   the browser morphs the clicked arrow into the header pill's dot. The blog
-   tag's arrow carries the name statically; the homepage retarget script
-   moves it to the About tag's arrow when that is the link travelled. */
+/* ── Named elements ─────────────────────────── */
+
+/* The home hero — exits on forward nav, enters on back nav. */
 .vt-home-hero {
   view-transition-name: home-hero;
 }
 
+/* Destination pages — each gets its own name so we can assign
+   direction-specific keyframes. */
 .vt-blog-page {
   view-transition-name: blog-page;
 }
 
-/* The about page rides the same rails as the blog: in from the right on the
-   way out, back out to the right on the way home. */
 .vt-about-page {
   view-transition-name: about-page;
 }
 
+.vt-software-page {
+  view-transition-name: software-page;
+}
+
+/* Shared-element morphs: the arrow/dot pairs. */
 .vt-craft-arrow {
   view-transition-name: craft-arrow;
 }
 
-/* The top bar is pinned. Naming it lifts it out of the root cross-fade, and
-   because the bar paints above the mains (z-index 100), its group stacks on
-   top — the sliding pages pass underneath it instead of over it. Old and new
-   bars are pixel-identical (the differing home mark is captured separately
-   below), so the bar simply stands still. */
+.vt-craft-arrow-software {
+  view-transition-name: craft-arrow-sw;
+}
+
+/* Shared-element morph: the "Builder | Mentor | Father" tagline. */
+.vt-tagline {
+  view-transition-name: tagline;
+}
+
+/* The top bar is pinned — naming it lifts it out of the root cross-fade.
+   Old and new bars are pixel-identical (the differing home mark is
+   captured separately below), so the bar stands still. */
 .vt-top-nav {
   view-transition-name: top-nav;
 }
 
-/* The bar's home control: a "you are here" dot on the homepage, the house
-   icon everywhere else. One shared name morphs them in place — leaving home,
-   the dot grows into the way back; returning, the house settles back into
-   the marker. */
+/* The bar's home control: a "you are here" dot on the homepage, the
+   house icon everywhere else. One shared name morphs them in place. */
 .vt-home-mark {
   view-transition-name: home-mark;
 }
 
-/* Forward: the hero exits along the arrow's line of pull… */
+/* ── HORIZONTAL transitions (blog, software) ── */
+
+/* Default forward: hero exits left, destination sweeps in from the right.
+   The pageswap script on the homepage sets data-vt-direction before the
+   snapshot, so we can override for vertical destinations below. */
 ::view-transition-old(home-hero) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
 }
 
-/* …while the destination column sweeps in behind it. */
 ::view-transition-new(blog-page),
-::view-transition-new(about-page) {
+::view-transition-new(software-page) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-/* Back: the same move, mirrored. */
+/* Back from horizontal destinations: page exits right, hero enters left. */
 ::view-transition-old(blog-page),
-::view-transition-old(about-page) {
+::view-transition-old(software-page) {
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
 }
 
@@ -80,19 +98,59 @@
   animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
 }
 
-/* The arrow runs a touch longer than the page so it visibly leads the
-   motion and is the last thing to settle. */
-::view-transition-group(craft-arrow) {
+/* ── VERTICAL transition (about) ───────────── */
+
+/* When the transition type is "slide-down" (navigating to /about), the
+   hero exits upward instead of to the left, and the about page enters
+   from below. The pageswap/pagereveal scripts on the homepage and about
+   page add the type to the ViewTransition object.
+   html:active-view-transition-type() is the CSS selector for VT types. */
+
+/* Forward: override hero exit to slide up when heading to /about. */
+html:active-view-transition-type(slide-down)::view-transition-old(home-hero) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
+}
+
+/* Forward: about page sweeps in from the bottom. */
+::view-transition-new(about-page) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+}
+
+/* Back: about page exits downward. */
+::view-transition-old(about-page) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
+}
+
+/* Back from /about: hero returns from below (the reverse of exiting up). */
+html:active-view-transition-type(slide-down)::view-transition-new(home-hero) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+}
+
+/* ── Shared-element morph timing ────────────── */
+
+/* The arrows run a touch longer than the page so they visibly lead the
+   motion and are the last things to settle. */
+::view-transition-group(craft-arrow),
+::view-transition-group(craft-arrow-sw) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The dot ⇄ house morph keeps the arrow's tempo so both accent marks settle
-   on the same beat. */
+/* The dot/house morph keeps the arrow's tempo so both accent marks
+   settle on the same beat. */
 ::view-transition-group(home-mark) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* The tagline morph: quicker than the page slide so the text settles
+   into place as the page finishes moving. */
+::view-transition-group(tagline) {
+  animation-duration: 350ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Horizontal keyframes ───────────────────── */
 
 @keyframes vt-out-left {
   to {
@@ -122,9 +180,41 @@
   }
 }
 
-/* Reduced motion: cancel the snapshot animations so the navigation resolves
-   instantly. The global reduced-motion rule can't reach these pseudo-elements
-   (they live in the top layer, outside the * / *::before net). */
+/* ── Vertical keyframes ─────────────────────── */
+
+@keyframes vt-out-up {
+  to {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes vt-in-up {
+  from {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes vt-out-down {
+  to {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes vt-in-down {
+  from {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────── */
+
+/* Cancel the snapshot animations so navigation resolves instantly with a
+   simple cross-fade. The global reduced-motion rule can't reach these
+   pseudo-elements (they live in the top layer, outside the * net). */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

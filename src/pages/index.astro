@@ -6,19 +6,19 @@ import "../styles/view-transitions.css";
 <BaseLayout>
   <main class="vt-home-hero" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
     <h1 class="page-heading" style="margin-bottom: var(--space-2); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
-    <p class="page-subtitle" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
+    <p class="page-subtitle vt-tagline" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
     </p>
-    <nav class="craft-links" aria-label="Featured links">
-      <a href="/about" class="craft-link">
+    <nav class="craft-links craft-links--vertical" aria-label="Featured links">
+      <a href="/software" class="craft-link" data-direction="right">
         <span class="craft-link-index" aria-hidden="true">01</span>
-        <span>About Me</span>
-        <span class="craft-link-arrow vt-craft-arrow" aria-hidden="true">→</span>
-      </a>
-      <a href="/software" class="craft-link">
-        <span class="craft-link-index" aria-hidden="true">02</span>
         <span>Software Projects</span>
-        <span class="craft-link-arrow" aria-hidden="true">→</span>
+        <span class="craft-link-arrow vt-craft-arrow-software" aria-hidden="true">→</span>
+      </a>
+      <a href="/about" class="craft-link" data-direction="down">
+        <span class="craft-link-index" aria-hidden="true">02</span>
+        <span>About Me</span>
+        <span class="craft-link-arrow craft-link-arrow--down vt-craft-arrow" aria-hidden="true">↓</span>
       </a>
     </nav>
   </main>
@@ -34,8 +34,45 @@ import "../styles/view-transitions.css";
     </div>
   </div>
 
-  <!-- The flying arrow: vt-craft-arrow on the About tag's arrow (the only
-       remaining craft-link with a view-transition destination) morphs into the
-       accent dot in the About page's header pill (view-transitions.css). No
-       dynamic retargeting is needed now that there is a single arrow carrier. -->
+  <!-- View transitions:
+       - vt-craft-arrow on the About link's down-arrow morphs into the
+         pill-dot on the About page header.
+       - vt-craft-arrow-software on the Software link's right-arrow morphs
+         into the pill-dot on the Software page header.
+       - vt-tagline on the "Builder | Mentor | Father" subtitle morphs into
+         the smaller sub-header on the About page.
+       - The pageswap script below tags the document with data-vt-direction
+         so CSS can pick direction-specific hero exit animations. -->
+
+  <script is:inline>
+    /* Before the view-transition snapshot is taken, tag the transition
+       with a type so CSS can pick direction-specific animations.
+       View Transition types (Level 2) are the standard mechanism for
+       per-navigation transitions in MPA view transitions. */
+    document.addEventListener('pageswap', function (e) {
+      if (!e.viewTransition) return;
+      var url = new URL(e.activation.entry.url);
+      var path = url.pathname;
+      if (path.startsWith('/about')) {
+        e.viewTransition.types.add('slide-down');
+      } else {
+        e.viewTransition.types.add('slide-right');
+      }
+    });
+
+    /* When arriving back on the homepage, tag the transition type based
+       on where we came from so the hero enter animation matches. */
+    document.addEventListener('pagereveal', function (e) {
+      if (!e.viewTransition) return;
+      var from = navigation.activation && navigation.activation.from;
+      if (from) {
+        var path = new URL(from.url).pathname;
+        if (path.startsWith('/about')) {
+          e.viewTransition.types.add('slide-down');
+        } else {
+          e.viewTransition.types.add('slide-right');
+        }
+      }
+    });
+  </script>
 </BaseLayout>

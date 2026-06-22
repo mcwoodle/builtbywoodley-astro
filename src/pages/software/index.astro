@@ -2,17 +2,21 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
+// Opt this page into the home <-> software slide transition.
+import "../../styles/view-transitions.css";
 
 const entries = await getCollection("software");
 const sorted = entries.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <BaseLayout>
-  <main>
+  <main class="vt-software-page">
     <header class="section-shell">
       <div class="surface-section">
         <div class="pill">
-          <span class="pill-dot" aria-hidden="true"></span>
+          <!-- vt-craft-arrow-software: the Software link's right-arrow morphs
+               into this dot during the home -> software view transition. -->
+          <span class="pill-dot vt-craft-arrow-software" aria-hidden="true"></span>
           <span>Software Projects</span>
         </div>
         <h1 class="page-heading">Software Projects</h1>

@@ -612,6 +612,30 @@ main.home-main {
   transform: translate(5px, -5px);
 }
 
+/* Vertical column variant for the homepage nav — stacks links in a
+   centered single column instead of the default inline row. */
+.craft-links--vertical {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Down-pointing arrow modifier — the About link's arrow points downward
+   and animates along the Y axis instead of X. */
+.craft-link-arrow--down {
+  display: inline-block;
+}
+
+.craft-link:hover .craft-link-arrow--down,
+.craft-link:focus-visible .craft-link-arrow--down {
+  transform: translateY(3px);
+}
+
+.craft-link:active .craft-link-arrow--down {
+  transform: translateY(8px);
+  transition-duration: 0.1s;
+}
+
 /* ─────────────────────────────────────────────
    Project Entry / Blog Entry
    ───────────────────────────────────────────── */
