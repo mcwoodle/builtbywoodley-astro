@@ -33,17 +33,24 @@
 
 /* ── Named elements (shared morphs only) ───── */
 
-/* Shared-element morphs: the arrow/dot pairs. */
-.vt-craft-arrow {
+/* Shared-element morphs: the arrow/dot pairs.
+   Each is only lifted out of the root snapshot on the navigation where a
+   counterpart exists on the destination — gated by the active view-transition
+   type. On any other navigation the element keeps no view-transition-name, so
+   it stays part of the root and pans with the rest of the page instead of
+   orphaning (a named element with no match fades in place rather than moving).
+   The About arrow + tagline pair up only on slide-down (Home<->About); the
+   Software arrow pairs up only on slide-right (Home<->Software). */
+html:active-view-transition-type(slide-down) .vt-craft-arrow {
   view-transition-name: craft-arrow;
 }
 
-.vt-craft-arrow-software {
+html:active-view-transition-type(slide-right) .vt-craft-arrow-software {
   view-transition-name: craft-arrow-sw;
 }
 
 /* Shared-element morph: the "Builder | Mentor | Father" tagline. */
-.vt-tagline {
+html:active-view-transition-type(slide-down) .vt-tagline {
   view-transition-name: tagline;
 }
 
