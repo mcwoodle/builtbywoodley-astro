@@ -142,41 +142,43 @@ const description = "Stuff that I've built";
             var n = getComputedStyle(el).viewTransitionName;
             if (n && n !== 'none') (map[n] = map[n] || []).push(el);
           });
-          var dups = Object.keys(map).filter(function (k) { return map[k].length > 1; });
-          return { list: Object.keys(map), dups: dups };
+          return { list: Object.keys(map), dups: Object.keys(map).filter(function (k) { return map[k].length > 1; }) };
         }
         function badge(msg, bad) {
           var d = document.createElement('div');
           d.textContent = msg;
-          d.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:92vw;' +
-            'font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;' +
+          d.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:94vw;' +
+            'font:11px/1.35 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;' +
             'color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);background:' + (bad ? '#b00020' : '#0a7d2c');
           document.body.appendChild(d);
-          setTimeout(function () { d.remove(); }, bad ? 8000 : 1600);
+          setTimeout(function () { d.remove(); }, bad ? 9000 : 1500);
         }
         addEventListener('pageswap', function (e) {
           var s = scan();
-          console.log('[VTDBG] pageswap@' + location.pathname + ' vt=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
-            ' names=[' + s.list.join(',') + '] DUPS=' + JSON.stringify(s.dups));
-          if (s.dups.length) badge('OUT DUP @' + location.pathname + ': ' + s.dups.join(','), true);
+          var dest = '?';
+          try { dest = (e.activation && e.activation.entry) ? new URL(e.activation.entry.url).pathname : '?'; } catch (_) {}
+          var nav = (e.activation && e.activation.navigationType) || '?';
+          var rec = 'out=' + (e.viewTransition ? 'ACTIVE' : 'NULL') + ' from=' + location.pathname + ' dest=' + dest + ' nav=' + nav;
+          try { sessionStorage.setItem('vtdbg', rec); } catch (_) {}
+          console.log('[VTDBG] pageswap ' + rec + ' dups=' + JSON.stringify(s.dups));
         });
         addEventListener('pagereveal', function (e) {
           var s = scan();
           var t0 = performance.now();
-          console.log('[VTDBG] pagereveal@' + location.pathname + ' vt=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
-            ' names=[' + s.list.join(',') + '] DUPS=' + JSON.stringify(s.dups));
+          var prev = '(none)';
+          try { prev = sessionStorage.getItem('vtdbg') || '(none)'; } catch (_) {}
+          var inNav = (navigation.activation && navigation.activation.navigationType) || '?';
+          console.log('[VTDBG] pagereveal@' + location.pathname + ' in=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
+            ' inNav=' + inNav + ' | ' + prev + ' dups=' + JSON.stringify(s.dups));
           if (!e.viewTransition) {
-            badge('NO-VT @' + location.pathname + (s.dups.length ? ' DUP:' + s.dups.join(',') : ''), true);
+            badge('NO-VT  in@' + location.pathname + '  nav=' + inNav + '\n' + prev, true);
             return;
           }
           e.viewTransition.ready.then(
-            function () { badge('VT OK @' + location.pathname, false); },
+            function () { badge('OK @' + location.pathname, false); },
             function (err) {
-              var ms = (performance.now() - t0).toFixed(0);
-              badge('SKIPPED @' + location.pathname + ' (' + ms + 'ms)\n' + err.name + ': ' + err.message +
-                (s.dups.length ? '\nDUP: ' + s.dups.join(',') : '\n(no duplicate name found)'), true);
-              console.log('[VTDBG] ready REJECT @' + location.pathname + ' after ' + ms + 'ms :: ' + err +
-                ' DUPS=' + JSON.stringify(s.dups));
+              badge('SKIP @' + location.pathname + '  ' + (performance.now() - t0).toFixed(0) + 'ms\n' +
+                err.name + '\nin nav=' + inNav + '\n' + prev + (s.dups.length ? '\nDUP ' + s.dups.join(',') : ''), true);
             }
           );
         });
