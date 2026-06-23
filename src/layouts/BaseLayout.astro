@@ -133,5 +133,54 @@ const description = "Stuff that I've built";
     <script>
       import '../scripts/storyscroll';
     </script>
+    <!-- ⚠️ TEMP VT-SKIP DIAGNOSTIC — remove after capturing the cause (see PR #48) -->
+    <script is:inline>
+      (function () {
+        function scan() {
+          var map = {};
+          document.querySelectorAll('[class*="vt-"]').forEach(function (el) {
+            var n = getComputedStyle(el).viewTransitionName;
+            if (n && n !== 'none') (map[n] = map[n] || []).push(el);
+          });
+          var dups = Object.keys(map).filter(function (k) { return map[k].length > 1; });
+          return { list: Object.keys(map), dups: dups };
+        }
+        function badge(msg, bad) {
+          var d = document.createElement('div');
+          d.textContent = msg;
+          d.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:92vw;' +
+            'font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;' +
+            'color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);background:' + (bad ? '#b00020' : '#0a7d2c');
+          document.body.appendChild(d);
+          setTimeout(function () { d.remove(); }, bad ? 8000 : 1600);
+        }
+        addEventListener('pageswap', function (e) {
+          var s = scan();
+          console.log('[VTDBG] pageswap@' + location.pathname + ' vt=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
+            ' names=[' + s.list.join(',') + '] DUPS=' + JSON.stringify(s.dups));
+          if (s.dups.length) badge('OUT DUP @' + location.pathname + ': ' + s.dups.join(','), true);
+        });
+        addEventListener('pagereveal', function (e) {
+          var s = scan();
+          var t0 = performance.now();
+          console.log('[VTDBG] pagereveal@' + location.pathname + ' vt=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
+            ' names=[' + s.list.join(',') + '] DUPS=' + JSON.stringify(s.dups));
+          if (!e.viewTransition) {
+            badge('NO-VT @' + location.pathname + (s.dups.length ? ' DUP:' + s.dups.join(',') : ''), true);
+            return;
+          }
+          e.viewTransition.ready.then(
+            function () { badge('VT OK @' + location.pathname, false); },
+            function (err) {
+              var ms = (performance.now() - t0).toFixed(0);
+              badge('SKIPPED @' + location.pathname + ' (' + ms + 'ms)\n' + err.name + ': ' + err.message +
+                (s.dups.length ? '\nDUP: ' + s.dups.join(',') : '\n(no duplicate name found)'), true);
+              console.log('[VTDBG] ready REJECT @' + location.pathname + ' after ' + ms + 'ms :: ' + err +
+                ' DUPS=' + JSON.stringify(s.dups));
+            }
+          );
+        });
+      })();
+    </script>
   </body>
 </html>
