@@ -1,10 +1,8 @@
 /* ─────────────────────────────────────────────
    View Transitions — "panning canvas" model
-   Imported by the homepage, the about page, the software page, detail
-   pages, and the mocked blog index. Cross-document view transitions
-   require BOTH the outgoing and incoming page to opt in, so just those
-   pairs animate; every other navigation stays a plain page load.
-   Browsers without the View Transition API ignore all of this.
+   Imported by BaseLayout so every same-origin page has the required
+   cross-document opt-in. Browsers without the View Transition API ignore all
+   of this.
 
    Mental model: all pages live on one large canvas laid out in a grid.
    Navigating pans the viewport across that canvas. Both the outgoing

@@ -550,10 +550,8 @@ main.home-main {
   bottom: 5px;
   height: 5px;
   background:
-    repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 7px)
-      left bottom / 100% 4px no-repeat,
-    linear-gradient(var(--tick-color), var(--tick-color))
-      left bottom / 100% 1px no-repeat;
+    repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 7px) left bottom / 100% 4px no-repeat,
+    linear-gradient(var(--tick-color), var(--tick-color)) left bottom / 100% 1px no-repeat;
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
@@ -790,18 +788,14 @@ main.home-main {
   margin-bottom: calc(var(--space-5) * -1);
   overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 55%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 55%,
-    transparent 100%
-  );
+  -webkit-mask-image: linear-gradient(to bottom,
+      #000 0%,
+      #000 55%,
+      transparent 100%);
+  mask-image: linear-gradient(to bottom,
+      #000 0%,
+      #000 55%,
+      transparent 100%);
 }
 
 .carousel-card-media img {
@@ -1053,8 +1047,8 @@ main.home-main {
   line-height: 1.75;
 }
 
-:root:not([data-theme-family="original"]) .project-content > p,
-:root:not([data-theme-family="original"]) .prose > p {
+:root:not([data-theme-family="original"]) .project-content>p,
+:root:not([data-theme-family="original"]) .prose>p {
   max-width: 68ch;
   text-wrap: pretty;
 }
@@ -1118,12 +1112,9 @@ main.home-main {
   margin: var(--space-7) auto 0;
   opacity: 1;
   background:
-    repeating-linear-gradient(to right, var(--color-accent) 0 1px, transparent 1px 60px)
-      left bottom / 100% 11px no-repeat,
-    repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 12px)
-      left bottom / 100% 6px no-repeat,
-    linear-gradient(var(--tick-color), var(--tick-color))
-      left bottom / 100% 1px no-repeat;
+    repeating-linear-gradient(to right, var(--color-accent) 0 1px, transparent 1px 60px) left bottom / 100% 11px no-repeat,
+    repeating-linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 12px) left bottom / 100% 6px no-repeat,
+    linear-gradient(var(--tick-color), var(--tick-color)) left bottom / 100% 1px no-repeat;
 }
 
 /* ── Carousel cards: cleaner, crisper, editorial ── */
@@ -1141,6 +1132,7 @@ main.home-main {
 
 /* ── Editorial responsive tweaks ── */
 @media (max-width: 720px) {
+
   /* Larger type on phones — the desktop scale reads small at arm's length. */
   :root:not([data-theme-family="original"]) {
     --fs-body: 1.0625rem;
@@ -1181,8 +1173,8 @@ main.home-main {
   /* Full-width text on phones; the measure cap only helps on wide screens.
      Greedy wrapping too — `pretty` leaves short, ragged lines on a narrow
      column, which reads as wasted space along the right edge. */
-  :root:not([data-theme-family="original"]) .project-content > p,
-  :root:not([data-theme-family="original"]) .prose > p {
+  :root:not([data-theme-family="original"]) .project-content>p,
+  :root:not([data-theme-family="original"]) .prose>p {
     max-width: none;
     text-wrap: wrap;
   }
