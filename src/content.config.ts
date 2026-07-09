@@ -2,19 +2,25 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 type ViewTransitionAnimationMode = 'body-transform' | 'disabled' | 'native';
+type ViewTransitionAnimationRule = {
+  userAgentPattern: string;
+  mode: ViewTransitionAnimationMode;
+};
 
-// Browser-specific view-transition behavior:
+// User-agent-specific view-transition behavior:
 // - body-transform: skip native snapshots and animate body transforms.
 // - disabled: disable cross-document animation.
 // - native: use the original browser-native transitions.
-export const viewTransitionAnimationByBrowser = {
+export const viewTransitionAnimationConfig = {
   default: 'native',
-  edge: 'body-transform',
-  chrome: 'native',
-} as const satisfies { default: ViewTransitionAnimationMode } & Record<
-  string,
-  ViewTransitionAnimationMode
->;
+  rules: [
+    { userAgentPattern: '\\bEdg(?:e|A|iOS)?/', mode: 'body-transform' },
+    { userAgentPattern: '\\bFirefox\\/', mode: 'body-transform' },
+  ],
+} as const satisfies {
+  default: ViewTransitionAnimationMode;
+  rules: readonly ViewTransitionAnimationRule[];
+};
 
 const projectSchema = ({ image }: { image: any }) =>
   z.object({
