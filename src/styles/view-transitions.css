@@ -36,25 +36,25 @@
   background: var(--vt-bg, var(--color-bg));
 }
 
-/* The configured Edge fallback keeps the native snapshot layer effectively
+/* The configured body-transform fallback keeps the native snapshot layer effectively
    instant; BaseLayout drives visible motion with body transforms. */
-html[data-vt-animation='edge']::view-transition-group(*),
-html[data-vt-animation='edge']::view-transition-old(*),
-html[data-vt-animation='edge']::view-transition-new(*) {
+html[data-vt-animation='body-transform']::view-transition-group(*),
+html[data-vt-animation='body-transform']::view-transition-old(*),
+html[data-vt-animation='body-transform']::view-transition-new(*) {
   animation-delay: 0ms !important;
   animation-duration: 1ms !important;
   animation-fill-mode: both !important;
   mix-blend-mode: normal !important;
 }
 
-html[data-vt-animation='none']::view-transition-group(*),
-html[data-vt-animation='none']::view-transition-old(*),
-html[data-vt-animation='none']::view-transition-new(*) {
+html[data-vt-animation='disabled']::view-transition-group(*),
+html[data-vt-animation='disabled']::view-transition-old(*),
+html[data-vt-animation='disabled']::view-transition-new(*) {
   animation: none !important;
   mix-blend-mode: normal !important;
 }
 
-html[data-vt-animation='edge'] {
+html[data-vt-animation='body-transform'] {
   overflow-x: clip;
 }
 

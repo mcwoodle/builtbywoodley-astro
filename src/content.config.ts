@@ -1,16 +1,16 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
-type ViewTransitionAnimationMode = 'edge' | 'none' | 'chrome';
+type ViewTransitionAnimationMode = 'body-transform' | 'disabled' | 'native';
 
 // Browser-specific view-transition behavior:
-// - edge: use the Edge body-transform fallback animation.
-// - none: disable cross-document animation.
-// - chrome: use the original native transitions tuned in Chrome.
+// - body-transform: skip native snapshots and animate body transforms.
+// - disabled: disable cross-document animation.
+// - native: use the original browser-native transitions.
 export const viewTransitionAnimationByBrowser = {
-  default: 'chrome',
-  edge: 'edge',
-  chrome: 'chrome',
+  default: 'native',
+  edge: 'body-transform',
+  chrome: 'native',
 } as const satisfies { default: ViewTransitionAnimationMode } & Record<
   string,
   ViewTransitionAnimationMode

@@ -39,7 +39,7 @@ const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimation
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
         var FAMILIES = { editorial: 1, original: 1 };
-        var TRANSITION_MODES = { edge: 1, none: 1, chrome: 1 };
+        var TRANSITION_MODES = { 'body-transform': 1, disabled: 1, native: 1 };
         var BG = {
           editorial: { light: '#FAF8F4', dark: '#15120F' },
           original: { light: '#F5F0EB', dark: '#1A1613' },
@@ -107,7 +107,7 @@ const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimation
         }
 
         function configuredTransitionMode(type) {
-          var config = { default: 'chrome' };
+          var config = { default: 'native' };
           try {
             var configNode = document.getElementById('view-transition-animation-config');
             if (configNode && configNode.textContent) {
@@ -118,8 +118,8 @@ const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimation
             /* Malformed config should not break page rendering. */
           }
 
-          var mode = config[type] || config.default || 'chrome';
-          return TRANSITION_MODES[mode] ? mode : 'chrome';
+          var mode = config[type] || config.default || 'native';
+          return TRANSITION_MODES[mode] ? mode : 'native';
         }
 
         // Apply a mode: the resolved colour theme (always light/dark) plus the
@@ -143,18 +143,18 @@ const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimation
           if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
         }
 
-        // The configured "none" mode disables cross-document animation while
+        // The configured "disabled" mode disables cross-document animation while
         // still allowing ordinary navigation and page rendering to proceed.
-        if (transitionMode === 'none') {
+        if (transitionMode === 'disabled') {
           addEventListener('pageswap', skipNativeViewTransition, { capture: true });
           addEventListener('pagereveal', skipNativeViewTransition, { capture: true });
         }
 
-        // The configured "edge" mode uses a CSS transform fallback: skip the
-        // native transition, record direction before navigation, then animate
-        // the next page in from that side.
+        // The configured "body-transform" mode uses a CSS transform fallback:
+        // skip the native transition, record direction before navigation, then
+        // animate the next page in from that side.
         try {
-          if (currentBrowserType === 'edge' && transitionMode === 'edge') {
+          if (currentBrowserType === 'edge' && transitionMode === 'body-transform') {
             var EDGE_TRANSITION_KEY = 'edge-fallback-transition';
             try {
               var pending = sessionStorage.getItem(EDGE_TRANSITION_KEY);
