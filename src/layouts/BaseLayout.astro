@@ -100,17 +100,108 @@ const description = "Stuff that I've built";
         window.__applyThemeMode = applyMode;
 
         // Edge currently shows intermittent light compositor flashes during
-        // cross-document View Transitions on this site. Keep normal navigation
-        // there and let Chromium/Chrome use the animated transition path.
+        // cross-document View Transitions on this site. It gets a CSS transform
+        // fallback instead: skip the native transition, record direction before
+        // navigation, then animate the next page in from that side.
         try {
           if (/\bEdg\//.test(navigator.userAgent)) {
+            var EDGE_TRANSITION_KEY = 'edge-fallback-transition';
             root.setAttribute('data-browser', 'edge');
+            try {
+              var pending = sessionStorage.getItem(EDGE_TRANSITION_KEY);
+              if (pending) {
+                sessionStorage.removeItem(EDGE_TRANSITION_KEY);
+                if (/^(left|right|up|down)$/.test(pending)) {
+                  root.setAttribute('data-edge-enter', pending);
+                }
+              }
+            } catch (err) {
+              /* Storage may be unavailable; Edge still navigates normally. */
+            }
+
             var skipEdgeTransition = function (event) {
               var vt = event && event.viewTransition;
               if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
             };
             addEventListener('pageswap', skipEdgeTransition, { capture: true });
             addEventListener('pagereveal', skipEdgeTransition, { capture: true });
+
+            function normalizedPath(url) {
+              var path = url.pathname.replace(/\/+$/, '');
+              return path || '/';
+            }
+
+            function routePoint(path) {
+              if (path === '/') return { x: 0, y: 0 };
+              if (path === '/about') return { x: 0, y: 1 };
+              if (path === '/software') return { x: 1, y: 0 };
+              if (path.indexOf('/software/') === 0) return { x: 2, y: 0 };
+              if (path === '/blog' || path === '/mocked/blog') return { x: 1, y: 0 };
+              if (path.indexOf('/blog/') === 0 || path.indexOf('/mocked/blog/') === 0) {
+                return { x: 2, y: 0 };
+              }
+              return null;
+            }
+
+            function fallbackDirection(anchor, targetUrl) {
+              var from = routePoint(normalizedPath(location));
+              var to = routePoint(normalizedPath(targetUrl));
+              if (from && to) {
+                var dx = to.x - from.x;
+                var dy = to.y - from.y;
+                if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) return dx > 0 ? 'right' : 'left';
+                if (dy !== 0) return dy > 0 ? 'down' : 'up';
+              }
+              if (anchor && anchor.dataset.direction === 'down') return 'down';
+              return 'right';
+            }
+
+            function shouldAnimateNavigation(event, anchor, targetUrl) {
+              if (event.defaultPrevented) return false;
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return false;
+              }
+              if (!anchor || anchor.target || anchor.hasAttribute('download')) return false;
+              if (targetUrl.origin !== location.origin) return false;
+              if (targetUrl.pathname === location.pathname && targetUrl.search === location.search) {
+                return false;
+              }
+              if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return false;
+              }
+              return true;
+            }
+
+            addEventListener('click', function (event) {
+              var anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+              if (!anchor) return;
+              var targetUrl;
+              try {
+                targetUrl = new URL(anchor.href, location.href);
+              } catch (err) {
+                return;
+              }
+              if (!shouldAnimateNavigation(event, anchor, targetUrl)) return;
+
+              var direction = fallbackDirection(anchor, targetUrl);
+              event.preventDefault();
+              root.setAttribute('data-edge-exit', direction);
+              try {
+                sessionStorage.setItem(EDGE_TRANSITION_KEY, direction);
+              } catch (err) {
+                /* Ignore storage failures; the exit animation can still run. */
+              }
+
+              var finished = false;
+              var go = function (animationEvent) {
+                if (animationEvent && animationEvent.target !== document.body) return;
+                if (finished) return;
+                finished = true;
+                location.href = targetUrl.href;
+              };
+              document.body.addEventListener('animationend', go, { once: true });
+              setTimeout(go, 480);
+            }, { capture: true });
           }
         } catch (e) {
           /* Browser detection is best-effort; unsupported environments still navigate. */
@@ -167,57 +258,6 @@ const description = "Stuff that I've built";
     <slot />
     <script>
       import '../scripts/storyscroll';
-    </script>
-    <!-- ⚠️ TEMP VT-SKIP DIAGNOSTIC — remove after capturing the cause (see PR #48) -->
-    <script is:inline>
-      (function () {
-        function scan() {
-          var map = {};
-          document.querySelectorAll('[class*="vt-"]').forEach(function (el) {
-            var n = getComputedStyle(el).viewTransitionName;
-            if (n && n !== 'none') (map[n] = map[n] || []).push(el);
-          });
-          return { list: Object.keys(map), dups: Object.keys(map).filter(function (k) { return map[k].length > 1; }) };
-        }
-        function badge(msg, bad) {
-          var d = document.createElement('div');
-          d.textContent = msg;
-          d.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;max-width:94vw;' +
-            'font:11px/1.35 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;' +
-            'color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.45);background:' + (bad ? '#b00020' : '#0a7d2c');
-          document.body.appendChild(d);
-          setTimeout(function () { d.remove(); }, bad ? 9000 : 1500);
-        }
-        addEventListener('pageswap', function (e) {
-          var s = scan();
-          var dest = '?';
-          try { dest = (e.activation && e.activation.entry) ? new URL(e.activation.entry.url).pathname : '?'; } catch (_) {}
-          var nav = (e.activation && e.activation.navigationType) || '?';
-          var rec = 'out=' + (e.viewTransition ? 'ACTIVE' : 'NULL') + ' from=' + location.pathname + ' dest=' + dest + ' nav=' + nav;
-          try { sessionStorage.setItem('vtdbg', rec); } catch (_) {}
-          console.log('[VTDBG] pageswap ' + rec + ' dups=' + JSON.stringify(s.dups));
-        });
-        addEventListener('pagereveal', function (e) {
-          var s = scan();
-          var t0 = performance.now();
-          var prev = '(none)';
-          try { prev = sessionStorage.getItem('vtdbg') || '(none)'; } catch (_) {}
-          var inNav = (navigation.activation && navigation.activation.navigationType) || '?';
-          console.log('[VTDBG] pagereveal@' + location.pathname + ' in=' + (e.viewTransition ? 'ACTIVE' : 'NULL') +
-            ' inNav=' + inNav + ' | ' + prev + ' dups=' + JSON.stringify(s.dups));
-          if (!e.viewTransition) {
-            badge('NO-VT  in@' + location.pathname + '  nav=' + inNav + '\n' + prev, true);
-            return;
-          }
-          e.viewTransition.ready.then(
-            function () { badge('OK @' + location.pathname, false); },
-            function (err) {
-              badge('SKIP @' + location.pathname + '  ' + (performance.now() - t0).toFixed(0) + 'ms\n' +
-                err.name + '\nin nav=' + inNav + '\n' + prev + (s.dups.length ? '\nDUP ' + s.dups.join(',') : ''), true);
-            }
-          );
-        });
-      })();
     </script>
   </body>
 </html>

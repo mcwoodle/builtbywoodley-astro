@@ -36,9 +36,9 @@
   background: var(--vt-bg, var(--color-bg));
 }
 
-/* Edge has intermittently exposed a light compositor/backdrop during these
-   cross-document transitions. JS skips Edge transitions when possible; this is
-   the CSS fallback for event paths where skipTransition() is unavailable. */
+/* Edge has intermittently exposed a light compositor/backdrop during native
+   cross-document transitions. Keep the native snapshot layer effectively
+   instant there; BaseLayout drives Edge's visible motion with body transforms. */
 html[data-browser='edge']::view-transition-group(*),
 html[data-browser='edge']::view-transition-old(*),
 html[data-browser='edge']::view-transition-new(*) {
@@ -46,6 +46,49 @@ html[data-browser='edge']::view-transition-new(*) {
   animation-duration: 1ms !important;
   animation-fill-mode: both !important;
   mix-blend-mode: normal !important;
+}
+
+html[data-browser='edge'] {
+  overflow-x: clip;
+}
+
+html[data-edge-enter] body,
+html[data-edge-exit] body {
+  background: var(--vt-bg, var(--color-bg));
+  min-block-size: 100vh;
+  will-change: transform;
+}
+
+html[data-edge-enter='right'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+}
+
+html[data-edge-enter='left'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+}
+
+html[data-edge-enter='down'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+}
+
+html[data-edge-enter='up'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+}
+
+html[data-edge-exit='right'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
+}
+
+html[data-edge-exit='left'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
+}
+
+html[data-edge-exit='down'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
+}
+
+html[data-edge-exit='up'] body {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
 }
 
 /* ── Named elements (shared morphs only) ───── */
@@ -327,6 +370,11 @@ html:active-view-transition-type(home-edge)::view-transition-new(home-mark) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  html[data-edge-enter] body,
+  html[data-edge-exit] body {
     animation: none !important;
   }
 }
