@@ -1,5 +1,6 @@
 ---
 import TopNav from '../components/TopNav.astro';
+import { viewTransitionAnimationByBrowser } from '../content.config';
 import '../styles/global.css';
 import '../styles/view-transitions.css';
 
@@ -12,11 +13,17 @@ const { hideNav = false } = Astro.props;
 
 const title = "Built by Woodley";
 const description = "Stuff that I've built";
+const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimationByBrowser);
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script
+      type="application/json"
+      id="view-transition-animation-config"
+      set:html={viewTransitionAnimationConfigJson}
+    />
     <!-- Resolve and apply the colour theme before first paint to avoid a flash
          of the wrong theme. The visitor's saved *mode* is one of:
            • 'light' / 'dark' — an explicit fixed choice.
@@ -32,6 +39,7 @@ const description = "Stuff that I've built";
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
         var FAMILIES = { editorial: 1, original: 1 };
+        var TRANSITION_MODES = { edge: 1, none: 1, chrome: 1 };
         var BG = {
           editorial: { light: '#FAF8F4', dark: '#15120F' },
           original: { light: '#F5F0EB', dark: '#1A1613' },
@@ -88,6 +96,32 @@ const description = "Stuff that I've built";
           return 'light'; // No preference exposed.
         }
 
+        function browserType() {
+          var ua = navigator.userAgent;
+          if (/\bEdg(?:e|A|iOS)?\//.test(ua)) return 'edge';
+          if (/\bOPR\//.test(ua)) return 'opera';
+          if (/\bFirefox\//.test(ua)) return 'firefox';
+          if (/\bChrome\//.test(ua) || /\bCriOS\//.test(ua)) return 'chrome';
+          if (/\bSafari\//.test(ua)) return 'safari';
+          return 'default';
+        }
+
+        function configuredTransitionMode(type) {
+          var config = { default: 'chrome' };
+          try {
+            var configNode = document.getElementById('view-transition-animation-config');
+            if (configNode && configNode.textContent) {
+              var parsed = JSON.parse(configNode.textContent);
+              if (parsed && typeof parsed === 'object') config = parsed;
+            }
+          } catch (err) {
+            /* Malformed config should not break page rendering. */
+          }
+
+          var mode = config[type] || config.default || 'chrome';
+          return TRANSITION_MODES[mode] ? mode : 'chrome';
+        }
+
         // Apply a mode: the resolved colour theme (always light/dark) plus the
         // mode itself. Exposed so the toggle reuses this exact resolution.
         function applyMode(mode) {
@@ -99,14 +133,29 @@ const description = "Stuff that I've built";
         }
         window.__applyThemeMode = applyMode;
 
-        // Edge currently shows intermittent light compositor flashes during
-        // cross-document View Transitions on this site. It gets a CSS transform
-        // fallback instead: skip the native transition, record direction before
-        // navigation, then animate the next page in from that side.
+        var currentBrowserType = browserType();
+        var transitionMode = configuredTransitionMode(currentBrowserType);
+        root.setAttribute('data-browser', currentBrowserType);
+        root.setAttribute('data-vt-animation', transitionMode);
+
+        function skipNativeViewTransition(event) {
+          var vt = event && event.viewTransition;
+          if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
+        }
+
+        // The configured "none" mode disables cross-document animation while
+        // still allowing ordinary navigation and page rendering to proceed.
+        if (transitionMode === 'none') {
+          addEventListener('pageswap', skipNativeViewTransition, { capture: true });
+          addEventListener('pagereveal', skipNativeViewTransition, { capture: true });
+        }
+
+        // The configured "edge" mode uses a CSS transform fallback: skip the
+        // native transition, record direction before navigation, then animate
+        // the next page in from that side.
         try {
-          if (/\bEdg\//.test(navigator.userAgent)) {
+          if (currentBrowserType === 'edge' && transitionMode === 'edge') {
             var EDGE_TRANSITION_KEY = 'edge-fallback-transition';
-            root.setAttribute('data-browser', 'edge');
             try {
               var pending = sessionStorage.getItem(EDGE_TRANSITION_KEY);
               if (pending) {
@@ -119,12 +168,8 @@ const description = "Stuff that I've built";
               /* Storage may be unavailable; Edge still navigates normally. */
             }
 
-            var skipEdgeTransition = function (event) {
-              var vt = event && event.viewTransition;
-              if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
-            };
-            addEventListener('pageswap', skipEdgeTransition, { capture: true });
-            addEventListener('pagereveal', skipEdgeTransition, { capture: true });
+            addEventListener('pageswap', skipNativeViewTransition, { capture: true });
+            addEventListener('pagereveal', skipNativeViewTransition, { capture: true });
 
             function normalizedPath(url) {
               var path = url.pathname.replace(/\/+$/, '');

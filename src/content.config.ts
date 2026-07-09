@@ -1,6 +1,21 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+type ViewTransitionAnimationMode = 'edge' | 'none' | 'chrome';
+
+// Browser-specific view-transition behavior:
+// - edge: use the Edge body-transform fallback animation.
+// - none: disable cross-document animation.
+// - chrome: use the original native transitions tuned in Chrome.
+export const viewTransitionAnimationByBrowser = {
+  default: 'chrome',
+  edge: 'edge',
+  chrome: 'chrome',
+} as const satisfies { default: ViewTransitionAnimationMode } & Record<
+  string,
+  ViewTransitionAnimationMode
+>;
+
 const projectSchema = ({ image }: { image: any }) =>
   z.object({
     title: z.string().max(100, 'Title cannot exceed 100 characters.'),
