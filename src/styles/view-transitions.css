@@ -36,6 +36,18 @@
   background: var(--vt-bg, var(--color-bg));
 }
 
+/* Edge has intermittently exposed a light compositor/backdrop during these
+   cross-document transitions. JS skips Edge transitions when possible; this is
+   the CSS fallback for event paths where skipTransition() is unavailable. */
+html[data-browser='edge']::view-transition-group(*),
+html[data-browser='edge']::view-transition-old(*),
+html[data-browser='edge']::view-transition-new(*) {
+  animation-delay: 0ms !important;
+  animation-duration: 1ms !important;
+  animation-fill-mode: both !important;
+  mix-blend-mode: normal !important;
+}
+
 /* ── Named elements (shared morphs only) ───── */
 
 /* The homepage button seed dots get their `view-transition-name: arrow-fly`

@@ -99,6 +99,23 @@ const description = "Stuff that I've built";
         }
         window.__applyThemeMode = applyMode;
 
+        // Edge currently shows intermittent light compositor flashes during
+        // cross-document View Transitions on this site. Keep normal navigation
+        // there and let Chromium/Chrome use the animated transition path.
+        try {
+          if (/\bEdg\//.test(navigator.userAgent)) {
+            root.setAttribute('data-browser', 'edge');
+            var skipEdgeTransition = function (event) {
+              var vt = event && event.viewTransition;
+              if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
+            };
+            addEventListener('pageswap', skipEdgeTransition, { capture: true });
+            addEventListener('pagereveal', skipEdgeTransition, { capture: true });
+          }
+        } catch (e) {
+          /* Browser detection is best-effort; unsupported environments still navigate. */
+        }
+
         try {
           applyFamily(storedFamily());
           applyMode(storedMode());
