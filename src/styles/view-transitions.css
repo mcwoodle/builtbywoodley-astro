@@ -58,11 +58,37 @@ html[data-vt-animation='body-transform'] {
   overflow-x: clip;
 }
 
+html[data-vt-transitioning] {
+  overflow: hidden;
+}
+
 html[data-vt-enter] body,
 html[data-vt-exit] body {
   background: var(--vt-bg, var(--color-bg));
   min-block-size: 100vh;
   will-change: transform;
+}
+
+html[data-vt-transitioning] body {
+  pointer-events: none;
+}
+
+.vt-next-page {
+  background: var(--vt-bg, var(--color-bg));
+  color: var(--color-text);
+  font-family: var(--font-body);
+  inset: 0;
+  min-block-size: 100vh;
+  overflow: hidden auto;
+  pointer-events: none;
+  position: fixed;
+  z-index: 2147483646;
+  will-change: transform;
+}
+
+.vt-next-page-body {
+  background: var(--vt-bg, var(--color-bg));
+  min-block-size: 100vh;
 }
 
 html[data-vt-enter='right'] body {
@@ -95,6 +121,22 @@ html[data-vt-exit='down'] body {
 
 html[data-vt-exit='up'] body {
   animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
+}
+
+.vt-next-page[data-vt-next='right'] {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+}
+
+.vt-next-page[data-vt-next='left'] {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+}
+
+.vt-next-page[data-vt-next='down'] {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+}
+
+.vt-next-page[data-vt-next='up'] {
+  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
 }
 
 /* ── Named elements (shared morphs only) ───── */
@@ -380,7 +422,8 @@ html:active-view-transition-type(home-edge)::view-transition-new(home-mark) {
   }
 
   html[data-vt-enter] body,
-  html[data-vt-exit] body {
+  html[data-vt-exit] body,
+  .vt-next-page {
     animation: none !important;
   }
 }
