@@ -172,6 +172,8 @@ html {
      bar with it) doesn't shift sideways between pages that scroll (blog) and
      pages that don't (home). No-op where scrollbars overlay content. */
   scrollbar-gutter: stable;
+  scrollbar-color: var(--color-border-subtle) var(--vt-bg, var(--color-bg));
+  background: var(--vt-bg, var(--color-bg));
 }
 
 /* ─────────────────────────────────────────────
@@ -181,11 +183,34 @@ body {
   font-family: var(--font-body);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
-  background: var(--color-bg);
+  background: var(--vt-bg, var(--color-bg));
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vt-bg, var(--color-bg));
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+}
+
+.vt-page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--vt-bg, var(--color-bg));
+  view-transition-name: page-backdrop;
+}
+
+body > main,
+body > .top-nav {
+  position: relative;
+  z-index: 1;
 }
 
 h1,

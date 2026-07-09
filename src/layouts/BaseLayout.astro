@@ -32,6 +32,19 @@ const description = "Stuff that I've built";
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
         var FAMILIES = { editorial: 1, original: 1 };
+        var BG = {
+          editorial: { light: '#FAF8F4', dark: '#15120F' },
+          original: { light: '#F5F0EB', dark: '#1A1613' },
+        };
+
+        function syncCanvasBg(fam, applied) {
+          var family = FAMILIES[fam] ? fam : 'editorial';
+          var theme = applied === 'dark' ? 'dark' : 'light';
+          var bg = BG[family][theme];
+          root.style.setProperty('--vt-bg', bg);
+          root.style.backgroundColor = bg;
+          root.style.colorScheme = theme;
+        }
 
         // The visitor's chosen mode. No saved value => 'system' (the default).
         function storedMode() {
@@ -57,7 +70,9 @@ const description = "Stuff that I've built";
 
         // Apply a family. Exposed so the family toggle reuses this exact logic.
         function applyFamily(fam) {
-          root.setAttribute('data-theme-family', FAMILIES[fam] ? fam : 'editorial');
+          var family = FAMILIES[fam] ? fam : 'editorial';
+          root.setAttribute('data-theme-family', family);
+          syncCanvasBg(family, root.getAttribute('data-theme') || systemTheme());
         }
         window.__applyThemeFamily = applyFamily;
 
@@ -80,6 +95,7 @@ const description = "Stuff that I've built";
             mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : systemTheme();
           root.setAttribute('data-theme', applied);
           root.setAttribute('data-theme-mode', mode);
+          syncCanvasBg(root.getAttribute('data-theme-family') || storedFamily(), applied);
         }
         window.__applyThemeMode = applyMode;
 
@@ -129,6 +145,7 @@ const description = "Stuff that I've built";
     />
   </head>
   <body>
+    <div class="vt-page-backdrop" aria-hidden="true"></div>
     {!hideNav && <TopNav />}
     <slot />
     <script>

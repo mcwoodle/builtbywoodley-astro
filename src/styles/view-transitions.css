@@ -32,6 +32,10 @@
   navigation: auto;
 }
 
+::view-transition {
+  background: var(--vt-bg, var(--color-bg));
+}
+
 /* ── Named elements (shared morphs only) ───── */
 
 /* The homepage button seed dots get their `view-transition-name: arrow-fly`
@@ -46,12 +50,11 @@ html:active-view-transition-type(slide-down) .vt-tagline {
   view-transition-name: tagline;
 }
 
-/* The top bar is pinned — naming it lifts it out of the root snapshot.
-   Old and new bars are pixel-identical (the differing home mark is
-   captured separately below), so the bar stands still while the
-   page content slides underneath. */
+/* Keep the top bar inside the root snapshot. A separate named top-nav layer
+   produced intermittent light flashes beneath the sticky bar during horizontal
+   back-nav, especially around the scrollbar/gutter area. */
 .vt-top-nav {
-  view-transition-name: top-nav;
+  view-transition-name: none;
 }
 
 /* The bar's home control: a "you are here" dot on the homepage, the
@@ -78,10 +81,32 @@ html:active-view-transition-type(slide-down) .vt-tagline {
    snapshots. We replace that with directional slides. Disable the
    default cross-fade (mix-blend-mode: normal prevents the additive
    blend that causes ghosting, and we set our own keyframes). */
+::view-transition-old(*),
+::view-transition-new(*) {
+  /* Prevent the default additive cross-fade blend, which can brighten dark UI. */
+  mix-blend-mode: normal;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  /* Prevent the default cross-fade blend */
-  mix-blend-mode: normal;
+  background: var(--vt-bg, var(--color-bg));
+}
+
+::view-transition-group(page-backdrop) {
+  z-index: 0;
+}
+
+::view-transition-old(page-backdrop),
+::view-transition-new(page-backdrop) {
+  animation: none;
+  block-size: 100%;
+  inline-size: 100%;
+  opacity: 1;
+}
+
+::view-transition-group(root) {
+  z-index: 10;
+  background: var(--vt-bg, var(--color-bg));
 }
 
 /* ── HORIZONTAL root slide (slide-right) ───── */
@@ -137,7 +162,8 @@ html:active-view-transition-type(slide-down):active-view-transition-type(back-na
    honored on ::view-transition-group() in Chromium 126+. */
 ::view-transition-group(arrow-fly) { z-index: 60; }
 ::view-transition-group(home-mark) { z-index: 50; }
-::view-transition-group(top-nav)   { z-index: 1; }
+::view-transition-group(tagline)   { z-index: 50; }
+::view-transition-group(nav-crumb) { z-index: 50; }
 
 /* ── Flying arrow (arrow-fly) ───────────────── */
 
