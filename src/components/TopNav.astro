@@ -48,14 +48,12 @@ const crumb = path.startsWith('/software/') && path !== '/software'
           </svg>
           <span class="home-dot"></span>
         </span>
-        {!isHome && (
-          <!-- Transparent flight target: gives the arrow-fly view-transition
-               group a destination geometry over the home control so the
-               homepage button arrow auto-travels up here while staying an
-               arrow, then fades as it lands. Renders a box (opacity:0) but
-               does not affect layout or block clicks. -->
-          <span class="home-arrow-target vt-arrow-fly" aria-hidden="true"></span>
-        )}
+        <!-- Transparent flight target: gives the arrow-fly view-transition
+             group a destination geometry over the home control so the
+             homepage button arrow auto-travels up here while staying an
+             arrow, then fades as it lands. Renders a box (opacity:0) but
+             does not affect layout or block clicks. -->
+        {!isHome && <span class="home-arrow-target vt-arrow-fly" aria-hidden="true"></span>}
       </a>
       {crumb && (
         <span class="crumb-separator" aria-hidden="true">&rsaquo;</span>
