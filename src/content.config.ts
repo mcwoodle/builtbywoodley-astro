@@ -1,27 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
-type ViewTransitionAnimationMode = 'body-transform' | 'disabled' | 'native';
-type ViewTransitionAnimationRule = {
-  userAgentPattern: string;
-  mode: ViewTransitionAnimationMode;
-};
-
-// User-agent-specific view-transition behavior:
-// - body-transform: skip native snapshots and animate body transforms.
-// - disabled: disable cross-document animation.
-// - native: use the original browser-native transitions.
-export const viewTransitionAnimationConfig = {
-  default: 'native',
-  rules: [
-    { userAgentPattern: '\\bEdg(?:e|A|iOS)?/', mode: 'body-transform' },
-    { userAgentPattern: '\\bFirefox\\/', mode: 'body-transform' },
-  ],
-} as const satisfies {
-  default: ViewTransitionAnimationMode;
-  rules: readonly ViewTransitionAnimationRule[];
-};
-
 const projectSchema = ({ image }: { image: any }) =>
   z.object({
     title: z.string().max(100, 'Title cannot exceed 100 characters.'),

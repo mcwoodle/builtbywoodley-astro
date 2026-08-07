@@ -8,14 +8,8 @@
   // Independent of production, which stays on the custom domains below; this
   // is a deployment-level setting that applies on the next production deploy.
   "preview_urls": true,
-  // Serve directory pages at their no-trailing-slash path with a direct 200.
-  // Astro builds /foo/index.html; Cloudflare's default auto-trailing-slash
-  // 307-redirects /foo -> /foo/, and that redirect makes the browser skip the
-  // cross-document view transition. Every internal link in the site is
-  // no-slash, so drop-trailing-slash keeps navigations redirect-free.
   "assets": {
-    "directory": "./dist",
-    "html_handling": "drop-trailing-slash"
+    "directory": "./dist"
   },
   // Serve the site on the root domain. custom_domain:true makes wrangler
   // provision the DNS record and TLS certificate on deploy, so no manual

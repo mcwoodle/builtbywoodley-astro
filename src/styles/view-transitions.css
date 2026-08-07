@@ -1,429 +1,134 @@
 /* ─────────────────────────────────────────────
-   View Transitions — "panning canvas" model
-   Imported by BaseLayout so every same-origin page has the required
-   cross-document opt-in. Browsers without the View Transition API ignore all
-   of this.
+   Home ↔ Blog / Home ↔ About View Transitions
+   Imported ONLY by the homepage, the mocked blog index and the about page.
+   Cross-document view transitions require BOTH the outgoing and incoming
+   page to opt in, so just those pairs of pages animate; every other
+   navigation stays a plain page load. Browsers without the View Transition
+   API ignore all of this.
 
-   Mental model: all pages live on one large canvas laid out in a grid.
-   Navigating pans the viewport across that canvas. Both the outgoing
-   and incoming page translate together (same direction, same speed,
-   100% viewport travel) so they look like a single rigid surface.
-
-   Choreography by destination:
-   - Home -> /software : canvas pans LEFT  (home slides left, software enters right)
-   - Home -> /about    : canvas pans UP    (home slides up, about enters below)
-   - Home -> /blog     : canvas pans LEFT  (home slides left, blog enters right)
-   - /software -> detail : canvas pans LEFT (horizontal within software section)
-   Back-navigation reverses each pan direction.
-
-   Shared-element morphs (lifted out of root, float independently):
-   - home-mark         : the homepage button arrows fly up into the nav
-                          and BECOME the home icon (house). On the homepage
-                          the nav dot is NOT named, so the arrow is the sole
-                          old-side home-mark.
-   - tagline           : the "Builder | Mentor | Father" subtitle on the
-                          homepage morphs into the smaller sub-header on
-                          the About page
-   - nav-crumb         : the breadcrumb text expands/collapses as you
-                          navigate into/out-of detail pages
+   The choreography plays off the cut-list tag's arrow: the page follows the
+   arrow's pull — the hero slides away to the left while the destination
+   column sweeps in from the right — and the arrow itself flies ahead of the
+   page, shrinking into the accent dot of the destination header's pill. The
+   whole sequence mirrors on the way back. Both inner pages stage the same
+   named landing dot; a small inline script on the homepage (index.astro)
+   hands the arrow's name to whichever tag is actually travelled.
    ───────────────────────────────────────────── */
 
 @view-transition {
   navigation: auto;
 }
 
-::view-transition {
-  background: var(--vt-bg, var(--color-bg));
+/* Traveling pieces. A name that exists on only one side gets an enter/exit
+   slide; the arrow/pill-dot pair shares one name across both documents, so
+   the browser morphs the clicked arrow into the header pill's dot. The blog
+   tag's arrow carries the name statically; the homepage retarget script
+   moves it to the About tag's arrow when that is the link travelled. */
+.vt-home-hero {
+  view-transition-name: home-hero;
 }
 
-/* The configured body-transform fallback keeps the native snapshot layer effectively
-   instant; BaseLayout drives visible motion with body transforms. */
-html[data-vt-animation='body-transform']::view-transition-group(*),
-html[data-vt-animation='body-transform']::view-transition-old(*),
-html[data-vt-animation='body-transform']::view-transition-new(*) {
-  animation-delay: 0ms !important;
-  animation-duration: 1ms !important;
-  animation-fill-mode: both !important;
-  mix-blend-mode: normal !important;
+.vt-blog-page {
+  view-transition-name: blog-page;
 }
 
-html[data-vt-animation='disabled']::view-transition-group(*),
-html[data-vt-animation='disabled']::view-transition-old(*),
-html[data-vt-animation='disabled']::view-transition-new(*) {
-  animation: none !important;
-  mix-blend-mode: normal !important;
+/* The about page rides the same rails as the blog: in from the right on the
+   way out, back out to the right on the way home. */
+.vt-about-page {
+  view-transition-name: about-page;
 }
 
-html[data-vt-animation='body-transform'] {
-  overflow-x: clip;
+.vt-craft-arrow {
+  view-transition-name: craft-arrow;
 }
 
-html[data-vt-transitioning] {
-  overflow: hidden;
-}
-
-html[data-vt-enter] body,
-html[data-vt-exit] body {
-  background: var(--vt-bg, var(--color-bg));
-  min-block-size: 100vh;
-  will-change: transform;
-}
-
-html[data-vt-transitioning] body {
-  pointer-events: none;
-}
-
-.vt-next-page {
-  background: var(--vt-bg, var(--color-bg));
-  color: var(--color-text);
-  font-family: var(--font-body);
-  inset: 0;
-  min-block-size: 100vh;
-  overflow: hidden auto;
-  pointer-events: none;
-  position: fixed;
-  z-index: 2147483646;
-  will-change: transform;
-}
-
-.vt-next-page-body {
-  background: var(--vt-bg, var(--color-bg));
-  min-block-size: 100vh;
-}
-
-html[data-vt-enter='right'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
-}
-
-html[data-vt-enter='left'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
-}
-
-html[data-vt-enter='down'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
-}
-
-html[data-vt-enter='up'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
-}
-
-html[data-vt-exit='right'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
-}
-
-html[data-vt-exit='left'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
-}
-
-html[data-vt-exit='down'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
-}
-
-html[data-vt-exit='up'] body {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
-}
-
-.vt-next-page[data-vt-next='right'] {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
-}
-
-.vt-next-page[data-vt-next='left'] {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
-}
-
-.vt-next-page[data-vt-next='down'] {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
-}
-
-.vt-next-page[data-vt-next='up'] {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
-}
-
-/* ── Named elements (shared morphs only) ───── */
-
-/* The homepage button seed dots get their `view-transition-name: arrow-fly`
-   assigned deterministically in JS by the pageswap/pagereveal scripts in
-   index.astro, BEFORE the snapshot is captured. The previous type-gated CSS
-   assignment (e.g. `:active-view-transition-type(slide-right) .vt-seed-software`)
-   had to land on the OUTGOING snapshot during pageswap, which was timing-fragile
-   and intermittently skipped the dot so it never lifted into the flying group. */
-
-/* Shared-element morph: the "Builder | Mentor | Father" tagline. */
-html:active-view-transition-type(slide-down) .vt-tagline {
-  view-transition-name: tagline;
-}
-
-/* Keep the top bar inside the root snapshot. A separate named top-nav layer
-   produced intermittent light flashes beneath the sticky bar during horizontal
-   back-nav, especially around the scrollbar/gutter area. */
+/* The top bar is pinned. Naming it lifts it out of the root cross-fade, and
+   because the bar paints above the mains (z-index 100), its group stacks on
+   top — the sliding pages pass underneath it instead of over it. Old and new
+   bars are pixel-identical (the differing home mark is captured separately
+   below), so the bar simply stands still. */
 .vt-top-nav {
-  view-transition-name: none;
+  view-transition-name: top-nav;
 }
 
-/* The bar's home control: a "you are here" dot on the homepage, the
-   house icon everywhere else. One shared name morphs them in place. */
+/* The bar's home control: a "you are here" dot on the homepage, the house
+   icon everywhere else. One shared name morphs them in place — leaving home,
+   the dot grows into the way back; returning, the house settles back into
+   the marker. */
 .vt-home-mark {
   view-transition-name: home-mark;
 }
 
-/* The transparent flight target over the home control on subpages. Gives
-   the arrow-fly group a destination geometry so the homepage button arrow
-   auto-travels up here while staying an arrow, then fades as it lands. */
-.vt-arrow-fly {
-  view-transition-name: arrow-fly;
+/* Forward: the hero exits along the arrow's line of pull… */
+::view-transition-old(home-hero) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
 }
 
-/* The breadcrumb crumb text (only present on detail pages). */
-.vt-nav-crumb {
-  view-transition-name: nav-crumb;
+/* …while the destination column sweeps in behind it. */
+::view-transition-new(blog-page),
+::view-transition-new(about-page) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-/* ── Suppress default root cross-fade ──────── */
-
-/* By default the View Transition API cross-fades old and new root
-   snapshots. We replace that with directional slides. Disable the
-   default cross-fade (mix-blend-mode: normal prevents the additive
-   blend that causes ghosting, and we set our own keyframes). */
-::view-transition-old(*),
-::view-transition-new(*) {
-  /* Prevent the default additive cross-fade blend, which can brighten dark UI. */
-  mix-blend-mode: normal;
+/* Back: the same move, mirrored. */
+::view-transition-old(blog-page),
+::view-transition-old(about-page) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  background: var(--vt-bg, var(--color-bg));
+::view-transition-new(home-hero) {
+  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
 }
 
-::view-transition-group(page-backdrop) {
-  z-index: 0;
-}
-
-::view-transition-old(page-backdrop),
-::view-transition-new(page-backdrop) {
-  animation: none;
-  block-size: 100%;
-  inline-size: 100%;
-  opacity: 1;
-}
-
-::view-transition-group(root) {
-  z-index: 10;
-  background: var(--vt-bg, var(--color-bg));
-}
-
-/* ── HORIZONTAL root slide (slide-right) ───── */
-
-/* Forward: canvas pans LEFT.
-   Old root exits to the left, new root enters from the right. */
-html:active-view-transition-type(slide-right)::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
-}
-
-html:active-view-transition-type(slide-right)::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
-}
-
-/* Back: canvas pans RIGHT (reverse).
-   Old root exits to the right, new root enters from the left. */
-html:active-view-transition-type(slide-right):active-view-transition-type(back-nav)::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
-}
-
-html:active-view-transition-type(slide-right):active-view-transition-type(back-nav)::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
-}
-
-/* ── VERTICAL root slide (slide-down) ──────── */
-
-/* Forward: canvas pans UP.
-   Old root exits upward, new root enters from below. */
-html:active-view-transition-type(slide-down)::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
-}
-
-html:active-view-transition-type(slide-down)::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
-}
-
-/* Back: canvas pans DOWN (reverse).
-   Old root exits downward, new root enters from above. */
-html:active-view-transition-type(slide-down):active-view-transition-type(back-nav)::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
-}
-
-html:active-view-transition-type(slide-down):active-view-transition-type(back-nav)::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
-}
-
-/* ── Shared-element morph timing ────────────── */
-
-/* ── Paint order ────────────────────────────── */
-
-/* Lift the flying arrow and the home mark above the pinned top-nav so the
-   arrow flies OVER the bar instead of slipping behind it. Group z-index is
-   honored on ::view-transition-group() in Chromium 126+. */
-::view-transition-group(arrow-fly) { z-index: 60; }
-::view-transition-group(home-mark) { z-index: 50; }
-::view-transition-group(tagline)   { z-index: 50; }
-::view-transition-group(nav-crumb) { z-index: 50; }
-
-/* ── Flying arrow (arrow-fly) ───────────────── */
-
-/* The arrow group travels from the homepage button up to the transparent
-   target over the home control. Position interpolates over 500ms to match
-   the dot/house morph below. */
-::view-transition-group(arrow-fly) {
+/* The arrow runs a touch longer than the page so it visibly leads the
+   motion and is the last thing to settle. */
+::view-transition-group(craft-arrow) {
   animation-duration: 500ms;
-  animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1);
-}
-/* forward (leaving/arriving home): the arrow is the OLD image — stays a fully
-   opaque arrow across the travel, then vanishes right as it reaches the spot. */
-html:active-view-transition-type(home-edge)::view-transition-old(arrow-fly) {
-  animation: 500ms cubic-bezier(0.5, 0, 0.2, 1) both arrow-fly-travel;
-}
-html:active-view-transition-type(home-edge)::view-transition-new(arrow-fly) {
-  animation: 500ms linear both vt-hidden;
-}
-/* back-nav reverses the roles: the arrow is now the NEW image, flying back
-   down to the button — show it, hide the placeholder. Higher specificity
-   (two type pseudos) so it overrides the forward rules above. */
-html:active-view-transition-type(home-edge):active-view-transition-type(back-nav)::view-transition-old(arrow-fly) {
-  animation: 500ms linear both vt-hidden;
-}
-html:active-view-transition-type(home-edge):active-view-transition-type(back-nav)::view-transition-new(arrow-fly) {
-  animation: 500ms cubic-bezier(0.5, 0, 0.2, 1) both arrow-fly-travel-back;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Dot → house bloom (home-mark) ──────────── */
-
-/* The dot/house morph keeps a slightly longer tempo so both accent marks
-   settle smoothly. */
+/* The dot ⇄ house morph keeps the arrow's tempo so both accent marks settle
+   on the same beat. */
 ::view-transition-group(home-mark) {
   animation-duration: 500ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* Held to the end so the dot stays a dot while the arrow flies, then blooms
-   into the house exactly as the arrow lands. Scoped to home-edge so
-   subpage<->subpage navigations keep the plain default morph (no flicker).
-   The same keyframes read correctly both ways: on back-nav the OLD image is
-   the house and the NEW is the dot, and "hold old, bloom new" still works. */
-html:active-view-transition-type(home-edge)::view-transition-old(home-mark) {
-  animation: 500ms ease both home-mark-hold;
-}
-html:active-view-transition-type(home-edge)::view-transition-new(home-mark) {
-  animation: 500ms cubic-bezier(0.22, 1, 0.36, 1) both home-mark-bloom;
-}
-
-/* The tagline morph: slightly quicker than the page slide so the text
-   settles into place as the page finishes moving. */
-::view-transition-group(tagline) {
-  animation-duration: 400ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Breadcrumb crumb: gentle expand/collapse as you go deeper or shallower. */
-::view-transition-group(nav-crumb) {
-  animation-duration: 400ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-::view-transition-new(nav-crumb) {
-  animation: 360ms cubic-bezier(0.22, 1, 0.36, 1) both crumb-expand;
-}
-::view-transition-old(nav-crumb) {
-  animation: 220ms ease both crumb-collapse;
-}
-
-/* ── Keyframes ─────────────────────────────── */
-
-/* Horizontal: no opacity change — solid canvas pan. */
 
 @keyframes vt-out-left {
   to {
-    transform: translateX(-100%);
+    transform: translateX(-100vw);
+    opacity: 0;
   }
 }
 
 @keyframes vt-in-right {
   from {
-    transform: translateX(100%);
+    transform: translateX(100vw);
+    opacity: 0;
   }
 }
 
 @keyframes vt-out-right {
   to {
-    transform: translateX(100%);
+    transform: translateX(100vw);
+    opacity: 0;
   }
 }
 
 @keyframes vt-in-left {
   from {
-    transform: translateX(-100%);
+    transform: translateX(-100vw);
+    opacity: 0;
   }
 }
 
-/* Vertical: no opacity change — solid canvas pan. */
-
-@keyframes vt-out-up {
-  to {
-    transform: translateY(-100%);
-  }
-}
-
-@keyframes vt-in-up {
-  from {
-    transform: translateY(100%);
-  }
-}
-
-@keyframes vt-out-down {
-  to {
-    transform: translateY(100%);
-  }
-}
-
-@keyframes vt-in-down {
-  from {
-    transform: translateY(-100%);
-  }
-}
-
-/* Breadcrumb crumb expand/collapse */
-@keyframes crumb-expand {
-  from { opacity: 0; transform: translateX(-8px); clip-path: inset(0 100% 0 0); }
-  to   { opacity: 1; transform: none;            clip-path: inset(0 0 0 0); }
-}
-@keyframes crumb-collapse {
-  to { opacity: 0; transform: translateX(-8px); }
-}
-
-/* Flying arrow: stays a fully opaque arrow across the travel, then vanishes
-   right as it reaches the spot (forward). Back-nav variant fades the arrow
-   in just after it leaves the home control and flies it back to the button. */
-@keyframes arrow-fly-travel { 0%, 70% { opacity: 1; } 90%, 100% { opacity: 0; } }
-@keyframes arrow-fly-travel-back { 0%, 8% { opacity: 0; } 22%, 100% { opacity: 1; } }
-@keyframes vt-hidden { from, to { opacity: 0; } }
-
-/* Dot -> house bloom: the old image (dot) holds, then the new image (house)
-   blooms in at the end as the arrow lands. */
-@keyframes home-mark-hold  { 0%, 66% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes home-mark-bloom { 0%, 58% { opacity: 0; } 100% { opacity: 1; } }
-
-/* ── Reduced motion ─────────────────────────── */
-
-/* Cancel the snapshot animations so navigation resolves instantly with a
-   simple cross-fade. The global reduced-motion rule can't reach these
-   pseudo-elements (they live in the top layer, outside the * net). */
+/* Reduced motion: cancel the snapshot animations so the navigation resolves
+   instantly. The global reduced-motion rule can't reach these pseudo-elements
+   (they live in the top layer, outside the * / *::before net). */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
-    animation: none !important;
-  }
-
-  html[data-vt-enter] body,
-  html[data-vt-exit] body,
-  .vt-next-page {
     animation: none !important;
   }
 }

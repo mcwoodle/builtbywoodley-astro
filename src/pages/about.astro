@@ -1,14 +1,17 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+// Opts this page into the home ↔ about slide transition (the homepage imports
+// the same sheet; cross-document view transitions need both ends to opt in).
+import "../styles/view-transitions.css";
 ---
 
 <BaseLayout>
-  <main>
+  <main class="vt-about-page">
     <header class="section-shell">
       <div class="surface-section">
-        <h1 class="page-heading">About Me</h1>
-        <p class="page-subtitle vt-tagline" style="font-family: var(--font-display); font-size: clamp(0.85rem, 1.5vw, 1rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
-          Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Father
+        <h1 class="page-heading">Matt Woodley</h1>
+        <p class="page-subtitle">
+          Ontario, Canada
         </p>
       </div>
     </header>
@@ -73,36 +76,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
   </main>
 </BaseLayout>
-
-<script is:inline>
-  /* Tag "slide-down" on all transitions from the About page so CSS
-     uses the vertical root-slide. On traversals (browser back/forward)
-     also add "back-nav" to reverse the slide direction. */
-  window.addEventListener('pageswap', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-down');
-    if (e.activation.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when navigating TO the homepage so the dot->house /
-    // arrow-fly choreography fires on this end of a home-edge nav.
-    var destPath = new URL(e.activation.entry.url).pathname;
-    if (destPath === '/') e.viewTransition.types.add('home-edge');
-  });
-
-  window.addEventListener('pagereveal', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-down');
-    var nav = navigation.activation;
-    if (nav && nav.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when this page was reached FROM the homepage.
-    if (nav && nav.from && new URL(nav.from.url).pathname === '/') {
-      e.viewTransition.types.add('home-edge');
-    }
-  });
-</script>
 
 <style>
   /* The about page's tags pick up the homepage numbering (01, 02 → 03, 04)
