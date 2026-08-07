@@ -1,21 +1,29 @@
 ---
 import TopNav from '../components/TopNav.astro';
+import { viewTransitionAnimationConfig } from '../content.config';
 import '../styles/global.css';
+import '../styles/view-transitions.css';
 
 interface Props {
   /** Hide the sticky TopNav — for full-bleed pages that supply their own
-      navigation chrome (e.g. the framed map's floating home tab). */
+      navigation UI (e.g. the framed map's floating home tab). */
   hideNav?: boolean;
 }
 const { hideNav = false } = Astro.props;
 
 const title = "Built by Woodley";
 const description = "Stuff that I've built";
+const viewTransitionAnimationConfigJson = JSON.stringify(viewTransitionAnimationConfig);
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script
+      type="application/json"
+      id="view-transition-animation-config"
+      set:html={viewTransitionAnimationConfigJson}
+    />
     <!-- Resolve and apply the colour theme before first paint to avoid a flash
          of the wrong theme. The visitor's saved *mode* is one of:
            • 'light' / 'dark' — an explicit fixed choice.
@@ -31,6 +39,20 @@ const description = "Stuff that I've built";
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
         var FAMILIES = { editorial: 1, original: 1 };
+        var TRANSITION_MODES = { 'body-transform': 1, disabled: 1, native: 1 };
+        var BG = {
+          editorial: { light: '#FAF8F4', dark: '#15120F' },
+          original: { light: '#F5F0EB', dark: '#1A1613' },
+        };
+
+        function syncCanvasBg(fam, applied) {
+          var family = FAMILIES[fam] ? fam : 'editorial';
+          var theme = applied === 'dark' ? 'dark' : 'light';
+          var bg = BG[family][theme];
+          root.style.setProperty('--vt-bg', bg);
+          root.style.backgroundColor = bg;
+          root.style.colorScheme = theme;
+        }
 
         // The visitor's chosen mode. No saved value => 'system' (the default).
         function storedMode() {
@@ -56,20 +78,51 @@ const description = "Stuff that I've built";
 
         // Apply a family. Exposed so the family toggle reuses this exact logic.
         function applyFamily(fam) {
-          root.setAttribute('data-theme-family', FAMILIES[fam] ? fam : 'editorial');
+          var family = FAMILIES[fam] ? fam : 'editorial';
+          root.setAttribute('data-theme-family', family);
+          syncCanvasBg(family, root.getAttribute('data-theme') || systemTheme());
         }
         window.__applyThemeFamily = applyFamily;
 
         // The OS-/browser-level preference. `prefers-color-scheme` is the only
         // signal platforms expose, and it already layers OS then browser: it
-        // reports the OS setting (Windows, macOS, iOS, Android, ChromeOS,
-        // GNOME/KDE…) unless the browser overrides it (Firefox content-override,
-        // Chrome Auto Dark, per-site dark mode), in which case it reports that.
+        // reports the platform setting unless the browser overrides it, in
+        // which case it reports that browser-level setting.
         function systemTheme() {
           if (!window.matchMedia) return 'light'; // Pre-2015 browser.
           if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
           if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
           return 'light'; // No preference exposed.
+        }
+
+        function configuredTransitionMode() {
+          var config = { default: 'native', rules: [] };
+          try {
+            var configNode = document.getElementById('view-transition-animation-config');
+            if (configNode && configNode.textContent) {
+              var parsed = JSON.parse(configNode.textContent);
+              if (parsed && typeof parsed === 'object') config = parsed;
+            }
+          } catch (err) {
+            /* Malformed config should not break page rendering. */
+          }
+
+          var ua = navigator.userAgent || '';
+          var rules = Array.isArray(config.rules) ? config.rules : [];
+          for (var i = 0; i < rules.length; i += 1) {
+            var rule = rules[i];
+            if (!rule || !TRANSITION_MODES[rule.mode] || typeof rule.userAgentPattern !== 'string') {
+              continue;
+            }
+            try {
+              if (new RegExp(rule.userAgentPattern).test(ua)) return rule.mode;
+            } catch (err) {
+              /* Ignore invalid configured patterns. */
+            }
+          }
+
+          var mode = config.default || 'native';
+          return TRANSITION_MODES[mode] ? mode : 'native';
         }
 
         // Apply a mode: the resolved colour theme (always light/dark) plus the
@@ -79,8 +132,448 @@ const description = "Stuff that I've built";
             mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : systemTheme();
           root.setAttribute('data-theme', applied);
           root.setAttribute('data-theme-mode', mode);
+          syncCanvasBg(root.getAttribute('data-theme-family') || storedFamily(), applied);
         }
         window.__applyThemeMode = applyMode;
+
+        var transitionMode = configuredTransitionMode();
+        root.setAttribute('data-vt-animation', transitionMode);
+
+        function skipNativeViewTransition(event) {
+          var vt = event && event.viewTransition;
+          if (vt && typeof vt.skipTransition === 'function') vt.skipTransition();
+        }
+
+        // The configured "disabled" mode disables cross-document animation while
+        // still allowing ordinary navigation and page rendering to proceed.
+        if (transitionMode === 'disabled') {
+          addEventListener('pageswap', skipNativeViewTransition, { capture: true });
+          addEventListener('pagereveal', skipNativeViewTransition, { capture: true });
+        }
+
+        // The configured "body-transform" mode uses a CSS transform fallback:
+        // skip the native transition, record direction before navigation, then
+        // animate the next page in from that side.
+        try {
+          if (transitionMode === 'body-transform') {
+            var BODY_TRANSFORM_TRANSITION_KEY = 'body-transform-transition';
+            var BODY_TRANSFORM_SOURCE_PATH_KEY = 'body-transform-source-path';
+            var TRANSITION_CACHE_LIMIT = 24;
+            var transitionPageCache = new Map();
+            var transitionFetches = new Map();
+            var transitionAssetFetches = new Set();
+            var transitionInProgress = false;
+
+            addEventListener('pageswap', skipNativeViewTransition, { capture: true });
+            addEventListener('pagereveal', skipNativeViewTransition, { capture: true });
+
+            function normalizedPath(url) {
+              var path = url.pathname.replace(/\/+$/, '');
+              return path || '/';
+            }
+
+            function routePoint(path) {
+              if (path === '/') return { x: 0, y: 0 };
+              if (path === '/about') return { x: 0, y: 1 };
+              if (path === '/software') return { x: 1, y: 0 };
+              if (path.indexOf('/software/') === 0) return { x: 2, y: 0 };
+              if (path === '/blog' || path === '/mocked/blog') return { x: 1, y: 0 };
+              if (path.indexOf('/blog/') === 0 || path.indexOf('/mocked/blog/') === 0) {
+                return { x: 2, y: 0 };
+              }
+              return null;
+            }
+
+            function directionBetweenPaths(fromPath, toPath) {
+              var from = routePoint(fromPath);
+              var to = routePoint(toPath);
+              if (from && to) {
+                var dx = to.x - from.x;
+                var dy = to.y - from.y;
+                if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) return dx > 0 ? 'right' : 'left';
+                if (dy !== 0) return dy > 0 ? 'down' : 'up';
+              }
+              return '';
+            }
+
+            function fallbackDirection(anchor, targetUrl) {
+              var direction = directionBetweenPaths(
+                normalizedPath(location),
+                normalizedPath(targetUrl)
+              );
+              if (direction) return direction;
+              if (anchor && anchor.dataset.direction === 'down') return 'down';
+              return 'right';
+            }
+
+            function transitionCacheKey(url) {
+              var path = url.pathname.replace(/\/+$/, '') || '/';
+              return path + url.search;
+            }
+
+            function validDirection(direction) {
+              return /^(left|right|up|down)$/.test(direction || '');
+            }
+
+            function readAndRemoveSessionValue(key) {
+              try {
+                var value = sessionStorage.getItem(key);
+                if (value) sessionStorage.removeItem(key);
+                return value || '';
+              } catch (err) {
+                return '';
+              }
+            }
+
+            function writeSessionValue(key, value) {
+              try {
+                sessionStorage.setItem(key, value);
+              } catch (err) {
+                /* Storage may be unavailable; navigation still works. */
+              }
+            }
+
+            function applyEnterDirection(direction) {
+              if (!validDirection(direction)) return;
+              root.removeAttribute('data-vt-enter');
+              root.offsetWidth;
+              root.setAttribute('data-vt-enter', direction);
+            }
+
+            function isBackForwardNavigation() {
+              try {
+                var nav = performance.getEntriesByType('navigation')[0];
+                return nav && nav.type === 'back_forward';
+              } catch (err) {
+                return false;
+              }
+            }
+
+            function storedTraverseDirection() {
+              var sourcePath = readAndRemoveSessionValue(BODY_TRANSFORM_SOURCE_PATH_KEY);
+              if (!sourcePath) return '';
+              return directionBetweenPaths(sourcePath, normalizedPath(location));
+            }
+
+            function applyPendingEnterDirection() {
+              var pending = readAndRemoveSessionValue(BODY_TRANSFORM_TRANSITION_KEY);
+              if (pending) {
+                applyEnterDirection(pending);
+                return;
+              }
+              if (isBackForwardNavigation()) applyEnterDirection(storedTraverseDirection());
+            }
+
+            function canTransitionTo(anchor, targetUrl) {
+              if (!anchor || anchor.target || anchor.hasAttribute('download')) return false;
+              if (targetUrl.origin !== location.origin) return false;
+              if (targetUrl.pathname === location.pathname && targetUrl.search === location.search) {
+                return false;
+              }
+              if (!/^https?:$/.test(targetUrl.protocol)) return false;
+              if (!isTransitionDocumentUrl(targetUrl)) return false;
+              return true;
+            }
+
+            function shouldAnimateNavigation(event, anchor, targetUrl) {
+              if (event.defaultPrevented) return false;
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return false;
+              }
+              if (!canTransitionTo(anchor, targetUrl)) return false;
+              if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+              return true;
+            }
+
+            function trimTransitionCache() {
+              while (transitionPageCache.size > TRANSITION_CACHE_LIMIT) {
+                var oldest = transitionPageCache.keys().next().value;
+                if (!oldest) return;
+                transitionPageCache.delete(oldest);
+              }
+            }
+
+            function sameOriginAssetUrl(value, baseUrl) {
+              if (!value) return null;
+              try {
+                var url = new URL(value, baseUrl);
+                return url.origin === location.origin ? url.href : null;
+              } catch (err) {
+                return null;
+              }
+            }
+
+            function isTransitionDocumentUrl(url) {
+              var path = url.pathname;
+              if (/^\/(?:@|_astro\/|_image|node_modules\/|src\/)/.test(path)) return false;
+              if (/\.[a-z0-9]+$/i.test(path)) return false;
+              return true;
+            }
+
+            function warmTransitionAsset(href) {
+              if (!href || transitionAssetFetches.has(href)) return;
+              transitionAssetFetches.add(href);
+              try {
+                fetch(href, {
+                  cache: 'force-cache',
+                  credentials: 'same-origin',
+                  priority: 'low',
+                }).catch(function () {});
+              } catch (err) {
+                /* Asset warming is opportunistic. */
+              }
+            }
+
+            function warmTransitionResources(html, targetUrl) {
+              try {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                doc.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (node) {
+                  warmTransitionAsset(sameOriginAssetUrl(node.getAttribute('href'), targetUrl.href));
+                });
+                doc.querySelectorAll('img[src]').forEach(function (node) {
+                  warmTransitionAsset(sameOriginAssetUrl(node.getAttribute('src'), targetUrl.href));
+                });
+                doc.querySelectorAll('source[srcset], img[srcset]').forEach(function (node) {
+                  var srcset = node.getAttribute('srcset') || '';
+                  srcset.split(',').forEach(function (candidate) {
+                    var src = candidate.trim().split(/\s+/)[0];
+                    warmTransitionAsset(sameOriginAssetUrl(src, targetUrl.href));
+                  });
+                });
+              } catch (err) {
+                /* A malformed preview document should not block navigation. */
+              }
+            }
+
+            function fetchTransitionPage(targetUrl) {
+              var key = transitionCacheKey(targetUrl);
+              if (transitionPageCache.has(key)) return Promise.resolve(transitionPageCache.get(key));
+              if (transitionFetches.has(key)) return transitionFetches.get(key);
+
+              var request = fetch(targetUrl.href, {
+                cache: 'force-cache',
+                credentials: 'same-origin',
+                headers: { Accept: 'text/html' },
+                priority: 'low',
+              })
+                .then(function (response) {
+                  var contentType = response.headers.get('content-type') || '';
+                  if (!response.ok || contentType.indexOf('text/html') === -1) return '';
+                  return response.text();
+                })
+                .then(function (html) {
+                  if (!html) return '';
+                  html = sanitizePreviewHtml(html);
+                  transitionPageCache.set(key, html);
+                  trimTransitionCache();
+                  warmTransitionResources(html, targetUrl);
+                  return html;
+                })
+                .catch(function () {
+                  return '';
+                })
+                .finally(function () {
+                  transitionFetches.delete(key);
+                });
+
+              transitionFetches.set(key, request);
+              return request;
+            }
+
+            function sanitizePreviewHtml(html) {
+              return html
+                .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<astro-dev-toolbar\b[^>]*>[\s\S]*?<\/astro-dev-toolbar>/gi, '')
+                .replace(/<astro-dev-toolbar\b[^>]*\/?>/gi, '');
+            }
+
+            function clonePreviewHeadAssets(sourceDoc, layer) {
+              sourceDoc.querySelectorAll('link[rel="stylesheet"], style').forEach(function (node) {
+                var clone = node.cloneNode(true);
+                if (clone.tagName === 'LINK') {
+                  clone.setAttribute('data-vt-preview-asset', '');
+                }
+                layer.appendChild(clone);
+              });
+            }
+
+            function sanitizePreviewDocument(sourceDoc) {
+              sourceDoc.querySelectorAll('script, astro-dev-toolbar').forEach(function (node) {
+                node.remove();
+              });
+            }
+
+            function buildPreviewLayer(html, direction) {
+              var sourceDoc = new DOMParser().parseFromString(html, 'text/html');
+              if (!sourceDoc.body) return null;
+              sanitizePreviewDocument(sourceDoc);
+
+              var layer = document.createElement('div');
+              layer.className = 'vt-next-page';
+              layer.setAttribute('aria-hidden', 'true');
+              layer.setAttribute('data-vt-next', direction);
+
+              clonePreviewHeadAssets(sourceDoc, layer);
+
+              var page = document.createElement('div');
+              page.className = 'vt-next-page-body';
+              page.innerHTML = sourceDoc.body.innerHTML;
+              layer.appendChild(page);
+              return layer;
+            }
+
+            function cleanupTransitionLayer(layer) {
+              if (layer && layer.parentNode) layer.parentNode.removeChild(layer);
+              root.removeAttribute('data-vt-transitioning');
+              root.removeAttribute('data-vt-exit');
+            }
+
+            function navigateAfterFallback(targetUrl, direction) {
+              root.setAttribute('data-vt-exit', direction);
+              writeSessionValue(BODY_TRANSFORM_TRANSITION_KEY, direction);
+
+              var finished = false;
+              var go = function (animationEvent) {
+                if (animationEvent && animationEvent.target !== document.body) return;
+                if (finished) return;
+                finished = true;
+                location.href = targetUrl.href;
+              };
+              document.body.addEventListener('animationend', go, { once: true });
+              setTimeout(go, 480);
+            }
+
+            function navigateWithPreview(targetUrl, direction, html) {
+              var layer = buildPreviewLayer(html, direction);
+              if (!layer) {
+                navigateAfterFallback(targetUrl, direction);
+                return;
+              }
+
+              transitionInProgress = true;
+              document.documentElement.appendChild(layer);
+              root.setAttribute('data-vt-transitioning', '');
+              root.offsetWidth;
+              root.setAttribute('data-vt-exit', direction);
+
+              var finished = false;
+              var go = function (animationEvent) {
+                if (animationEvent && animationEvent.target !== layer && animationEvent.target !== document.body) {
+                  return;
+                }
+                if (finished) return;
+                finished = true;
+                cleanupTransitionLayer(layer);
+                location.href = targetUrl.href;
+              };
+
+              layer.addEventListener('animationend', go, { once: true });
+              document.body.addEventListener('animationend', go, { once: true });
+              setTimeout(go, 480);
+            }
+
+            function prefetchTransitionTarget(anchor) {
+              if (!anchor) return;
+              var targetUrl;
+              try {
+                targetUrl = new URL(anchor.href, location.href);
+              } catch (err) {
+                return;
+              }
+              if (canTransitionTo(anchor, targetUrl)) fetchTransitionPage(targetUrl);
+            }
+
+            function scheduleTransitionPrefetches() {
+              var anchors = Array.prototype.slice.call(document.querySelectorAll('a[href]'));
+              var seen = new Set();
+              var queue = anchors.filter(function (anchor) {
+                var targetUrl;
+                try {
+                  targetUrl = new URL(anchor.href, location.href);
+                } catch (err) {
+                  return false;
+                }
+                var key = transitionCacheKey(targetUrl);
+                if (seen.has(key) || !canTransitionTo(anchor, targetUrl)) return false;
+                seen.add(key);
+                return true;
+              });
+
+              function runNext() {
+                var anchor = queue.shift();
+                if (!anchor) return;
+                fetchTransitionPage(new URL(anchor.href, location.href)).finally(function () {
+                  scheduleNext();
+                });
+              }
+
+              function scheduleNext() {
+                if (!queue.length) return;
+                if ('requestIdleCallback' in window) {
+                  requestIdleCallback(runNext, { timeout: 1500 });
+                } else {
+                  setTimeout(runNext, 120);
+                }
+              }
+
+              scheduleNext();
+            }
+
+            addEventListener('pointerover', function (event) {
+              var anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+              prefetchTransitionTarget(anchor);
+            }, { capture: true });
+
+            addEventListener('focusin', function (event) {
+              var anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+              prefetchTransitionTarget(anchor);
+            }, { capture: true });
+
+            addEventListener('click', function (event) {
+              var anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+              if (!anchor) return;
+              if (transitionInProgress) {
+                event.preventDefault();
+                return;
+              }
+              var targetUrl;
+              try {
+                targetUrl = new URL(anchor.href, location.href);
+              } catch (err) {
+                return;
+              }
+              if (!shouldAnimateNavigation(event, anchor, targetUrl)) return;
+
+              var direction = fallbackDirection(anchor, targetUrl);
+              event.preventDefault();
+              transitionInProgress = true;
+              fetchTransitionPage(targetUrl).then(function (html) {
+                if (html) navigateWithPreview(targetUrl, direction, html);
+                else navigateAfterFallback(targetUrl, direction);
+              });
+            }, { capture: true });
+
+            addEventListener('pagehide', function () {
+              writeSessionValue(BODY_TRANSFORM_SOURCE_PATH_KEY, normalizedPath(location));
+              root.removeAttribute('data-vt-enter');
+              root.removeAttribute('data-vt-exit');
+              root.removeAttribute('data-vt-transitioning');
+            });
+
+            addEventListener('pageshow', function (event) {
+              if (event.persisted) applyEnterDirection(storedTraverseDirection());
+            });
+
+            applyPendingEnterDirection();
+            if (document.readyState === 'loading') {
+              addEventListener('DOMContentLoaded', scheduleTransitionPrefetches, { once: true });
+            } else {
+              scheduleTransitionPrefetches();
+            }
+          }
+        } catch (e) {
+          /* Transition mode setup is best-effort; unsupported environments still navigate. */
+        }
 
         try {
           applyFamily(storedFamily());
@@ -107,7 +600,7 @@ const description = "Stuff that I've built";
             }
           };
           if (mql.addEventListener) mql.addEventListener('change', onChange);
-          else if (mql.addListener) mql.addListener(onChange); // Safari <14, old Edge.
+          else if (mql.addListener) mql.addListener(onChange); // Older browsers.
         } catch (e) {
           /* Change events unsupported; the initial theme is still applied. */
         }
@@ -128,6 +621,7 @@ const description = "Stuff that I've built";
     />
   </head>
   <body>
+    <div class="vt-page-backdrop" aria-hidden="true"></div>
     {!hideNav && <TopNav />}
     <slot />
     <script>

@@ -1,24 +1,23 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import "../styles/view-transitions.css";
 ---
 
 <BaseLayout>
-  <main class="vt-home-hero" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
+  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
     <h1 class="page-heading" style="margin-bottom: var(--space-2); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
-    <p class="page-subtitle" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
+    <p class="page-subtitle vt-tagline" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
       Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
     </p>
     <nav class="craft-links craft-links--vertical" aria-label="Featured links">
-      <a href="/software" class="craft-link">
-        <span class="craft-link-index" aria-hidden="true">01</span>
+      <a href="/software" class="craft-link" data-direction="right">
+        <span class="craft-link-seed vt-seed-software" aria-hidden="true"></span>
         <span>Software Projects</span>
-        <span class="craft-link-arrow vt-craft-arrow" aria-hidden="true">→</span>
+        <span class="craft-link-arrow" aria-hidden="true">→</span>
       </a>
-      <a href="/about" class="craft-link">
-        <span class="craft-link-index" aria-hidden="true">02</span>
+      <a href="/about" class="craft-link" data-direction="down">
+        <span class="craft-link-seed vt-seed-about" aria-hidden="true"></span>
         <span>About Me</span>
-        <span class="craft-link-arrow js-about-arrow" aria-hidden="true">→</span>
+        <span class="craft-link-arrow craft-link-arrow--down" aria-hidden="true">↓</span>
       </a>
     </nav>
   </main>
@@ -34,37 +33,60 @@ import "../styles/view-transitions.css";
     </div>
   </div>
 
-  <!-- The flying arrow: vt-craft-arrow names the blog tag's arrow statically
-       (view-transitions.css). When the journey is home ⇄ about instead, hand
-       the name to the About tag's arrow so the morph follows the link actually
-       travelled — both inner pages stage the same named landing dot in their
-       header pill. pageswap fires just before the outgoing page is snapshotted
-       and pagereveal just before the incoming one first renders: the only two
-       moments a cross-document transition lets the names move. Browsers
-       missing the events (or the Navigation API) keep the static default. -->
+  <!-- View transitions — "panning canvas" model:
+       The whole page slides as the root snapshot. Named elements (tagline,
+       seed dot, nav bar) are lifted out and morph independently.
+       - vt-seed-software: the Software button's accent seed dot flies up and
+         merges into the nav home dot (dot->dot->house)
+       - vt-seed-about: the About button's accent seed dot flies up and merges
+         into the nav home dot (dot->dot->house)
+       - vt-tagline: "Builder | Mentor | Father" morphs into the About sub-header
+       The arrows are NOT named — they stay in the root snapshot and simply
+       pan/slide with the rest of the page as it transitions.
+       The pageswap/pagereveal scripts below set VT types (slide-right,
+       slide-down, back-nav) so CSS picks the correct root-slide direction. -->
+
   <script is:inline>
-    (function () {
-      function aim(url) {
-        var blogArrow = document.querySelector('.vt-craft-arrow');
-        var aboutArrow = document.querySelector('.js-about-arrow');
-        if (!blogArrow || !aboutArrow || !url) return;
-        var toAbout = /^\/about\/?$/.test(new URL(url, location.href).pathname);
-        // The empty string clears the inline override, falling back to the
-        // stylesheet default — the blog arrow owns the name.
-        blogArrow.style.viewTransitionName = toAbout ? 'none' : '';
-        aboutArrow.style.viewTransitionName = toAbout ? 'craft-arrow' : '';
+    /* Tag each homepage view transition with direction + home-edge types,
+       and deterministically lift the correct button's seed dot into the
+       flying "arrow-fly" group BEFORE the snapshot is captured. We assign
+       the seed's view-transition-name here in JS rather than via a
+       type-gated CSS rule because the CSS assignment on the OUTGOING
+       snapshot was timing-fragile and intermittently skipped the dot. */
+    function applySeed(toAbout) {
+      var sw = document.querySelector('.vt-seed-software');
+      var ab = document.querySelector('.vt-seed-about');
+      if (sw) sw.style.viewTransitionName = toAbout ? 'none' : 'arrow-fly';
+      if (ab) ab.style.viewTransitionName = toAbout ? 'arrow-fly' : 'none';
+    }
+
+    window.addEventListener('pageswap', function (e) {
+      if (!e.viewTransition) return;
+      e.viewTransition.types.add('home-edge');
+      var entry = e.activation && e.activation.entry;
+      var path = entry ? new URL(entry.url).pathname : '';
+      var toAbout = path.indexOf('/about') === 0;
+      e.viewTransition.types.add(toAbout ? 'slide-down' : 'slide-right');
+      applySeed(toAbout);
+      if (e.activation && e.activation.navigationType === 'traverse') {
+        e.viewTransition.types.add('back-nav');
       }
-      window.addEventListener('pageswap', function (e) {
-        if (e.viewTransition && e.activation && e.activation.entry) {
-          aim(e.activation.entry.url);
-        }
-      });
-      window.addEventListener('pagereveal', function (e) {
-        var act = window.navigation && window.navigation.activation;
-        if (e.viewTransition && act && act.from) {
-          aim(act.from.url);
-        }
-      });
-    })();
+    });
+
+    window.addEventListener('pagereveal', function (e) {
+      if (!e.viewTransition) return;
+      e.viewTransition.types.add('home-edge');
+      var nav = navigation.activation;
+      var from = nav && nav.from;
+      if (from) {
+        var path = new URL(from.url).pathname;
+        var toAbout = path.indexOf('/about') === 0;
+        e.viewTransition.types.add(toAbout ? 'slide-down' : 'slide-right');
+        applySeed(toAbout);
+      }
+      if (nav && nav.navigationType === 'traverse') {
+        e.viewTransition.types.add('back-nav');
+      }
+    });
   </script>
 </BaseLayout>

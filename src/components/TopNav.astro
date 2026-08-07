@@ -25,8 +25,11 @@ const crumb = path.startsWith('/software/') && path !== '/software'
         aria-current={isHome ? 'page' : undefined}
         data-tooltip={isHome ? 'You’re home' : 'Back to home'}
       >
-        <!-- vt-home-mark: the dot ⇄ house morph across the home/blog view
-             transition (view-transitions.css) -->
+        <!-- vt-home-mark: the dot / house morph across the home/subpage view
+             transition. Named on EVERY page so the dot (homepage) morphs in
+             place into the house (subpages). The morph is delayed so the dot
+             holds, then blooms into the house exactly as the flying arrow
+             lands (see view-transitions.css, home-edge type). -->
         <span class="home-mark vt-home-mark" aria-hidden="true">
           <svg
             class="home-icon"
@@ -45,10 +48,18 @@ const crumb = path.startsWith('/software/') && path !== '/software'
           </svg>
           <span class="home-dot"></span>
         </span>
+        {!isHome && (
+          <!-- Transparent flight target: gives the arrow-fly view-transition
+               group a destination geometry over the home control so the
+               homepage button arrow auto-travels up here while staying an
+               arrow, then fades as it lands. Renders a box (opacity:0) but
+               does not affect layout or block clicks. -->
+          <span class="home-arrow-target vt-arrow-fly" aria-hidden="true"></span>
+        )}
       </a>
       {crumb && (
         <span class="crumb-separator" aria-hidden="true">&rsaquo;</span>
-        <a class="nav-crumb" href={crumb.href}>{crumb.label}</a>
+        <a class="nav-crumb vt-nav-crumb" href={crumb.href}>{crumb.label}</a>
       )}
     </nav>
     <div class="nav-actions">
@@ -153,6 +164,23 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     justify-content: center;
   }
 
+  /* Transparent flight target for the arrow-fly view-transition group.
+     Centered over the home control at dot scale (~8px) so the flying seed
+     dot lands cleanly onto the 7px nav home dot before it blooms into the
+     house. opacity:0 (NOT display:none / visibility:hidden) so it still
+     renders a box for the snapshot to capture geometry; pointer-events:none
+     and absolute positioning keep it out of layout and out of the way of
+     clicks. (.home-link is position: relative, so this anchors to it.) */
+  .home-arrow-target {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    opacity: 0;
+    pointer-events: none;
+  }
   .home-icon {
     display: block;
     width: 20px;
@@ -169,7 +197,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
   }
 
   /* At home the control is the "you are here" marker — the same 7px accent
-     dot as the blog header pill's (the one the cut-list arrow flies into). */
+     dot that serves as a "you are here" marker on the homepage. */
   .home-dot {
     display: none;
     width: 7px;
