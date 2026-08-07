@@ -5,38 +5,52 @@ import ThemeFamilyToggle from './ThemeFamilyToggle.astro';
 // Each page is statically built, so it knows at build time whether it *is*
 // the homepage. On the homepage the home control collapses into a "you are
 // here" dot; everywhere else it is the little house that leads back.
-const isHome = Astro.url.pathname === '/';
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isHome = path === '/';
+
+// Breadcrumb: only shown on detail pages (e.g. /software/<slug>).
+// Section landing pages (/software, /about) don't get a crumb because
+// their <h1> already names the section.
+const crumb = path.startsWith('/software/') && path !== '/software'
+  ? { label: 'Software Projects', href: '/software' }
+  : null;
 ---
 <nav class="top-nav vt-top-nav">
   <div class="nav-inner">
-    <a
-      href="/"
-      class:list={['home-link', { 'is-home': isHome }]}
-      aria-label={isHome ? 'Home — you are here' : 'Back to home'}
-      aria-current={isHome ? 'page' : undefined}
-      data-tooltip={isHome ? 'You’re home' : 'Back to home'}
-    >
-      <!-- vt-home-mark: the dot ⇄ house morph across the home/blog view
-           transition (view-transitions.css) -->
-      <span class="home-mark vt-home-mark" aria-hidden="true">
-        <svg
-          class="home-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M3 10.5 12 3l9 7.5"></path>
-          <path d="M5 9.4V21h14V9.4"></path>
-          <!-- The doorway dot: the same accent dot the control collapses to
-               on the homepage. Lights up on hover — the dot lives here. -->
-          <circle class="home-door-dot" cx="12" cy="15" r="2" stroke="none"></circle>
-        </svg>
-        <span class="home-dot"></span>
-      </span>
-    </a>
+    <nav class="breadcrumb-group" aria-label="Breadcrumb">
+      <a
+        href="/"
+        class:list={['home-link', { 'is-home': isHome }]}
+        aria-label={isHome ? 'Home — you are here' : 'Back to home'}
+        aria-current={isHome ? 'page' : undefined}
+        data-tooltip={isHome ? 'You’re home' : 'Back to home'}
+      >
+        <!-- vt-home-mark: the dot ⇄ house morph across the home/blog view
+             transition (view-transitions.css) -->
+        <span class="home-mark vt-home-mark" aria-hidden="true">
+          <svg
+            class="home-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5 9.4V21h14V9.4"></path>
+            <!-- The doorway dot: the same accent dot the control collapses to
+                 on the homepage. Lights up on hover — the dot lives here. -->
+            <circle class="home-door-dot" cx="12" cy="15" r="2" stroke="none"></circle>
+          </svg>
+          <span class="home-dot"></span>
+        </span>
+      </a>
+      {crumb && (
+        <span class="crumb-separator" aria-hidden="true">&rsaquo;</span>
+        <a class="nav-crumb" href={crumb.href}>{crumb.label}</a>
+      )}
+    </nav>
     <div class="nav-actions">
       <ThemeFamilyToggle />
       <ThemeToggle />
@@ -68,6 +82,42 @@ const isHome = Astro.url.pathname === '/';
     display: flex;
     align-items: center;
     gap: var(--space-2);
+  }
+
+  /* Breadcrumb group: left-aligned flex row holding home-link + optional crumb */
+  .breadcrumb-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    /* Reset <nav> defaults */
+    padding: 0;
+    border: 0;
+  }
+  .crumb-separator {
+    color: var(--color-text-muted);
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    line-height: 1;
+    user-select: none;
+  }
+  .nav-crumb {
+    font-family: var(--font-display);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+  }
+  .nav-crumb:hover,
+  .nav-crumb:focus-visible {
+    color: var(--color-accent);
+  }
+  .nav-crumb:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   /* Icon-only home control. Same 40px round footprint as the theme toggles
@@ -102,6 +152,7 @@ const isHome = Astro.url.pathname === '/';
     align-items: center;
     justify-content: center;
   }
+
   .home-icon {
     display: block;
     width: 20px;

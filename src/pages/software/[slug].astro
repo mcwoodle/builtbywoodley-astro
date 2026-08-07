@@ -1,0 +1,20 @@
+---
+import SoftwarePageLayout from "../../layouts/SoftwarePageLayout.astro";
+import { getProjectPaths, renderProjectContent } from "../../utils/content";
+
+export async function getStaticPaths() {
+  return getProjectPaths("software");
+}
+
+const { project } = Astro.props;
+
+if (!project) {
+  return Astro.redirect(`/404?code=PROJECT_NOT_FOUND`);
+}
+
+const Content = await renderProjectContent(project);
+---
+
+<SoftwarePageLayout project={project}>
+  <Content />
+</SoftwarePageLayout>

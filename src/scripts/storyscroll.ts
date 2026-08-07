@@ -41,63 +41,73 @@ document.addEventListener('DOMContentLoaded', () => {
       '(prefers-reduced-motion: reduce)',
     ).matches;
 
-    // Reveal settings per element. Title and content are intentionally
-    // identical right now so they animate in sync — give either block its own
-    // values to make them independent again.
-    //   offsetVh: start offset as a fraction of the viewport height; small, so
-    //     the element only peeks above the bottom edge early on.
-    //   start/end: ScrollTrigger positions, tracking the entry's natural 1:1
-    //     position (the entry is never transformed). Starting at 'top bottom'
-    //     (as the section enters) and ending around the middle stretches the
-    //     reveal over a long, slow range.
-    //   ease: fast at first, slowing as the section nears mid-viewport.
-    //
-    // Net effect: the title is only slightly visible at the bottom by the time
-    // the section takes up ~1/8 of the viewport, and finishes settling roughly
-    // halfway up.
+    // Entry reveal — the title rises and fades in from the bottom edge as
+    // before (12vh of travel over a long scrubbed range, settling around
+    // mid-viewport), but the content no longer flies with it. It stays
+    // planted at its 1:1 position and prints in top-to-bottom behind the
+    // rising title, like a plotter laying ink:
+    //   - the wipe starts at the scrub progress where the title's bottom
+    //     edge has risen past the content's first line — before that the
+    //     title itself occupies the band, so no dead gap can ever open;
+    //   - after it, revealed text only ever sits below the title's path,
+    //     so the two never collide and the content needs no opacity hiding.
     const reveal = {
-      title: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
-      content: { offsetVh: 0.12, start: 'top bottom', end: 'top 35%', ease: 'power1.out' },
-    };
-
-    type RevealCfg = {
-      offsetVh: number;
-      start: string;
-      end: string;
-      ease: string;
-    };
-    const animateReveal = (
-      el: HTMLElement,
-      entry: HTMLElement,
-      cfg: RevealCfg,
-    ) => {
-      // Offset within the entry (measured before any transform is applied) so
-      // both elements begin the same distance below the bottom edge.
-      const delta = el.getBoundingClientRect().top - entry.getBoundingClientRect().top;
-      gsap.fromTo(
-        el,
-        { opacity: 0, y: () => window.innerHeight * cfg.offsetVh - delta },
-        {
-          opacity: 1,
-          y: 0,
-          ease: cfg.ease,
-          scrollTrigger: {
-            trigger: entry,
-            start: cfg.start,
-            end: cfg.end,
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        },
-      );
+      offsetVh: 0.12,
+      start: 'top bottom',
+      end: 'top 35%',
+      ease: 'power1.out',
     };
 
     entries.forEach((entry) => {
       if (reduceMotion) return;
       const title = entry.querySelector<HTMLElement>('.project-title');
       const content = entry.querySelector<HTMLElement>('.project-content');
-      if (title) animateReveal(title, entry, reveal.title);
-      if (content) animateReveal(content, entry, reveal.content);
+
+      const entryTop = entry.getBoundingClientRect().top;
+      const titleRect = title?.getBoundingClientRect();
+      const contentRect = content?.getBoundingClientRect();
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: entry,
+          start: reveal.start,
+          end: reveal.end,
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      if (title && titleRect) {
+        tl.fromTo(
+          title,
+          { opacity: 0, y: () => window.innerHeight * reveal.offsetVh - (titleRect.top - entryTop) },
+          { opacity: 1, y: 0, ease: reveal.ease, duration: 1 },
+          0,
+        );
+      }
+
+      if (content && contentRect) {
+        // Title travel K and resting gap G between title bottom and content
+        // top. The title's bottom edge passes the content's first line when
+        // (12vh - delta) * (1 - e(p)) = G; for power1.out e(p) = 1-(1-p)^2,
+        // so pStart = 1 - sqrt(G / K). Clamped so degenerate layouts (no
+        // gap, tiny viewports) still leave room for the wipe to play.
+        let pStart = 0;
+        if (titleRect) {
+          const K = window.innerHeight * reveal.offsetVh - (titleRect.top - entryTop);
+          const G = contentRect.top - titleRect.bottom;
+          if (K > 0 && G < K) pStart = Math.min(0.6, 1 - Math.sqrt(Math.max(G, 0) / K));
+        }
+
+        // ease 'none': the print advances at a steady, mechanical rate tied
+        // directly to scroll.
+        tl.fromTo(
+          content,
+          { clipPath: 'inset(0% 0% 100% 0%)' },
+          { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 1 - pStart },
+          pStart,
+        );
+      }
     });
   }
 

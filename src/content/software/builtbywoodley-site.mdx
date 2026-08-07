@@ -1,0 +1,38 @@
+---
+title: "Built by Woodley (This Site)"
+publishDate: 2025-06-10
+description: "A meta write-up of this portfolio site: static Astro with MDX content collections, a token-driven design system, and defense-in-depth security headers on Cloudflare Workers."
+coverImage: "./images/site-cover.svg"
+tags: ["web", "design-system", "cloudflare", "security"]
+summary: "This portfolio site itself -- static Astro with MDX content collections, a token-driven Tailwind design system with multiple theme families, and defense-in-depth headers on Cloudflare Workers."
+stack: ["Astro", "MDX", "TypeScript", "Tailwind CSS", "Cloudflare Workers"]
+order: 3
+---
+
+## Motivation
+
+Every portfolio site is a bit meta, but I wanted this one to demonstrate the same engineering thinking it describes. The site is built with Astro as a fully static output -- MDX content collections for structured authoring, `astro:assets` for build-time image optimization, and file-based routing with cross-document view transitions that make navigation feel app-like without shipping a client-side router.
+
+## Design system
+
+The styling layer is Tailwind v4 over a token-driven `global.css` design system. All visual decisions flow through CSS custom properties -- colors, spacing, radii, shadows, typography scales -- rather than being scattered across component files. The interesting part is that the token system supports **multiple theme families**: an editorial look (the default) and the site's original appearance, each with light and dark variants. Switching families swaps the entire visual identity without touching markup or layout, because every component reads the same token names. The `data-theme` and `data-theme-family` attributes on the root element drive the swap, with a no-flash inline script that resolves the visitor's preference before the first paint.
+
+The editorial family carries a workshop "shop drawing" aesthetic -- a single typeface with hierarchy from weight, size, case, and tracking; a faint graph-paper dot grid on the page ground; scribed hairlines and measured tick marks as section cues. It is deliberately restrained: every craft cue is felt rather than noticed.
+
+## Hosting architecture
+
+The site deploys as a **Cloudflare Workers static-assets** site -- pure static output, no server-side rendering. GitHub Actions runs the build on pushes to `mainline` and ships it via `wrangler`. Each pull request gets a unique preview URL posted automatically as a PR comment, so visual review happens before merge. The production site runs on a custom domain through Cloudflare.
+
+## Security posture
+
+Security is treated as architecture, not afterthought. A `public/_headers` file ships defense-in-depth response headers with every page Cloudflare serves:
+
+- A **Content-Security-Policy** that locks sources to same-origin plus the Google Fonts origin. `script-src` allows only `'self'` and `'unsafe-inline'` (required for the theme-init script); no external scripts load.
+- **Clickjacking protection** via `frame-ancestors 'none'` and `X-Frame-Options`.
+- **HSTS** with a one-year max-age and `includeSubDomains`.
+- A tight **Referrer-Policy** (`strict-origin-when-cross-origin`) and a **Permissions-Policy** that denies every browser feature the site does not use -- camera, microphone, geolocation, payment, and more.
+- **Cross-Origin-Opener-Policy** set to `same-origin` to isolate the browsing context.
+
+CI runs secret scanning via gitleaks on every commit (locally as a pre-commit hook and in GitHub Actions), plus `npm audit` for dependency vulnerability checks. Dependabot keeps npm packages and pinned GitHub Actions current.
+
+A detail worth calling out: this Software Projects section reuses the same content-collection and MDX pipeline as the workshop journal blog. And the embedded GTA Urban Analytics map is served under a **deliberately path-scoped CSP exception** at `/viz/*`. That path gets a relaxed policy so it can load third-party map libraries (kepler.gl from unpkg, Carto tiles), while the rest of the site stays locked to `default-src 'self'`. The exception is implemented as a separate rule block in `_headers`, and Cloudflare applies the most-specific matching rule for each path.

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <rect width="1200" height="750" rx="16" fill="#1A2A3A"/>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="#243444" stroke="#4A7A9A" stroke-width="1"/>
+  <!-- Graph paper dots -->
+  <pattern id="dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+    <circle cx="14" cy="14" r="1" fill="#4A6A7A" opacity="0.3"/>
+  </pattern>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="url(#dots)"/>
+  <!-- Blog post lines -->
+  <rect x="300" y="180" width="600" height="20" rx="4" fill="#4A7A9A" opacity="0.35"/>
+  <rect x="300" y="220" width="600" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <rect x="300" y="238" width="540" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <rect x="300" y="256" width="580" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <!-- Divider -->
+  <line x1="300" y1="285" x2="900" y2="285" stroke="#4A7A9A" stroke-width="0.5" opacity="0.3"/>
+  <!-- Second post block -->
+  <rect x="300" y="305" width="450" height="16" rx="3" fill="#4A7A9A" opacity="0.3"/>
+  <rect x="300" y="335" width="600" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <rect x="300" y="353" width="560" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <rect x="300" y="371" width="590" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <!-- Divider -->
+  <line x1="300" y1="400" x2="900" y2="400" stroke="#4A7A9A" stroke-width="0.5" opacity="0.3"/>
+  <!-- Third post block -->
+  <rect x="300" y="420" width="380" height="16" rx="3" fill="#4A7A9A" opacity="0.3"/>
+  <rect x="300" y="450" width="600" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <rect x="300" y="468" width="520" height="8" rx="2" fill="#4A6A7A" opacity="0.2"/>
+  <text x="600" y="560" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="#C8D8E8" letter-spacing="0.02em">A Fake Blog</text>
+  <text x="600" y="605" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#7A9ABA" letter-spacing="0.05em">Astro + MDX + Content Collections</text>
+</svg>

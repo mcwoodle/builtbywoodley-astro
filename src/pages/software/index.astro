@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+
+const entries = await getCollection("software");
+const sorted = entries.sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout>
+  <main>
+    <header class="section-shell">
+      <div class="surface-section">
+        <h1 class="page-heading">Software Projects</h1>
+        <p class="page-subtitle">
+          Each write-up covers the use-case motivation alongside the engineering
+          decisions, architecture, and agentic development approach behind it.
+        </p>
+      </div>
+    </header>
+
+    <div class="section-shell">
+      <div class="grid-gap-md" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        {sorted.map((entry) => (
+          <a href={entry.data.cardUrl ?? `/software/${entry.id}`} style="text-decoration: none; color: inherit;">
+            <article class="surface" style="overflow: hidden; display: flex; flex-direction: column; height: 100%; transition: transform 0.25s ease, box-shadow 0.25s ease; border: 1px solid var(--color-border-subtle);">
+              <div style="width: 100%; height: 200px; overflow: hidden;">
+                <Image
+                  src={entry.data.coverImage}
+                  alt={`Cover image for ${entry.data.title}`}
+                  width={600}
+                  height={375}
+                  style="display: block; width: 100%; height: 100%; object-fit: cover;"
+                />
+              </div>
+              <div style="padding: var(--space-4); display: flex; flex-direction: column; flex: 1;">
+                <h2 style="font-size: var(--fs-heading); margin: 0 0 var(--space-2); line-height: var(--lh-heading);">
+                  {entry.data.title}
+                </h2>
+                <p style="font-size: var(--fs-small); color: var(--color-text-muted); margin: 0 0 var(--space-3); flex: 1;">
+                  {entry.data.summary}
+                </p>
+                {entry.data.stack.length > 0 && (
+                  <div class="tags-row">
+                    {entry.data.stack.map((tech: string) => (
+                      <span class="tag-chip">{tech}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          </a>
+        ))}
+      </div>
+    </div>
+
+  </main>
+</BaseLayout>

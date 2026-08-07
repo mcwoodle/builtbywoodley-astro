@@ -1,0 +1,11 @@
+# Gitleaks configuration
+# Extends the default rules but adds path-based allowlisting for the
+# kepler.gl standalone HTML bundle, which contains minified JS where
+# variable/property names trigger false-positive "generic-api-key" matches.
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''public/viz/gta-crime-map\.html''',
+]

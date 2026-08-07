@@ -1,0 +1,45 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+  project: any;
+}
+
+const { project } = Astro.props;
+---
+
+<BaseLayout>
+  <main>
+    <article class="section-shell">
+      <div class="surface-section">
+        <header class="project-meta" style="margin-bottom: var(--space-4);">
+          <span>{project.data.publishDate.toLocaleDateString()}</span>
+          {project.data.repoUrl && (
+            <a href={project.data.repoUrl} target="_blank" rel="noopener" style="color: var(--color-accent);">
+              View repository
+            </a>
+          )}
+        </header>
+        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
+          {project.data.title}
+        </h1>
+        {project.data.description && (
+          <p class="page-subtitle" style="margin-bottom: var(--space-4);">
+            {project.data.description}
+          </p>
+        )}
+        {project.data.stack.length > 0 && (
+          <div class="tags-row" style="margin-bottom: var(--space-5);">
+            {project.data.stack.map((tech: string) => (
+              <span class="tag-chip">{tech}</span>
+            ))}
+          </div>
+        )}
+        <div class="prose">
+          <slot />
+        </div>
+        <div class="post-end-mark"></div>
+      </div>
+    </article>
+  </main>
+</BaseLayout>

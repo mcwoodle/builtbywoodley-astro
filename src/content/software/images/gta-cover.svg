@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <rect width="1200" height="750" rx="16" fill="#1A3A4A"/>
+  <rect x="40" y="40" width="1120" height="670" rx="12" fill="#224455" stroke="#3A7A8A" stroke-width="1"/>
+  <!-- Grid lines suggesting a map -->
+  <line x1="200" y1="40" x2="200" y2="710" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="400" y1="40" x2="400" y2="710" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="600" y1="40" x2="600" y2="710" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="800" y1="40" x2="800" y2="710" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="1000" y1="40" x2="1000" y2="710" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="40" y1="180" x2="1160" y2="180" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="40" y1="320" x2="1160" y2="320" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="40" y1="460" x2="1160" y2="460" stroke="#2A5A6A" stroke-width="0.5"/>
+  <line x1="40" y1="600" x2="1160" y2="600" stroke="#2A5A6A" stroke-width="0.5"/>
+  <!-- Hexagon shapes suggesting aggregation bins -->
+  <polygon points="300,300 340,275 380,300 380,340 340,365 300,340" fill="#3A8A6A" opacity="0.4"/>
+  <polygon points="380,300 420,275 460,300 460,340 420,365 380,340" fill="#4AAA7A" opacity="0.3"/>
+  <polygon points="500,250 540,225 580,250 580,290 540,315 500,290" fill="#3A8A6A" opacity="0.5"/>
+  <polygon points="580,250 620,225 660,250 660,290 620,315 580,290" fill="#5ABB8A" opacity="0.35"/>
+  <polygon points="660,350 700,325 740,350 740,390 700,415 660,390" fill="#4AAA7A" opacity="0.45"/>
+  <polygon points="740,350 780,325 820,350 820,390 780,415 740,390" fill="#3A8A6A" opacity="0.3"/>
+  <polygon points="420,400 460,375 500,400 500,440 460,465 420,440" fill="#5ABB8A" opacity="0.25"/>
+  <polygon points="820,250 860,225 900,250 900,290 860,315 820,290" fill="#4AAA7A" opacity="0.4"/>
+  <text x="600" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="#E0EAE4" letter-spacing="0.02em">GTA Urban Analytics</text>
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#8ABBA0" letter-spacing="0.05em">Crime data pipeline &amp; interactive map</text>
+</svg>

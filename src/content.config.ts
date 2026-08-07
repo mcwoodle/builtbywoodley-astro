@@ -20,6 +20,23 @@ const projectSchema = ({ image }: { image: any }) =>
     videoUrl: z.string().url().optional(),
   });
 
+const softwareSchema = ({ image }: { image: any }) =>
+  z.object({
+    title: z.string().max(100, 'Title cannot exceed 100 characters.'),
+    publishDate: z.date(),
+    description: z.string().optional(),
+    coverImage: image(),
+    tags: z.array(z.string()).default([]),
+    summary: z.string(),
+    stack: z.array(z.string()).default([]),
+    repoUrl: z.string().url().optional(),
+    // liveUrl is a site-relative path (e.g. /viz/...), not an absolute URL
+    liveUrl: z.string().optional(),
+    // cardUrl overrides the default /software/<slug> link on the index card
+    cardUrl: z.string().optional(),
+    order: z.number().default(0),
+  });
+
 const projects = defineCollection({
   loader: glob({ pattern: '**/*.mdx', base: './src/content/projects' }),
   schema: projectSchema,
@@ -30,4 +47,9 @@ const mockedProjects = defineCollection({
   schema: projectSchema,
 });
 
-export const collections = { projects, mockedProjects };
+const software = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/software' }),
+  schema: softwareSchema,
+});
+
+export const collections = { projects, mockedProjects, software };
