@@ -18,5 +18,11 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: [
+        'local.builtbywoodley.ca',
+        'dev.astro.woodleywoodworks.ca',
+      ],
+    },
   },
 });
