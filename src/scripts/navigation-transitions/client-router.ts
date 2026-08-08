@@ -30,7 +30,7 @@ function clearTransitionAttributes(doc: Document) {
 
 function copyThemeState(newDocument: Document) {
   const nextRoot = newDocument.documentElement;
-  for (const attribute of ['data-theme', 'data-theme-mode', 'data-theme-family']) {
+  for (const attribute of ['data-theme', 'data-theme-mode']) {
     const value = root.getAttribute(attribute);
     if (value !== null) nextRoot.setAttribute(attribute, value);
   }

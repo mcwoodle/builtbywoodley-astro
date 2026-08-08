@@ -8,8 +8,8 @@
  * boundary (comma, dash, sentence end…) so the styled run reads as a phrase,
  * not an arbitrary word count.
  *
- * The span carries no styling of its own — themes that don't style
- * `.entry-leadin` (the preserved original family) render the text unchanged.
+ * The span carries no styling of its own; the Editorial theme applies its
+ * tracked lead-in treatment through the `.entry-leadin` class.
  */
 
 // Minimal structural types for the HAST nodes we touch, to avoid a type-only

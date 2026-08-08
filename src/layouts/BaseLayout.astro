@@ -27,14 +27,9 @@ const {
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
-        var FAMILY_KEY = 'theme-family';
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
-        var FAMILIES = { editorial: 1, original: 1 };
-        var BG = {
-          editorial: { light: '#FAF8F4', dark: '#15120F' },
-          original: { light: '#F5F0EB', dark: '#1A1613' },
-        };
+        var BG = { light: '#FAF8F4', dark: '#15120F' };
 
         function systemTheme() {
           if (!window.matchMedia) return 'light';
@@ -51,47 +46,29 @@ const {
           }
         }
 
-        function storedFamily() {
-          try {
-            var value = localStorage.getItem(FAMILY_KEY);
-            return FAMILIES[value] ? value : 'editorial';
-          } catch (error) {
-            return 'editorial';
-          }
-        }
-
-        function syncCanvasBg(familyValue, appliedTheme) {
-          var family = FAMILIES[familyValue] ? familyValue : 'editorial';
+        function syncCanvasBg(appliedTheme) {
           var theme = appliedTheme === 'dark' ? 'dark' : 'light';
-          var background = BG[family][theme];
+          var background = BG[theme];
           root.style.setProperty('--vt-bg', background);
           root.style.backgroundColor = background;
           root.style.colorScheme = theme;
         }
-
-        function applyFamily(familyValue) {
-          var family = FAMILIES[familyValue] ? familyValue : 'editorial';
-          root.setAttribute('data-theme-family', family);
-          syncCanvasBg(family, root.getAttribute('data-theme') || systemTheme());
-        }
-        window.__applyThemeFamily = applyFamily;
 
         function applyMode(modeValue) {
           var mode = MODES[modeValue] ? modeValue : 'system';
           var applied = mode === 'light' || mode === 'dark' ? mode : systemTheme();
           root.setAttribute('data-theme', applied);
           root.setAttribute('data-theme-mode', mode);
-          syncCanvasBg(root.getAttribute('data-theme-family') || storedFamily(), applied);
+          syncCanvasBg(applied);
         }
         window.__applyThemeMode = applyMode;
 
         try {
-          applyFamily(storedFamily());
           applyMode(storedMode());
         } catch (error) {
           root.setAttribute('data-theme', 'light');
           root.setAttribute('data-theme-mode', 'system');
-          root.setAttribute('data-theme-family', 'editorial');
+          syncCanvasBg('light');
         }
 
         try {
@@ -116,7 +93,7 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <NavigationTransitionHead />

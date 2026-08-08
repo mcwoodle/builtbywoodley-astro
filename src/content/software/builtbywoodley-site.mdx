@@ -4,7 +4,7 @@ publishDate: 2025-06-10
 description: "A meta write-up of this portfolio site: static Astro with MDX content collections, a token-driven design system, and defense-in-depth security headers on Cloudflare Workers."
 coverImage: "./images/site-cover.svg"
 tags: ["web", "design-system", "cloudflare", "security"]
-summary: "This portfolio site itself -- static Astro with MDX content collections, a token-driven Tailwind design system with multiple theme families, and defense-in-depth headers on Cloudflare Workers."
+summary: "This portfolio site itself -- static Astro with MDX content collections, a token-driven Editorial design system, and defense-in-depth headers on Cloudflare Workers."
 stack: ["Astro", "MDX", "TypeScript", "Tailwind CSS", "Cloudflare Workers"]
 order: 3
 ---
@@ -15,9 +15,9 @@ Every portfolio site is a bit meta, but I wanted this one to demonstrate the sam
 
 ## Design system
 
-The styling layer is Tailwind v4 over a token-driven `global.css` design system. All visual decisions flow through CSS custom properties -- colors, spacing, radii, shadows, typography scales -- rather than being scattered across component files. The interesting part is that the token system supports **multiple theme families**: an editorial look (the default) and the site's original appearance, each with light and dark variants. Switching families swaps the entire visual identity without touching markup or layout, because every component reads the same token names. The `data-theme` and `data-theme-family` attributes on the root element drive the swap, with a no-flash inline script that resolves the visitor's preference before the first paint.
+The styling layer is Tailwind v4 over a token-driven `global.css` design system. All visual decisions flow through CSS custom properties -- colors, spacing, radii, shadows, typography scales -- rather than being scattered across component files. The Editorial theme supports light and dark variants through the same token names, with `data-theme` on the root element selecting the active colour mode. A no-flash inline script resolves the visitor's preference before the first paint.
 
-The editorial family carries a workshop "shop drawing" aesthetic -- a single typeface with hierarchy from weight, size, case, and tracking; a faint graph-paper dot grid on the page ground; scribed hairlines and measured tick marks as section cues. It is deliberately restrained: every craft cue is felt rather than noticed.
+The Editorial theme carries a workshop "shop drawing" aesthetic -- a single typeface with hierarchy from weight, size, case, and tracking; a faint graph-paper dot grid on the page ground; scribed hairlines and measured tick marks as section cues. It is deliberately restrained: every craft cue is felt rather than noticed.
 
 ## Hosting architecture
 

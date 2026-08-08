@@ -3,15 +3,8 @@
 /* ─────────────────────────────────────────────
    Design Tokens
    ───────────────────────────────────────────── */
-/* Two theme *families* share this token system:
-     • Editorial (default) — the refined, airier look. Lives on :root, so it is
-       what loads when nothing else matches.
-     • Original — the preserved original look, scoped to
-       [data-theme-family="original"] so selecting it restores the old site
-       exactly (same tokens it always had + none of the editorial extras).
-   Each family has a light and a dark variant. The no-flash init in
-   BaseLayout sets data-theme-family before first paint; absence falls back to
-   the editorial defaults below. */
+/* Editorial uses one token system with light and dark colour modes. The
+   no-flash init in BaseLayout resolves the selected mode before first paint. */
 
 /* ── Editorial · Light (default) ──
    Paper-white ground, crisp white surfaces and deep ink text for an airy,
@@ -31,7 +24,7 @@
   /* Whisper-faint dot for the editorial graph-paper ground */
   --color-grid-dot: rgba(38, 32, 26, 0.05);
 
-  /* Radii — a touch crisper than the original for a modern edge */
+  /* Radii — crisp enough for the theme's shop-drawing character */
   --radius-md: 10px;
   --radius-lg: 16px;
 
@@ -87,66 +80,6 @@
 
   --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.38);
-
-  color-scheme: dark;
-}
-
-/* ─────────────────────────────────────────────
-   Original Theme (preserved)
-   The site's original look, kept selectable so it can be compared or
-   restored. Re-declares every token the editorial defaults changed — colour,
-   radii, shadows and type — so the original renders exactly as it always did.
-   The editorial-only enhancements further down are skipped for this family.
-   ───────────────────────────────────────────── */
-:root[data-theme-family="original"] {
-  /* Palette — warm, earthy, editorial */
-  --color-bg: #F5F0EB;
-  --color-surface: #FDFBF8;
-  --color-surface-alt: #EDE7DF;
-  --color-border-subtle: rgba(120, 100, 80, 0.15);
-  --color-text: #2C2420;
-  --color-text-muted: #7A6E62;
-  --color-accent: #C2694F;
-  --color-accent-hover: #A8553D;
-  --color-accent-soft: rgba(194, 105, 79, 0.10);
-
-  /* Radii */
-  --radius-md: 12px;
-  --radius-lg: 20px;
-
-  /* Shadows */
-  --shadow-soft: 0 8px 30px rgba(44, 36, 32, 0.08);
-  --shadow-card: 0 2px 12px rgba(44, 36, 32, 0.06);
-
-  /* Typography — families (original pairs sans display with serif body) */
-  --font-body: 'Source Serif 4', Georgia, serif;
-
-  /* Typography — scale */
-  --fs-display: clamp(2.5rem, 4vw, 3.25rem);
-  --fs-heading: clamp(1.25rem, 2vw, 1.5rem);
-  --fs-body: 1rem;
-
-  /* Line heights */
-  --lh-display: 1.15;
-  --lh-body: 1.7;
-
-  color-scheme: light;
-}
-
-/* Original · Dark — warm, earthy, dimmed for low light. */
-:root[data-theme-family="original"][data-theme="dark"] {
-  --color-bg: #1A1613;
-  --color-surface: #242019;
-  --color-surface-alt: #2F2922;
-  --color-border-subtle: rgba(220, 200, 180, 0.14);
-  --color-text: #EDE7DF;
-  --color-text-muted: #ADA192;
-  --color-accent: #D9836A;
-  --color-accent-hover: #E89C84;
-  --color-accent-soft: rgba(217, 131, 106, 0.14);
-
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
 
   color-scheme: dark;
 }
@@ -290,8 +223,7 @@ main.home-main {
    Theme Toggle
    Sits at the right edge of the top nav on every page.
    ───────────────────────────────────────────── */
-.theme-toggle,
-.theme-family-toggle {
+.theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -310,21 +242,18 @@ main.home-main {
     border-color 0.2s ease, transform 0.15s ease;
 }
 
-.theme-toggle:hover,
-.theme-family-toggle:hover {
+.theme-toggle:hover {
   transform: translateY(-1px);
   border-color: var(--color-accent);
   color: var(--color-accent);
 }
 
-.theme-toggle:focus-visible,
-.theme-family-toggle:focus-visible {
+.theme-toggle:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-.theme-toggle svg,
-.theme-family-toggle svg {
+.theme-toggle svg {
   width: 20px;
   height: 20px;
 }
@@ -362,8 +291,7 @@ main.home-main {
    per mode via data-tooltip by the toggle script (and is present in the static
    markup too, so it works before JS runs). aria-label carries the accessible
    name for assistive tech. */
-.theme-toggle::after,
-.theme-family-toggle::after {
+.theme-toggle::after {
   content: attr(data-tooltip);
   position: absolute;
   top: calc(100% + 8px);
@@ -386,9 +314,7 @@ main.home-main {
 }
 
 .theme-toggle:hover::after,
-.theme-toggle:focus-visible::after,
-.theme-family-toggle:hover::after,
-.theme-family-toggle:focus-visible::after {
+.theme-toggle:focus-visible::after {
   opacity: 1;
   transform: translateY(0);
 }
@@ -497,7 +423,7 @@ main.home-main {
    drafting crop marks register at the corners and a small tape-measure rule
    draws in under the label — the same craft cues used elsewhere (eyebrow
    scribe lines, the post-end ruler), kept quiet on purpose. Tokens only, so
-   every theme family and mode renders its own palette.
+   both Editorial colour modes render from the same palette tokens.
    ───────────────────────────────────────────── */
 .craft-links {
   display: flex;
@@ -971,51 +897,43 @@ main.home-main {
 
 /* ─────────────────────────────────────────────
    Editorial Theme — Enhancements
-   Layered on the shared component styles for every family EXCEPT "original",
-   so the preserved original look is untouched. These are pure styling on the
-   existing markup (no structural HTML changes), which is what lets a visitor
-   switch families and keep the very same content.
-
    The look: a workshop "shop drawing". One typeface (Outfit) throughout, with
    hierarchy from weight, size, case and tracking; quiet craft cues — a faint
    graph-paper ground, scribed hairlines, measured tick marks — instead of
    ornament. Restraint is the point: every cue should be felt, not noticed.
-
-   The :root:not([data-theme-family="original"]) prefix also matches when the
-   attribute is absent, so the editorial treatment is the safe default.
    ───────────────────────────────────────────── */
 
 /* The page ground carries a whisper of graph paper — the dot grid of a shop
    drawing. Quiet enough to read as texture, not pattern; surfaces sit on top
    with solid fills. */
-:root:not([data-theme-family="original"]) body {
+body {
   background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 1.4px);
   background-size: 28px 28px;
 }
 
 /* Selected text takes the accent wash — pencil-highlighter, not neon. */
-:root:not([data-theme-family="original"]) ::selection {
+::selection {
   background: color-mix(in srgb, var(--color-accent) 26%, transparent);
 }
 
 /* Headlines pull heavier and tighter than the 600-weight default — the
    single-typeface system needs weight, not a second family, for contrast.
    text-wrap: balance keeps multi-line titles from ragged orphans. */
-:root:not([data-theme-family="original"]) .page-heading {
+.page-heading {
   font-weight: 700;
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
-:root:not([data-theme-family="original"]) .project-title,
-:root:not([data-theme-family="original"]) .project-list-title,
-:root:not([data-theme-family="original"]) .section-heading,
-:root:not([data-theme-family="original"]) .carousel-card-title {
+.project-title,
+.project-list-title,
+.section-heading,
+.carousel-card-title {
   text-wrap: balance;
 }
 
 /* A short scribe line ahead of eyebrows — the draftsman's leader line. */
-:root:not([data-theme-family="original"]) .eyebrow::before {
+.eyebrow::before {
   content: "";
   display: inline-block;
   width: 14px;
@@ -1026,7 +944,7 @@ main.home-main {
 }
 
 /* A hairline under section headers reads like a magazine section rule. */
-:root:not([data-theme-family="original"]) .section-header {
+.section-header {
   border-bottom: 1px solid var(--color-border-subtle);
   padding-bottom: var(--space-4);
 }
@@ -1034,24 +952,24 @@ main.home-main {
 /* ── Project log: a numbered, airy, long-form reading column ── */
 
 /* Number the entries like a contents page and give them generous air. */
-:root:not([data-theme-family="original"]) .js-projects-log .grid-gap-md {
+.js-projects-log .grid-gap-md {
   counter-reset: post;
   gap: var(--space-8);
 }
 
-:root:not([data-theme-family="original"]) .js-projects-log .project-entry {
+.js-projects-log .project-entry {
   counter-increment: post;
   padding-block: var(--space-7);
 }
 
-:root:not([data-theme-family="original"]) .js-projects-log .project-title {
+.js-projects-log .project-title {
   font-size: clamp(1.6rem, 3.2vw, 2.2rem);
   line-height: 1.15;
 }
 
 /* Each entry is labelled as a build — "BUILD 01" — a tracked accent kicker
    that nods to the site's name without shouting it. */
-:root:not([data-theme-family="original"]) .js-projects-log .project-title::before {
+.js-projects-log .project-title::before {
   content: "Build " counter(post, decimal-leading-zero);
   display: block;
   margin-bottom: var(--space-2);
@@ -1065,14 +983,14 @@ main.home-main {
 
 /* Comfortable reading measure + rhythm for long-form content (log + post page).
    Constraining paragraphs (not images) gives the airy editorial text column. */
-:root:not([data-theme-family="original"]) .project-content,
-:root:not([data-theme-family="original"]) .prose {
+.project-content,
+.prose {
   font-size: 1.02rem;
   line-height: 1.75;
 }
 
-:root:not([data-theme-family="original"]) .project-content>p,
-:root:not([data-theme-family="original"]) .prose>p {
+.project-content>p,
+.prose>p {
   max-width: 68ch;
   text-wrap: pretty;
 }
@@ -1080,9 +998,8 @@ main.home-main {
 /* Opening lead-in — the editorial alternative to a drop cap. The first clause
    of each entry (tagged at build time by rehype-lead-in, cut at a natural
    clause boundary) is set as a tracked uppercase run with a pencil-thin
-   accent rule beneath: the scribed first line of a drawing. The span is
-   unstyled in the original family, which therefore renders unchanged. */
-:root:not([data-theme-family="original"]) .entry-leadin {
+   accent rule beneath: the scribed first line of a drawing. */
+.entry-leadin {
   font-size: 0.88em;
   font-weight: 600;
   letter-spacing: 0.07em;
@@ -1094,22 +1011,22 @@ main.home-main {
 }
 
 /* In-text links: underlined like a pencil annotation, warming on hover. */
-:root:not([data-theme-family="original"]) .project-content a,
-:root:not([data-theme-family="original"]) .prose a {
+.project-content a,
+.prose a {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
   text-decoration-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
-:root:not([data-theme-family="original"]) .project-content a:hover,
-:root:not([data-theme-family="original"]) .prose a:hover {
+.project-content a:hover,
+.prose a:hover {
   text-decoration-color: currentColor;
 }
 
 /* Images sit as framed plates within the text. */
-:root:not([data-theme-family="original"]) .project-content img,
-:root:not([data-theme-family="original"]) .prose img {
+.project-content img,
+.prose img {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   margin-block: var(--space-5);
@@ -1117,8 +1034,8 @@ main.home-main {
 
 /* Pull-quotes get an accent rule and a medium voice (Outfit ships no italic,
    so weight carries the change of register instead). */
-:root:not([data-theme-family="original"]) .project-content blockquote,
-:root:not([data-theme-family="original"]) .prose blockquote {
+.project-content blockquote,
+.prose blockquote {
   margin: var(--space-5) 0;
   padding-left: var(--space-4);
   border-left: 2px solid var(--color-accent);
@@ -1129,7 +1046,7 @@ main.home-main {
 /* End mark → a tiny rule(r). A baseline with minor ticks every 12px and
    accent ticks at the ends and centre — the tape-measure sign-off on each
    build. Layer order: accent ticks over minor ticks over the baseline. */
-:root:not([data-theme-family="original"]) .post-end-mark {
+.post-end-mark {
   --tick-color: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
   width: 121px;
   height: 11px;
@@ -1142,15 +1059,15 @@ main.home-main {
 }
 
 /* ── Carousel cards: cleaner, crisper, editorial ── */
-:root:not([data-theme-family="original"]) .carousel-card {
+.carousel-card {
   border: 1px solid var(--color-border-subtle);
 }
 
-:root:not([data-theme-family="original"]) .carousel-card:hover {
+.carousel-card:hover {
   border-color: var(--color-accent-soft);
 }
 
-:root:not([data-theme-family="original"]) .carousel-card-title {
+.carousel-card-title {
   font-size: 1.1rem;
 }
 
@@ -1158,7 +1075,7 @@ main.home-main {
 @media (max-width: 720px) {
 
   /* Larger type on phones — the desktop scale reads small at arm's length. */
-  :root:not([data-theme-family="original"]) {
+  :root {
     --fs-body: 1.0625rem;
     --fs-small: 0.95rem;
     --fs-xs: 0.8rem;
@@ -1167,29 +1084,29 @@ main.home-main {
   /* One gutter, not two: page padding and section padding both indent the
      column on phones, wasting ~30px of a ~390px screen. Keep the page gutter
      and collapse the section's, so text and plates own the width. */
-  :root:not([data-theme-family="original"]) main:not(.home-main) {
+  main:not(.home-main) {
     padding-inline: var(--space-4);
   }
 
-  :root:not([data-theme-family="original"]) .main-inner {
+  .main-inner {
     padding-inline: var(--space-4);
   }
 
-  :root:not([data-theme-family="original"]) .surface-section {
+  .surface-section {
     padding-inline: 0;
   }
 
-  :root:not([data-theme-family="original"]) .js-projects-log .grid-gap-md {
+  .js-projects-log .grid-gap-md {
     gap: var(--space-7);
   }
 
-  :root:not([data-theme-family="original"]) .js-projects-log .project-title {
+  .js-projects-log .project-title {
     font-size: 1.7rem;
   }
 
   /* Comfortable reading size for the narrow column. */
-  :root:not([data-theme-family="original"]) .project-content,
-  :root:not([data-theme-family="original"]) .prose {
+  .project-content,
+  .prose {
     font-size: 1.125rem;
     line-height: 1.7;
   }
@@ -1197,8 +1114,8 @@ main.home-main {
   /* Full-width text on phones; the measure cap only helps on wide screens.
      Greedy wrapping too — `pretty` leaves short, ragged lines on a narrow
      column, which reads as wasted space along the right edge. */
-  :root:not([data-theme-family="original"]) .project-content>p,
-  :root:not([data-theme-family="original"]) .prose>p {
+  .project-content>p,
+  .prose>p {
     max-width: none;
     text-wrap: wrap;
   }

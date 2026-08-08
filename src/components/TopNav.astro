@@ -1,6 +1,5 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
-import ThemeFamilyToggle from './ThemeFamilyToggle.astro';
 
 // Each page is statically built, so it knows at build time whether it *is*
 // the homepage. On the homepage the home control collapses into a "you are
@@ -50,7 +49,6 @@ const crumb = path.startsWith('/software/') && path !== '/software'
       )}
     </nav>
     <div class="nav-actions">
-      <ThemeFamilyToggle />
       <ThemeToggle />
     </div>
   </div>
@@ -71,7 +69,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     display: flex;
     align-items: center;
     justify-content: space-between;
-    /* The toggles are the tallest controls (40px + 1px borders). Pinning the
+    /* The theme toggle is the tallest control (40px + 1px borders). Pinning the
        row to that height keeps the bar identical on every page no matter
        what the controls inside are doing. */
     min-height: 42px;
@@ -118,7 +116,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     border-radius: 4px;
   }
 
-  /* Icon-only home control. Same 40px round footprint as the theme toggles
+  /* Icon-only home control. Same 40px round footprint as the theme toggle
      so the bar's left edge is pixel-identical everywhere, but quieter: no
      chip surface, just a muted mark that warms to the accent on hover. */
   .home-link {
@@ -190,7 +188,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     box-shadow: 0 0 0 6px var(--color-accent-soft);
   }
 
-  /* Tooltip — same recipe as the theme toggles' (global.css), anchored to
+  /* Tooltip — same recipe as the theme toggle's (global.css), anchored to
      the left edge since this control sits at the bar's left end. */
   .home-link::after {
     content: attr(data-tooltip);
