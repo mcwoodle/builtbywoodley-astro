@@ -25,9 +25,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
         aria-current={isHome ? 'page' : undefined}
         data-tooltip={isHome ? 'You’re home' : 'Back to home'}
       >
-        <!-- vt-home-mark: the dot ⇄ house morph across the home/blog view
-             transition (view-transitions.css) -->
-        <span class="home-mark vt-home-mark" aria-hidden="true">
+        <span class="home-mark" aria-hidden="true">
           <svg
             class="home-icon"
             viewBox="0 0 24 24"
@@ -145,8 +143,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
     outline-offset: 2px;
   }
 
-  /* The mark hugs its content so the view transition has true geometry to
-     morph: 20px house on inner pages, 7px dot at home. */
+  /* The mark hugs its content: 20px house on inner pages, 7px dot at home. */
   .home-mark {
     display: inline-flex;
     align-items: center;
@@ -169,7 +166,7 @@ const crumb = path.startsWith('/software/') && path !== '/software'
   }
 
   /* At home the control is the "you are here" marker — the same 7px accent
-     dot as the blog header pill's (the one the cut-list arrow flies into). */
+     dot that serves as a "you are here" marker on the homepage. */
   .home-dot {
     display: none;
     width: 7px;

@@ -53,7 +53,6 @@
   };
 
   const root = document.documentElement;
-  const toggle = document.querySelector<HTMLButtonElement>('.theme-family-toggle');
 
   function currentFamily(): Family {
     return root.getAttribute('data-theme-family') === 'original'
@@ -71,16 +70,23 @@
     else root.setAttribute('data-theme-family', family);
   }
 
-  function syncButton() {
+  function syncButton(toggle: HTMLButtonElement) {
     const meta = META[currentFamily()];
-    toggle?.setAttribute('aria-label', meta.label);
-    toggle?.setAttribute('data-tooltip', meta.tip);
+    toggle.setAttribute('aria-label', meta.label);
+    toggle.setAttribute('data-tooltip', meta.tip);
   }
 
-  syncButton();
+  function syncButtons() {
+    document.querySelectorAll<HTMLButtonElement>('.theme-family-toggle').forEach(syncButton);
+  }
 
-  // Flip Editorial ⇄ Original, recording the choice so it sticks.
-  toggle?.addEventListener('click', () => {
+  // Event delegation keeps the control live when ClientRouter replaces TopNav.
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    const toggle = target instanceof Element
+      ? target.closest<HTMLButtonElement>('.theme-family-toggle')
+      : null;
+    if (!toggle) return;
     const next: Family = currentFamily() === 'editorial' ? 'original' : 'editorial';
     applyFamily(next);
     try {
@@ -88,7 +94,7 @@
     } catch {
       // Storage unavailable (e.g. private mode); the family still applies here.
     }
-    syncButton();
+    syncButtons();
   });
 
   // Keep other open tabs consistent when the family changes in one of them.
@@ -97,7 +103,10 @@
     const v = event.newValue;
     if (v === 'editorial' || v === 'original') {
       applyFamily(v);
-      syncButton();
+      syncButtons();
     }
   });
+
+  document.addEventListener('astro:page-load', syncButtons);
+  syncButtons();
 </script>

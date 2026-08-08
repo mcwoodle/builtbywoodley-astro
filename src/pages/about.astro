@@ -1,17 +1,14 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-// Opts this page into the home ↔ about slide transition (the homepage imports
-// the same sheet; cross-document view transitions need both ends to opt in).
-import "../styles/view-transitions.css";
 ---
 
-<BaseLayout>
-  <main class="vt-about-page">
+<BaseLayout title="About | Built by Woodley">
+  <main>
     <header class="section-shell">
       <div class="surface-section">
-        <h1 class="page-heading">Matt Woodley</h1>
-        <p class="page-subtitle">
-          Ontario, Canada
+        <h1 class="page-heading">About Me</h1>
+        <p class="page-subtitle vt-tagline" style="font-family: var(--font-display); font-size: clamp(0.85rem, 1.5vw, 1rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
+          Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Father
         </p>
       </div>
     </header>

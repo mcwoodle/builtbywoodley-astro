@@ -8,8 +8,8 @@ interface Props {
 const { project } = Astro.props;
 ---
 
-<BaseLayout>
-  <main>
+<BaseLayout title={`${project.data.title} | Built by Woodley`}>
+  <main class="vt-project-page">
     <article class="section-shell">
       <div class="surface-section">
         <header class="project-meta" style="margin-bottom: var(--space-4);">

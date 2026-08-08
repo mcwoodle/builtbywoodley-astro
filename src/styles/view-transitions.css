@@ -1,134 +1,166 @@
-/* ─────────────────────────────────────────────
-   Home ↔ Blog / Home ↔ About View Transitions
-   Imported ONLY by the homepage, the mocked blog index and the about page.
-   Cross-document view transitions require BOTH the outgoing and incoming
-   page to opt in, so just those pairs of pages animate; every other
-   navigation stays a plain page load. Browsers without the View Transition
-   API ignore all of this.
+/* Whole-page navigation motion is driven by Astro's ClientRouter. Current
+   Firefox, Chrome, and Edge all use the same same-document View Transition
+   API; older browsers receive the CSS fallback at the end of this file. */
 
-   The choreography plays off the cut-list tag's arrow: the page follows the
-   arrow's pull — the hero slides away to the left while the destination
-   column sweeps in from the right — and the arrow itself flies ahead of the
-   page, shrinking into the accent dot of the destination header's pill. The
-   whole sequence mirrors on the way back. Both inner pages stage the same
-   named landing dot; a small inline script on the homepage (index.astro)
-   hands the arrow's name to whichever tag is actually travelled.
-   ───────────────────────────────────────────── */
-
-@view-transition {
-  navigation: auto;
+::view-transition {
+  background: var(--vt-bg, var(--color-bg));
 }
 
-/* Traveling pieces. A name that exists on only one side gets an enter/exit
-   slide; the arrow/pill-dot pair shares one name across both documents, so
-   the browser morphs the clicked arrow into the header pill's dot. The blog
-   tag's arrow carries the name statically; the homepage retarget script
-   moves it to the About tag's arrow when that is the link travelled. */
-.vt-home-hero {
-  view-transition-name: home-hero;
+::view-transition-old(*),
+::view-transition-new(*) {
+  mix-blend-mode: normal;
 }
 
-.vt-blog-page {
-  view-transition-name: blog-page;
+::view-transition-old(root),
+::view-transition-new(root) {
+  background: var(--vt-bg, var(--color-bg));
 }
 
-/* The about page rides the same rails as the blog: in from the right on the
-   way out, back out to the right on the way home. */
-.vt-about-page {
-  view-transition-name: about-page;
+::view-transition-group(page-backdrop) {
+  z-index: 0;
 }
 
-.vt-craft-arrow {
-  view-transition-name: craft-arrow;
+::view-transition-old(page-backdrop),
+::view-transition-new(page-backdrop) {
+  animation: none;
+  block-size: 100%;
+  inline-size: 100%;
+  opacity: 1;
 }
 
-/* The top bar is pinned. Naming it lifts it out of the root cross-fade, and
-   because the bar paints above the mains (z-index 100), its group stacks on
-   top — the sliding pages pass underneath it instead of over it. Old and new
-   bars are pixel-identical (the differing home mark is captured separately
-   below), so the bar simply stands still. */
+::view-transition-group(root) {
+  z-index: 10;
+  background: var(--vt-bg, var(--color-bg));
+}
+
+/* Keep the navigation out of the moving root snapshot. The old and new nav
+   snapshots swap without interpolation, fading, or positional movement. */
 .vt-top-nav {
   view-transition-name: top-nav;
 }
 
-/* The bar's home control: a "you are here" dot on the homepage, the house
-   icon everywhere else. One shared name morphs them in place — leaving home,
-   the dot grows into the way back; returning, the house settles back into
-   the marker. */
-.vt-home-mark {
-  view-transition-name: home-mark;
+::view-transition-group(top-nav) {
+  animation: none;
+  z-index: 100;
 }
 
-/* Forward: the hero exits along the arrow's line of pull… */
-::view-transition-old(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
+::view-transition-old(top-nav),
+::view-transition-new(top-nav) {
+  animation: none;
+  opacity: 1;
 }
 
-/* …while the destination column sweeps in behind it. */
-::view-transition-new(blog-page),
-::view-transition-new(about-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+/* Capture this content pair only for the relationship that uses it. */
+html[data-nav-about-edge] .vt-tagline {
+  view-transition-name: tagline;
 }
 
-/* Back: the same move, mirrored. */
-::view-transition-old(blog-page),
-::view-transition-old(about-page) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
+/* Root canvas directions describe the destination's position relative to the
+   source, so Back and Forward both resolve from the same route geometry. */
+html[data-nav-direction='right']::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
 }
 
-::view-transition-new(home-hero) {
-  animation: 400ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+html[data-nav-direction='right']::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-/* The arrow runs a touch longer than the page so it visibly leads the
-   motion and is the last thing to settle. */
-::view-transition-group(craft-arrow) {
-  animation-duration: 500ms;
+html[data-nav-direction='left']::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
+}
+
+html[data-nav-direction='left']::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+}
+
+html[data-nav-direction='down']::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
+}
+
+html[data-nav-direction='down']::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+}
+
+html[data-nav-direction='up']::view-transition-old(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
+}
+
+html[data-nav-direction='up']::view-transition-new(root) {
+  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+}
+
+html[data-nav-direction='neutral']::view-transition-old(root) {
+  animation: 220ms ease both vt-fade-out;
+}
+
+html[data-nav-direction='neutral']::view-transition-new(root) {
+  animation: 220ms ease both vt-fade-in;
+}
+
+/* Shared page-content paint order and timing. */
+::view-transition-group(tagline) { z-index: 50; }
+
+::view-transition-group(tagline) {
+  animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The dot ⇄ house morph keeps the arrow's tempo so both accent marks settle
-   on the same beat. */
-::view-transition-group(home-mark) {
-  animation-duration: 500ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+/* ClientRouter fallback. It intentionally uses the same directions but a
+   shorter sequential exit/swap/entry so unsupported browsers never wait on a
+   long animation. */
+html[data-astro-transition-fallback='old'] body > :not(.top-nav, .vt-page-backdrop, script),
+html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  background: var(--vt-bg, var(--color-bg));
+  will-change: transform, opacity;
 }
 
-@keyframes vt-out-left {
-  to {
-    transform: translateX(-100vw);
-    opacity: 0;
-  }
+html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 150ms ease-in both vt-out-left;
+}
+html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 190ms ease-out both vt-in-right;
+}
+html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 150ms ease-in both vt-out-right;
+}
+html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 190ms ease-out both vt-in-left;
+}
+html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 150ms ease-in both vt-out-up;
+}
+html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 190ms ease-out both vt-in-up;
+}
+html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 150ms ease-in both vt-out-down;
+}
+html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 190ms ease-out both vt-in-down;
+}
+html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 120ms ease-in both vt-fade-out;
+}
+html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
+  animation: 160ms ease-out both vt-fade-in;
 }
 
-@keyframes vt-in-right {
-  from {
-    transform: translateX(100vw);
-    opacity: 0;
-  }
-}
+@keyframes vt-out-left { to { transform: translateX(-100%); } }
+@keyframes vt-in-right { from { transform: translateX(100%); } }
+@keyframes vt-out-right { to { transform: translateX(100%); } }
+@keyframes vt-in-left { from { transform: translateX(-100%); } }
+@keyframes vt-out-up { to { transform: translateY(-100%); } }
+@keyframes vt-in-up { from { transform: translateY(100%); } }
+@keyframes vt-out-down { to { transform: translateY(100%); } }
+@keyframes vt-in-down { from { transform: translateY(-100%); } }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
 
-@keyframes vt-out-right {
-  to {
-    transform: translateX(100vw);
-    opacity: 0;
-  }
-}
-
-@keyframes vt-in-left {
-  from {
-    transform: translateX(-100vw);
-    opacity: 0;
-  }
-}
-
-/* Reduced motion: cancel the snapshot animations so the navigation resolves
-   instantly. The global reduced-motion rule can't reach these pseudo-elements
-   (they live in the top layer, outside the * / *::before net). */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
-  ::view-transition-new(*) {
+  ::view-transition-new(*),
+  html[data-astro-transition-fallback] body > :not(.top-nav, .vt-page-backdrop, script) {
     animation: none !important;
   }
 }

@@ -1,29 +1,29 @@
 ---
+import NavigationTransitionHead from '../components/NavigationTransitionHead.astro';
 import TopNav from '../components/TopNav.astro';
 import '../styles/global.css';
+import '../styles/view-transitions.css';
 
 interface Props {
-  /** Hide the sticky TopNav — for full-bleed pages that supply their own
-      navigation chrome (e.g. the framed map's floating home tab). */
+  /** Hide the sticky TopNav — for full-bleed pages that supply their own navigation UI. */
   hideNav?: boolean;
+  title?: string;
+  description?: string;
 }
-const { hideNav = false } = Astro.props;
 
-const title = "Built by Woodley";
-const description = "Stuff that I've built";
+const {
+  hideNav = false,
+  title = 'Built by Woodley',
+  description = "Stuff that I've built",
+} = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Resolve and apply the colour theme before first paint to avoid a flash
-         of the wrong theme. The visitor's saved *mode* is one of:
-           • 'light' / 'dark' — an explicit fixed choice.
-           • 'system'         — follow the OS/browser preference. This is the
-                                default when nothing is saved.
-         data-theme holds the applied colour theme (always light/dark; drives the
-         CSS tokens). data-theme-mode holds the mode (drives the toggle icon).
-         Must stay inline and ahead of the stylesheet. -->
+    <!-- Resolve the colour theme before first paint. This script intentionally
+         runs once; the transition coordinator carries its root attributes
+         across ClientRouter DOM swaps. -->
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
@@ -31,86 +31,79 @@ const description = "Stuff that I've built";
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
         var FAMILIES = { editorial: 1, original: 1 };
+        var BG = {
+          editorial: { light: '#FAF8F4', dark: '#15120F' },
+          original: { light: '#F5F0EB', dark: '#1A1613' },
+        };
 
-        // The visitor's chosen mode. No saved value => 'system' (the default).
+        function systemTheme() {
+          if (!window.matchMedia) return 'light';
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+          return 'light';
+        }
+
         function storedMode() {
           try {
-            var v = localStorage.getItem(STORAGE_KEY);
-            return MODES[v] ? v : 'system';
-          } catch (e) {
-            return 'system'; // Storage blocked (private mode, disabled cookies…).
+            var value = localStorage.getItem(STORAGE_KEY);
+            return MODES[value] ? value : 'system';
+          } catch (error) {
+            return 'system';
           }
         }
 
-        // The visitor's chosen theme family (look). No saved value =>
-        // 'editorial' (the default, more refined look). 'original' restores
-        // the site's original appearance.
         function storedFamily() {
           try {
-            var v = localStorage.getItem(FAMILY_KEY);
-            return FAMILIES[v] ? v : 'editorial';
-          } catch (e) {
+            var value = localStorage.getItem(FAMILY_KEY);
+            return FAMILIES[value] ? value : 'editorial';
+          } catch (error) {
             return 'editorial';
           }
         }
 
-        // Apply a family. Exposed so the family toggle reuses this exact logic.
-        function applyFamily(fam) {
-          root.setAttribute('data-theme-family', FAMILIES[fam] ? fam : 'editorial');
+        function syncCanvasBg(familyValue, appliedTheme) {
+          var family = FAMILIES[familyValue] ? familyValue : 'editorial';
+          var theme = appliedTheme === 'dark' ? 'dark' : 'light';
+          var background = BG[family][theme];
+          root.style.setProperty('--vt-bg', background);
+          root.style.backgroundColor = background;
+          root.style.colorScheme = theme;
+        }
+
+        function applyFamily(familyValue) {
+          var family = FAMILIES[familyValue] ? familyValue : 'editorial';
+          root.setAttribute('data-theme-family', family);
+          syncCanvasBg(family, root.getAttribute('data-theme') || systemTheme());
         }
         window.__applyThemeFamily = applyFamily;
 
-        // The OS-/browser-level preference. `prefers-color-scheme` is the only
-        // signal platforms expose, and it already layers OS then browser: it
-        // reports the OS setting (Windows, macOS, iOS, Android, ChromeOS,
-        // GNOME/KDE…) unless the browser overrides it (Firefox content-override,
-        // Chrome Auto Dark, per-site dark mode), in which case it reports that.
-        function systemTheme() {
-          if (!window.matchMedia) return 'light'; // Pre-2015 browser.
-          if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-          if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
-          return 'light'; // No preference exposed.
-        }
-
-        // Apply a mode: the resolved colour theme (always light/dark) plus the
-        // mode itself. Exposed so the toggle reuses this exact resolution.
-        function applyMode(mode) {
-          var applied =
-            mode === 'light' ? 'light' : mode === 'dark' ? 'dark' : systemTheme();
+        function applyMode(modeValue) {
+          var mode = MODES[modeValue] ? modeValue : 'system';
+          var applied = mode === 'light' || mode === 'dark' ? mode : systemTheme();
           root.setAttribute('data-theme', applied);
           root.setAttribute('data-theme-mode', mode);
+          syncCanvasBg(root.getAttribute('data-theme-family') || storedFamily(), applied);
         }
         window.__applyThemeMode = applyMode;
 
         try {
           applyFamily(storedFamily());
           applyMode(storedMode());
-        } catch (e) {
-          // Never leave the page unstyled.
-          try {
-            root.setAttribute('data-theme', 'light');
-            root.setAttribute('data-theme-mode', 'system');
-            root.setAttribute('data-theme-family', 'editorial');
-          } catch (e2) {}
+        } catch (error) {
+          root.setAttribute('data-theme', 'light');
+          root.setAttribute('data-theme-mode', 'system');
+          root.setAttribute('data-theme-family', 'editorial');
         }
 
-        // In system mode, follow live OS/browser theme changes without a reload.
         try {
-          var mql = window.matchMedia('(prefers-color-scheme: dark)');
+          var media = window.matchMedia('(prefers-color-scheme: dark)');
           var onChange = function () {
-            if (storedMode() !== 'system') return; // A fixed choice wins.
+            if (storedMode() !== 'system') return;
             applyMode('system');
-            try {
-              window.dispatchEvent(new Event('themechange'));
-            } catch (err) {
-              /* Event constructor missing — purely cosmetic, ignore. */
-            }
+            window.dispatchEvent(new Event('themechange'));
           };
-          if (mql.addEventListener) mql.addEventListener('change', onChange);
-          else if (mql.addListener) mql.addListener(onChange); // Safari <14, old Edge.
-        } catch (e) {
-          /* Change events unsupported; the initial theme is still applied. */
-        }
+          if (media.addEventListener) media.addEventListener('change', onChange);
+          else if (media.addListener) media.addListener(onChange);
+        } catch (error) {}
       })();
     </script>
     <meta charset="utf-8" />
@@ -126,8 +119,10 @@ const description = "Stuff that I've built";
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap"
       rel="stylesheet"
     />
+    <NavigationTransitionHead />
   </head>
   <body>
+    <div class="vt-page-backdrop" aria-hidden="true"></div>
     {!hideNav && <TopNav />}
     <slot />
     <script>

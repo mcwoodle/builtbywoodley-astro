@@ -172,6 +172,8 @@ html {
      bar with it) doesn't shift sideways between pages that scroll (blog) and
      pages that don't (home). No-op where scrollbars overlay content. */
   scrollbar-gutter: stable;
+  scrollbar-color: var(--color-border-subtle) var(--vt-bg, var(--color-bg));
+  background: var(--vt-bg, var(--color-bg));
 }
 
 /* ─────────────────────────────────────────────
@@ -181,11 +183,34 @@ body {
   font-family: var(--font-body);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
-  background: var(--color-bg);
+  background: var(--vt-bg, var(--color-bg));
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vt-bg, var(--color-bg));
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+}
+
+.vt-page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--vt-bg, var(--color-bg));
+  view-transition-name: page-backdrop;
+}
+
+body > main,
+body > .top-nav {
+  position: relative;
+  z-index: 1;
 }
 
 h1,
@@ -581,6 +606,20 @@ main.home-main {
   background: color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
+/* A registration dot in place of the part number, sized to match the home
+   marker while remaining part of the moving page content. */
+.craft-link-seed {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+.craft-link:hover .craft-link-seed,
+.craft-link:focus-visible .craft-link-seed {
+  box-shadow: 0 0 0 4px var(--color-accent-soft);
+}
+
 /* The arrow travels its direction of pull: along the grain for on-site
    links, up and out for off-site ones (.craft-link-out). */
 .craft-link-arrow {
@@ -616,6 +655,22 @@ main.home-main {
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
+}
+
+/* Down-pointing arrow modifier — the About link's arrow points downward
+   and animates along the Y axis instead of X. */
+.craft-link-arrow--down {
+  display: inline-block;
+}
+
+.craft-link:hover .craft-link-arrow--down,
+.craft-link:focus-visible .craft-link-arrow--down {
+  transform: translateY(3px);
+}
+
+.craft-link:active .craft-link-arrow--down {
+  transform: translateY(8px);
+  transition-duration: 0.1s;
 }
 
 /* ─────────────────────────────────────────────
