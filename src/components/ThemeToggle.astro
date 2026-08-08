@@ -85,7 +85,6 @@
   };
 
   const root = document.documentElement;
-  const toggle = document.querySelector<HTMLButtonElement>('.theme-toggle');
 
   function currentMode(): Mode {
     const m = root.getAttribute('data-theme-mode');
@@ -106,16 +105,21 @@
     }
   }
 
-  function syncButton() {
+  function syncButton(toggle: HTMLButtonElement) {
     const meta = META[currentMode()];
-    toggle?.setAttribute('aria-label', meta.label);
-    toggle?.setAttribute('data-tooltip', meta.tip);
+    toggle.setAttribute('aria-label', meta.label);
+    toggle.setAttribute('data-tooltip', meta.tip);
   }
 
-  syncButton();
+  function syncButtons() {
+    document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach(syncButton);
+  }
 
-  // Cycle System → Light → Dark → System, recording the choice so it sticks.
-  toggle?.addEventListener('click', () => {
+  // Event delegation keeps the control live when ClientRouter replaces TopNav.
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    const toggle = target instanceof Element ? target.closest<HTMLButtonElement>('.theme-toggle') : null;
+    if (!toggle) return;
     const next = ORDER[(ORDER.indexOf(currentMode()) + 1) % ORDER.length];
     applyMode(next);
     try {
@@ -123,12 +127,12 @@
     } catch {
       // Storage unavailable (e.g. private mode); the mode still applies here.
     }
-    syncButton();
+    syncButtons();
   });
 
   // The no-flash init dispatches `themechange` when it live-follows an OS/browser
   // switch in system mode — keep the button's label/tooltip in sync.
-  window.addEventListener('themechange', syncButton);
+  window.addEventListener('themechange', syncButtons);
 
   // Keep other open tabs consistent when the mode changes in one of them.
   window.addEventListener('storage', (event) => {
@@ -136,7 +140,10 @@
     const v = event.newValue;
     if (v === 'system' || v === 'light' || v === 'dark') {
       applyMode(v);
-      syncButton();
+      syncButtons();
     }
   });
+
+  document.addEventListener('astro:page-load', syncButtons);
+  syncButtons();
 </script>

@@ -85,7 +85,9 @@ const projects = (await getCollection(collectionName)).sort(
   // position and lets you drag (or click) anywhere on it to scroll.
   type Carousel = { track: HTMLElement; slider: HTMLElement; thumb: HTMLElement };
 
-  function setupSlider({ track, slider, thumb }: Carousel) {
+  let activeController: AbortController | null = null;
+
+  function setupSlider({ track, slider, thumb }: Carousel, signal: AbortSignal) {
     const MIN_THUMB = 28; // px — keep the handle grabbable even with many cards
 
     const maxScroll = () => track.scrollWidth - track.clientWidth;
@@ -118,17 +120,17 @@ const projects = (await getCollection(collectionName)).sort(
       slider.classList.add("is-dragging");
       slider.setPointerCapture(e.pointerId);
       scrollFromPointer(e.clientX);
-    });
+    }, { signal });
     slider.addEventListener("pointermove", (e) => {
       if (dragging) scrollFromPointer(e.clientX);
-    });
+    }, { signal });
     const end = (e: PointerEvent) => {
       dragging = false;
       slider.classList.remove("is-dragging");
       if (slider.hasPointerCapture(e.pointerId)) slider.releasePointerCapture(e.pointerId);
     };
-    slider.addEventListener("pointerup", end);
-    slider.addEventListener("pointercancel", end);
+    slider.addEventListener("pointerup", end, { signal });
+    slider.addEventListener("pointercancel", end, { signal });
 
     let ticking = false;
     track.addEventListener("scroll", () => {
@@ -138,15 +140,25 @@ const projects = (await getCollection(collectionName)).sort(
         render();
         ticking = false;
       });
-    });
-    window.addEventListener("resize", render);
+    }, { signal });
+    window.addEventListener("resize", render, { signal });
     render();
   }
 
-  document.querySelectorAll<HTMLElement>(".js-carousel-section").forEach((section) => {
-    const track = section.querySelector<HTMLElement>(".js-carousel-track");
-    const slider = section.querySelector<HTMLElement>(".js-carousel-slider");
-    const thumb = section.querySelector<HTMLElement>(".js-carousel-thumb");
-    if (track && slider && thumb) setupSlider({ track, slider, thumb });
-  });
+  function setupCarousels() {
+    activeController?.abort();
+    activeController = new AbortController();
+    const { signal } = activeController;
+
+    document.querySelectorAll<HTMLElement>(".js-carousel-section").forEach((section) => {
+      const track = section.querySelector<HTMLElement>(".js-carousel-track");
+      const slider = section.querySelector<HTMLElement>(".js-carousel-slider");
+      const thumb = section.querySelector<HTMLElement>(".js-carousel-thumb");
+      if (track && slider && thumb) setupSlider({ track, slider, thumb }, signal);
+    });
+  }
+
+  document.addEventListener("astro:before-swap", () => activeController?.abort());
+  document.addEventListener("astro:page-load", setupCarousels);
+  setupCarousels();
 </script>

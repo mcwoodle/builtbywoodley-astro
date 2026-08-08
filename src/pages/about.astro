@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout>
+<BaseLayout title="About | Built by Woodley">
   <main>
     <header class="section-shell">
       <div class="surface-section">
@@ -49,36 +49,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
   </main>
 </BaseLayout>
-
-<script is:inline>
-  /* Tag "slide-down" on all transitions from the About page so CSS
-     uses the vertical root-slide. On traversals (browser back/forward)
-     also add "back-nav" to reverse the slide direction. */
-  window.addEventListener('pageswap', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-down');
-    if (e.activation.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when navigating TO the homepage so the dot->house /
-    // arrow-fly choreography fires on this end of a home-edge nav.
-    var destPath = new URL(e.activation.entry.url).pathname;
-    if (destPath === '/') e.viewTransition.types.add('home-edge');
-  });
-
-  window.addEventListener('pagereveal', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-down');
-    var nav = navigation.activation;
-    if (nav && nav.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when this page was reached FROM the homepage.
-    if (nav && nav.from && new URL(nav.from.url).pathname === '/') {
-      e.viewTransition.types.add('home-edge');
-    }
-  });
-</script>
 
 <style>
   /* The about page's tags pick up the homepage numbering (01, 02 → 03, 04)

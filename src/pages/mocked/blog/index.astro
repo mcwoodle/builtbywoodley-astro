@@ -12,33 +12,3 @@ import BlogPageLayout from "../../../layouts/BlogPageLayout.astro";
   logEyebrow="Fake Blog Entries"
   logTitle=""
 />
-
-<script is:inline>
-  /* Tag "slide-right" on all transitions from the blog page so CSS
-     uses the horizontal root-slide. On traversals (browser back/forward)
-     also add "back-nav" to reverse the slide direction. */
-  window.addEventListener('pageswap', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-right');
-    if (e.activation.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when navigating TO the homepage so the dot->house /
-    // arrow-fly choreography fires on this end of a home-edge nav.
-    var destPath = new URL(e.activation.entry.url).pathname;
-    if (destPath === '/') e.viewTransition.types.add('home-edge');
-  });
-
-  window.addEventListener('pagereveal', function (e) {
-    if (!e.viewTransition) return;
-    e.viewTransition.types.add('slide-right');
-    var nav = navigation.activation;
-    if (nav && nav.navigationType === 'traverse') {
-      e.viewTransition.types.add('back-nav');
-    }
-    // Add home-edge when this page was reached FROM the homepage.
-    if (nav && nav.from && new URL(nav.from.url).pathname === '/') {
-      e.viewTransition.types.add('home-edge');
-    }
-  });
-</script>

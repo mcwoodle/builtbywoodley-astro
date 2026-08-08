@@ -606,9 +606,8 @@ main.home-main {
   background: color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
-/* A registration dot in place of the part number. On the homepage it lifts
-   off and flies up to merge into the nav's home dot before that dot blooms
-   into the house (view-transitions.css). Sized to match .home-dot (7px). */
+/* A registration dot in place of the part number, sized to match the home
+   marker while remaining part of the moving page content. */
 .craft-link-seed {
   flex: none;
   width: 7px;

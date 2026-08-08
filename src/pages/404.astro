@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout>
+<BaseLayout title="Page Not Found | Built by Woodley">
   <main>
     <article class="section-shell">
       <div class="surface-section">
@@ -34,8 +34,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
-  // Client-side script to extract error details for developers
-  document.addEventListener('DOMContentLoaded', () => {
+  function showErrorDetails() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const resource = params.get('resource');
@@ -68,5 +67,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     if (devDetailsEl && (hasDevInfo || window.location.hostname === 'localhost')) {
       devDetailsEl.style.display = 'block';
     }
-  });
+  }
+
+  document.addEventListener('astro:page-load', showErrorDetails);
+  showErrorDetails();
 </script>

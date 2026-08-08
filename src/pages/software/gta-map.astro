@@ -14,7 +14,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 // real mobile GPUs. A small toggle pill lets the user switch manually.
 ---
 
-<BaseLayout hideNav>
+<BaseLayout hideNav title="GTA Urban Analytics | Built by Woodley">
   <main class="map-shell">
     <!-- Floating home tab. It hangs from the top edge (square top, rounded
          bottom) and reuses the site's house glyph; on hover the door-dot
@@ -67,7 +67,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       ></iframe>
     </noscript>
 
-    <script is:inline>
+    <script is:inline data-astro-rerun>
       (function () {
         var FULL = '/viz/gta-crime-map';
         var LITE = '/viz/gta-crime-map-lite';
