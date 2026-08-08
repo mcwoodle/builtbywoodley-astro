@@ -55,7 +55,7 @@ jobs:
       # GitHub Advanced Security), so the same gate runs on PRs, pushes, and the
       # weekly schedule.
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
