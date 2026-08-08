@@ -142,10 +142,13 @@ body {
 }
 
 body > main,
-body > .top-nav,
-body > header {
+body > header:not(.top-nav) {
   position: relative;
   z-index: 1;
+}
+
+body > .top-nav {
+  z-index: 100;
 }
 
 h1,
@@ -305,6 +308,214 @@ svg {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Primary navigation
+   Keep these rules in the global visual-system stylesheet so the persistent
+   ClientRouter navigation cannot load with a stale component style module.
+   ───────────────────────────────────────────── */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 16px 20px 0;
+  pointer-events: none;
+}
+
+.top-nav .nav-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 64px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  box-shadow: var(--shadow-nav);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  pointer-events: auto;
+}
+
+.top-nav .nav-identity,
+.top-nav .brand-link,
+.top-nav .breadcrumb,
+.top-nav .primary-links,
+.top-nav .nav-actions {
+  display: flex;
+  align-items: center;
+}
+
+.top-nav .nav-identity {
+  min-width: 0;
+  gap: 14px;
+}
+
+.top-nav .brand-link {
+  min-width: 0;
+  gap: 10px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.top-nav .brand-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: transform 220ms var(--ease-out), background-color 200ms ease;
+}
+
+.top-nav .brand-link:hover .brand-mark,
+.top-nav .brand-link:focus-visible .brand-mark {
+  transform: rotate(-4deg) scale(1.04);
+  background: var(--color-accent);
+}
+
+.top-nav .brand-copy {
+  display: grid;
+  line-height: 1.05;
+}
+
+.top-nav .brand-copy strong,
+.top-nav .brand-copy small {
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+.top-nav .brand-copy strong {
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.top-nav .brand-copy small {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+.top-nav .brand-link:focus-visible,
+.top-nav .breadcrumb a:focus-visible,
+.top-nav .primary-links a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.top-nav .breadcrumb {
+  min-width: 0;
+  gap: 12px;
+}
+
+.top-nav .breadcrumb span {
+  width: 24px;
+  height: 1px;
+  background: var(--color-border-strong);
+}
+
+.top-nav .breadcrumb a {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-nav .breadcrumb a:hover {
+  color: var(--color-accent);
+}
+
+.top-nav .primary-links {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-surface-alt);
+}
+
+.top-nav .primary-links a {
+  position: relative;
+  padding: 8px 14px;
+  border-radius: 9px;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: color 180ms ease, background-color 180ms ease,
+    transform 180ms var(--ease-out), box-shadow 180ms ease;
+}
+
+.top-nav .primary-links a:hover {
+  color: var(--color-text);
+  transform: translateY(-1px);
+}
+
+.top-nav .primary-links a:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.top-nav .primary-links a.active {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+}
+
+.top-nav .nav-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .top-nav {
+    padding: 10px 10px 0;
+  }
+
+  .top-nav .nav-panel {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 58px;
+    padding: 7px 8px;
+    border-radius: 16px;
+  }
+
+  .top-nav .brand-copy,
+  .top-nav .breadcrumb {
+    display: none;
+  }
+
+  .top-nav .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .top-nav .primary-links {
+    justify-self: center;
+  }
+
+  .top-nav .primary-links a {
+    padding: 7px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .top-nav .primary-links a {
+    padding-inline: 10px;
+  }
 }
 
 /* ─────────────────────────────────────────────
