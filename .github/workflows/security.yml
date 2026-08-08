@@ -30,7 +30,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Full history so scheduled/push runs scan every commit, not just the
           # latest diff. gitleaks-action scopes PR runs to the PR commits.
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Audit the resolved lockfile for known high/critical advisories. npm audit
       # works on private repos (unlike dependency-review-action, which requires
