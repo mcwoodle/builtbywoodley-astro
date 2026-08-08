@@ -9,36 +9,63 @@ const { project } = Astro.props;
 ---
 
 <BaseLayout title={`${project.data.title} | Built by Woodley`}>
-  <main>
-    <article class="section-shell">
-      <div class="surface-section">
-        <header class="project-meta" style="margin-bottom: var(--space-4);">
-          <span>{project.data.publishDate.toLocaleDateString()}</span>
-          {project.data.repoUrl && (
-            <a href={project.data.repoUrl} target="_blank" rel="noopener" style="color: var(--color-accent);">
-              View repository
-            </a>
-          )}
-        </header>
-        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
+  <main class="detail-page">
+    <article class="detail-shell">
+      <header class="detail-hero">
+        <p class="eyebrow">Software case study</p>
+        <h1
+          class="page-heading"
+          style={`view-transition-name: software-title-${project.id};`}
+        >
           {project.data.title}
         </h1>
         {project.data.description && (
-          <p class="page-subtitle" style="margin-bottom: var(--space-4);">
-            {project.data.description}
-          </p>
+          <p class="page-subtitle">{project.data.description}</p>
         )}
+
         {project.data.stack.length > 0 && (
-          <div class="tags-row" style="margin-bottom: var(--space-5);">
+          <div class="tags-row detail-tags" aria-label="Technology stack">
             {project.data.stack.map((tech: string) => (
               <span class="tag-chip">{tech}</span>
             ))}
           </div>
         )}
-        <div class="prose">
+      </header>
+
+      <div class="detail-content-grid">
+        <aside class="detail-aside" aria-label="Project details">
+          <p class="detail-aside-label">Project profile</p>
+          <dl>
+            <div>
+              <dt>Published</dt>
+              <dd>{project.data.publishDate.toLocaleDateString()}</dd>
+            </div>
+            <div>
+              <dt>Discipline</dt>
+              <dd>Software engineering</dd>
+            </div>
+          </dl>
+
+          {(project.data.repoUrl || project.data.liveUrl) && (
+            <div class="detail-actions">
+              {project.data.repoUrl && (
+                <a class="button button--primary" href={project.data.repoUrl} target="_blank" rel="noopener">
+                  Repository <span aria-hidden="true">↗</span>
+                </a>
+              )}
+              {project.data.liveUrl && (
+                <a class="button" href={project.data.liveUrl}>
+                  Live project <span aria-hidden="true">↗</span>
+                </a>
+              )}
+            </div>
+          )}
+        </aside>
+
+        <div class="prose detail-prose">
           <slot />
+          <div class="post-end-mark" aria-hidden="true"></div>
         </div>
-        <div class="post-end-mark"></div>
       </div>
     </article>
   </main>

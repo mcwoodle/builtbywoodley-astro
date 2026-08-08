@@ -29,22 +29,21 @@ const projectsWithContent = await Promise.all(
 );
 ---
 
-<div class="main-inner">
-  <section class="section-shell js-projects-log">
-    <div class="surface-section">
-      <p class="eyebrow" style="margin-bottom: var(--space-2);">
-        {eyebrow}
-      </p>
-      <h2 class="section-heading">{title}</h2>
-      <div class="grid-gap-md">
-        {
-          projectsWithContent.map(({ project, Content }) => (
-            <BlogEntry project={project as any} contentOnly linkPrefix={linkPrefix}>
-              <Content />
-            </BlogEntry>
-          ))
-        }
+<div class="page-shell">
+  <section class="journal-log js-projects-log">
+    <header class="section-header">
+      <div>
+        <p class="eyebrow">{eyebrow}</p>
+        <h2 class="section-heading">{title}.</h2>
       </div>
+      <p>{projectsWithContent.length} {projectsWithContent.length === 1 ? 'entry' : 'entries'}</p>
+    </header>
+    <div class="journal-log-list">
+      {projectsWithContent.map(({ project, Content }) => (
+        <BlogEntry project={project as any} contentOnly linkPrefix={linkPrefix}>
+          <Content />
+        </BlogEntry>
+      ))}
     </div>
   </section>
 </div>

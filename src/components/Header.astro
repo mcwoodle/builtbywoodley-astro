@@ -4,14 +4,12 @@ type Props = {
 };
 
 const { subtitle } = Astro.props;
-const siteTitle = "Built by Woodley";
 ---
 
-<header class="section-shell">
-  <div class="surface-section">
-    <h1 class="page-heading">{siteTitle}</h1>
-    <p class="page-subtitle">
-      {subtitle}
-    </p>
+<header class="page-intro journal-intro">
+  <div>
+    <p class="eyebrow">Workshop journal</p>
+    <h1 class="page-heading">Building is how I think.</h1>
   </div>
+  <p class="page-subtitle">{subtitle}</p>
 </header>

@@ -3,59 +3,68 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout title="About | Built by Woodley">
-  <main>
-    <header class="section-shell">
-      <div class="surface-section">
-        <h1 class="page-heading">About Me</h1>
-        <p class="page-subtitle vt-tagline" style="font-family: var(--font-display); font-size: clamp(0.85rem, 1.5vw, 1rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
-          Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-1);">|</span> Father
+  <main class="page-shell about-page">
+    <section class="about-layout">
+      <header class="about-intro">
+        <p class="eyebrow">About · 02</p>
+        <h1 class="page-heading">Useful systems. Stronger teams.</h1>
+        <p class="page-subtitle vt-tagline">
+          I’m a principal software engineer who enjoys turning ambiguity into
+          momentum—through invention, sound engineering, and mentorship.
         </p>
-      </div>
-    </header>
 
-    <section class="section-shell">
-      <div class="surface-section">
-        <div class="prose">
-          <p>
-            <span class="entry-leadin">I'm a principal software engineer </span> who has excelled at the organizational IC leadership level in Big Tech, and thrives when inventing, designing, implementing and mentoring.
-          </p>
-          <p>
-            Outside of my career, I love to build stuff with my hands, from home renovations to "fine" wood working, and am always looking for that next skill to learn.
-          </p>
-          <p>
-            Above all else, my two kids (2023 & 2025), my partner and dog come first.  I've travelled the world, but my favourite place to be now is home with my family.
-          </p>
+        <div class="role-line" aria-label="Builder, mentor, father">
+          <span>Builder</span>
+          <span>Mentor</span>
+          <span>Father</span>
         </div>
 
-        <!-- The cut list continues from the homepage's tags 01 and 02. -->
-        <nav class="craft-links about-links" aria-label="Elsewhere">
+        <nav class="about-actions" aria-label="Elsewhere">
           <a
             href="https://www.linkedin.com/in/mattwoodley"
             target="_blank"
             rel="noopener noreferrer"
-            class="craft-link craft-link-out"
-          >
-            <span class="craft-link-index" aria-hidden="true">03</span>
-            <span>My LinkedIn</span>
-            <span class="craft-link-arrow" aria-hidden="true">↗</span>
-          </a>
-          <a href="mailto:matt@builtbywoodley.ca" class="craft-link craft-link-out">
-            <span class="craft-link-index" aria-hidden="true">04</span>
-            <span>Email Me</span>
-            <span class="craft-link-arrow" aria-hidden="true">↗</span>
+            class="button button--primary"
+          >LinkedIn <span aria-hidden="true">↗</span></a>
+          <a href="mailto:matt@builtbywoodley.ca" class="button">
+            Email me <span aria-hidden="true">↗</span>
           </a>
         </nav>
+      </header>
+
+      <div class="about-story">
+        <article class="story-block">
+          <p class="story-index">01 / At work</p>
+          <h2>Leadership through the work.</h2>
+          <p>
+            I’ve excelled at the organizational IC leadership level in Big Tech,
+            and thrive when inventing, designing, implementing, and mentoring.
+            I care about technical quality, but also about clarity: helping a
+            group understand what matters, why it matters, and how to move.
+          </p>
+        </article>
+
+        <article class="story-block">
+          <p class="story-index">02 / Away from the screen</p>
+          <h2>Craft is a habit.</h2>
+          <p>
+            Outside of my career, I build with my hands—from home renovations to
+            “fine” woodworking—and I’m always looking for the next skill to
+            learn. Making physical things keeps my judgment practical and my
+            appreciation for constraints sharp.
+          </p>
+        </article>
+
+        <article class="story-block story-block--quiet">
+          <p class="story-index">03 / What matters</p>
+          <h2>Life sets the perspective.</h2>
+          <p>
+            Above all else, my two kids, my partner, and our dog come first.
+            I’ve travelled the world, but my favourite place to be now is home
+            with my family.
+          </p>
+        </article>
       </div>
     </section>
   </main>
 </BaseLayout>
-
-<style>
-  /* The about page's tags pick up the homepage numbering (01, 02 → 03, 04)
-     and sit flush with the text column rather than centered like the hero's. */
-  .about-links {
-    justify-content: flex-start;
-    margin-top: var(--space-6);
-  }
-
-</style>

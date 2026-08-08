@@ -1,6 +1,5 @@
-/* Whole-page navigation motion is driven by Astro's ClientRouter. Current
-   Firefox, Chrome, and Edge all use the same same-document View Transition
-   API; older browsers receive the CSS fallback at the end of this file. */
+/* Route geometry is preserved, but the motion stays close to the surface so
+   navigation feels composed instead of behaving like a full-screen carousel. */
 
 ::view-transition {
   background: var(--vt-bg, var(--color-bg));
@@ -33,8 +32,7 @@
   background: var(--vt-bg, var(--color-bg));
 }
 
-/* Keep the navigation out of the moving root snapshot. The old and new nav
-   snapshots swap without interpolation, fading, or positional movement. */
+/* The navigation stays fixed while the destination settles underneath it. */
 .vt-top-nav {
   view-transition-name: top-nav;
 }
@@ -50,64 +48,68 @@
   opacity: 1;
 }
 
-/* Capture this content pair only for the relationship that uses it. */
 html[data-nav-about-edge] .vt-tagline {
   view-transition-name: tagline;
 }
 
-/* Root canvas directions describe the destination's position relative to the
-   source, so Back and Forward both resolve from the same route geometry. */
-html[data-nav-direction='right']::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-left;
-}
-
-html[data-nav-direction='right']::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
-}
-
-html[data-nav-direction='left']::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-right;
-}
-
-html[data-nav-direction='left']::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
-}
-
-html[data-nav-direction='down']::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-up;
-}
-
-html[data-nav-direction='down']::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
-}
-
-html[data-nav-direction='up']::view-transition-old(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-out-down;
-}
-
-html[data-nav-direction='up']::view-transition-new(root) {
-  animation: 450ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
-}
-
-html[data-nav-direction='neutral']::view-transition-old(root) {
-  animation: 220ms ease both vt-fade-out;
-}
-
-html[data-nav-direction='neutral']::view-transition-new(root) {
-  animation: 220ms ease both vt-fade-in;
-}
-
-/* Shared page-content paint order and timing. */
-::view-transition-group(tagline) { z-index: 50; }
-
-::view-transition-group(tagline) {
-  animation-duration: 400ms;
+::view-transition-group(tagline),
+::view-transition-group(page-title) {
+  z-index: 50;
+  animation-duration: 480ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ClientRouter fallback. It intentionally uses the same directions but a
-   shorter sequential exit/swap/entry so unsupported browsers never wait on a
-   long animation. */
+::view-transition-old(page-title) {
+  animation: 180ms ease-in both vt-title-out;
+}
+
+::view-transition-new(page-title) {
+  animation: 480ms cubic-bezier(0.22, 1, 0.36, 1) both vt-title-in;
+}
+
+/* Direction still reflects route relationships, expressed as a restrained
+   offset and fade rather than a full-width slide. */
+html[data-nav-direction='right']::view-transition-old(root) {
+  animation: 300ms ease-in both vt-out-left;
+}
+
+html[data-nav-direction='right']::view-transition-new(root) {
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+}
+
+html[data-nav-direction='left']::view-transition-old(root) {
+  animation: 300ms ease-in both vt-out-right;
+}
+
+html[data-nav-direction='left']::view-transition-new(root) {
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+}
+
+html[data-nav-direction='down']::view-transition-old(root) {
+  animation: 300ms ease-in both vt-out-up;
+}
+
+html[data-nav-direction='down']::view-transition-new(root) {
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+}
+
+html[data-nav-direction='up']::view-transition-old(root) {
+  animation: 300ms ease-in both vt-out-down;
+}
+
+html[data-nav-direction='up']::view-transition-new(root) {
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+}
+
+html[data-nav-direction='neutral']::view-transition-old(root) {
+  animation: 180ms ease-in both vt-fade-out;
+}
+
+html[data-nav-direction='neutral']::view-transition-new(root) {
+  animation: 360ms ease-out both vt-fade-in;
+}
+
+/* ClientRouter fallback mirrors the same visual language with shorter timing. */
 html[data-astro-transition-fallback='old'] body > :not(.top-nav, .vt-page-backdrop, script),
 html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdrop, script) {
   background: var(--vt-bg, var(--color-bg));
@@ -115,46 +117,72 @@ html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdr
 }
 
 html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 150ms ease-in both vt-out-left;
+  animation: 140ms ease-in both vt-out-left;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 190ms ease-out both vt-in-right;
+  animation: 220ms ease-out both vt-in-right;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 150ms ease-in both vt-out-right;
+  animation: 140ms ease-in both vt-out-right;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 190ms ease-out both vt-in-left;
+  animation: 220ms ease-out both vt-in-left;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 150ms ease-in both vt-out-up;
+  animation: 140ms ease-in both vt-out-up;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 190ms ease-out both vt-in-up;
+  animation: 220ms ease-out both vt-in-up;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 150ms ease-in both vt-out-down;
+  animation: 140ms ease-in both vt-out-down;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 190ms ease-out both vt-in-down;
+  animation: 220ms ease-out both vt-in-down;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
   animation: 120ms ease-in both vt-fade-out;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 160ms ease-out both vt-fade-in;
+  animation: 180ms ease-out both vt-fade-in;
 }
 
-@keyframes vt-out-left { to { transform: translateX(-100%); } }
-@keyframes vt-in-right { from { transform: translateX(100%); } }
-@keyframes vt-out-right { to { transform: translateX(100%); } }
-@keyframes vt-in-left { from { transform: translateX(-100%); } }
-@keyframes vt-out-up { to { transform: translateY(-100%); } }
-@keyframes vt-in-up { from { transform: translateY(100%); } }
-@keyframes vt-out-down { to { transform: translateY(100%); } }
-@keyframes vt-in-down { from { transform: translateY(-100%); } }
-@keyframes vt-fade-out { to { opacity: 0; } }
-@keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes vt-out-left {
+  to { opacity: 0; transform: translateX(-18px) scale(0.992); }
+}
+@keyframes vt-in-right {
+  from { opacity: 0; transform: translateX(28px) scale(0.994); }
+}
+@keyframes vt-out-right {
+  to { opacity: 0; transform: translateX(18px) scale(0.992); }
+}
+@keyframes vt-in-left {
+  from { opacity: 0; transform: translateX(-28px) scale(0.994); }
+}
+@keyframes vt-out-up {
+  to { opacity: 0; transform: translateY(-16px) scale(0.992); }
+}
+@keyframes vt-in-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.994); }
+}
+@keyframes vt-out-down {
+  to { opacity: 0; transform: translateY(16px) scale(0.992); }
+}
+@keyframes vt-in-down {
+  from { opacity: 0; transform: translateY(-24px) scale(0.994); }
+}
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: scale(0.994); }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: scale(0.994); }
+}
+@keyframes vt-title-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes vt-title-in {
+  from { opacity: 0; transform: translateY(16px); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),

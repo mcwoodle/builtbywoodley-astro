@@ -3,7 +3,7 @@ import type { CollectionEntry } from "astro:content";
 
 type Props = {
   project: CollectionEntry<"projects"> | CollectionEntry<"mockedProjects">;
-  /** When true, only the main content and title are rendered; no meta, description, or tags. */
+  /** When true, render the journal preview without the optional description and tags. */
   contentOnly?: boolean;
   /** Base URL for project links. Defaults to production blog path. */
   linkPrefix?: string;
@@ -15,16 +15,23 @@ const id = `project-${slug}`;
 ---
 
 <article id={id} class="project-entry js-project-entry">
-  <h2 class="project-title" style="margin-bottom: var(--space-3);">
-    <a href={`${linkPrefix}${slug}`}>{project.data.title}</a>
-  </h2>
+  <header class="project-entry-header">
+    <div>
+      <p class="project-meta">
+        <span>{project.data.projectType}</span>
+        <span>{project.data.publishDate.toLocaleDateString()}</span>
+      </p>
+      <h2 class="project-title">
+        <a href={`${linkPrefix}${slug}`}>{project.data.title}</a>
+      </h2>
+    </div>
+    <a class="project-open" href={`${linkPrefix}${slug}`} aria-label={`Open ${project.data.title}`}>
+      ↗
+    </a>
+  </header>
   {
     !contentOnly && (
       <>
-        <header class="project-meta">
-          <span>{project.data.projectType}</span>
-          <span>{project.data.publishDate.toLocaleDateString()}</span>
-        </header>
         {project.data.description && (
           <p class="project-description">{project.data.description}</p>
         )}

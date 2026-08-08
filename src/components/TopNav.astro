@@ -1,219 +1,266 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
 
-// Each page is statically built, so it knows at build time whether it *is*
-// the homepage. On the homepage the home control collapses into a "you are
-// here" dot; everywhere else it is the little house that leads back.
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
+const isSoftware = path === '/software' || path.startsWith('/software/');
+const isAbout = path === '/about';
 
-// Breadcrumb: only shown on detail pages (e.g. /software/<slug>).
-// Section landing pages (/software, /about) don't get a crumb because
-// their <h1> already names the section.
-const crumb = path.startsWith('/software/') && path !== '/software'
+const crumb = path.startsWith('/software/')
   ? { label: 'Software Projects', href: '/software' }
-  : null;
+  : path.startsWith('/blog/')
+    ? { label: 'Workshop Journal', href: '/blog' }
+    : path.startsWith('/mocked/blog/')
+      ? { label: 'Workshop Journal', href: '/mocked/blog' }
+      : null;
 ---
-<nav class="top-nav vt-top-nav">
-  <div class="nav-inner">
-    <nav class="breadcrumb-group" aria-label="Breadcrumb">
+
+<header class="top-nav vt-top-nav">
+  <nav class="nav-panel" aria-label="Primary navigation">
+    <div class="nav-identity">
       <a
         href="/"
-        class:list={['home-link', { 'is-home': isHome }]}
-        aria-label={isHome ? 'Home — you are here' : 'Back to home'}
+        class="brand-link"
+        aria-label={isHome ? 'Built by Woodley — home' : 'Back to home'}
         aria-current={isHome ? 'page' : undefined}
-        data-tooltip={isHome ? 'You’re home' : 'Back to home'}
       >
-        <span class="home-mark" aria-hidden="true">
-          <svg
-            class="home-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 10.5 12 3l9 7.5"></path>
-            <path d="M5 9.4V21h14V9.4"></path>
-            <!-- The doorway dot: the same accent dot the control collapses to
-                 on the homepage. Lights up on hover — the dot lives here. -->
-            <circle class="home-door-dot" cx="12" cy="15" r="2" stroke="none"></circle>
-          </svg>
-          <span class="home-dot"></span>
+        <span class="brand-mark" aria-hidden="true">MW</span>
+        <span class="brand-copy">
+          <strong>Matt Woodley</strong>
+          <small>Principal engineer</small>
         </span>
       </a>
+
       {crumb && (
-        <span class="crumb-separator" aria-hidden="true">&rsaquo;</span>
-        <a class="nav-crumb" href={crumb.href}>{crumb.label}</a>
+        <div class="breadcrumb" aria-label="Breadcrumb">
+          <span aria-hidden="true"></span>
+          <a href={crumb.href}>{crumb.label}</a>
+        </div>
       )}
-    </nav>
+    </div>
+
+    <div class="primary-links">
+      <a
+        href="/software"
+        class:list={{ active: isSoftware }}
+        aria-current={isSoftware ? 'page' : undefined}
+        data-direction="right"
+      >Work</a>
+      <a
+        href="/about"
+        class:list={{ active: isAbout }}
+        aria-current={isAbout ? 'page' : undefined}
+        data-direction="down"
+      >About</a>
+    </div>
+
     <div class="nav-actions">
       <ThemeToggle />
     </div>
-  </div>
-</nav>
+  </nav>
+</header>
 
 <style>
   .top-nav {
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border-subtle);
-    padding: var(--space-3) var(--space-4);
     position: sticky;
     top: 0;
     z-index: 100;
+    padding: 16px 20px 0;
+    pointer-events: none;
   }
-  .nav-inner {
-    max-width: 960px;
-    margin: 0 auto;
-    display: flex;
+
+  .nav-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
-    /* The theme toggle is the tallest control (40px + 1px borders). Pinning the
-       row to that height keeps the bar identical on every page no matter
-       what the controls inside are doing. */
-    min-height: 42px;
+    min-height: 64px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 8px 10px 8px 12px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+    box-shadow: var(--shadow-nav);
+    backdrop-filter: blur(22px) saturate(135%);
+    -webkit-backdrop-filter: blur(22px) saturate(135%);
+    pointer-events: auto;
   }
+
+  .nav-identity,
+  .brand-link,
+  .breadcrumb,
+  .primary-links,
   .nav-actions {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
   }
 
-  /* Breadcrumb group: left-aligned flex row holding home-link + optional crumb */
-  .breadcrumb-group {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    /* Reset <nav> defaults */
-    padding: 0;
-    border: 0;
+  .nav-identity {
+    min-width: 0;
+    gap: 14px;
   }
-  .crumb-separator {
-    color: var(--color-text-muted);
-    font-family: var(--font-display);
-    font-size: var(--fs-sm);
-    line-height: 1;
-    user-select: none;
-  }
-  .nav-crumb {
-    font-family: var(--font-display);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    color: var(--color-text-muted);
+
+  .brand-link {
+    min-width: 0;
+    gap: 10px;
+    color: var(--color-text);
     text-decoration: none;
-    transition: color 0.2s ease;
-    white-space: nowrap;
-  }
-  .nav-crumb:hover,
-  .nav-crumb:focus-visible {
-    color: var(--color-accent);
-  }
-  .nav-crumb:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-    border-radius: 4px;
   }
 
-  /* Icon-only home control. Same 40px round footprint as the theme toggle
-     so the bar's left edge is pixel-identical everywhere, but quieter: no
-     chip surface, just a muted mark that warms to the accent on hover. */
-  .home-link {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .brand-mark {
+    display: grid;
+    place-items: center;
     flex: none;
     width: 40px;
     height: 40px;
-    border-radius: 999px;
-    color: var(--color-text-muted);
-    transition: color 0.2s ease, transform 0.15s ease;
-  }
-  .home-link:hover,
-  .home-link:focus-visible {
-    color: var(--color-accent);
-    transform: translateY(-1px);
-  }
-  .home-link:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
+    border-radius: 11px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    transition: transform 220ms var(--ease-out), background-color 200ms ease;
   }
 
-  /* The mark hugs its content: 20px house on inner pages, 7px dot at home. */
-  .home-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .home-icon {
-    display: block;
-    width: 20px;
-    height: 20px;
-  }
-  .home-door-dot {
-    fill: var(--color-accent);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .home-link:hover .home-door-dot,
-  .home-link:focus-visible .home-door-dot {
-    opacity: 1;
-  }
-
-  /* At home the control is the "you are here" marker — the same 7px accent
-     dot that serves as a "you are here" marker on the homepage. */
-  .home-dot {
-    display: none;
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
+  .brand-link:hover .brand-mark,
+  .brand-link:focus-visible .brand-mark {
+    transform: rotate(-4deg) scale(1.04);
     background: var(--color-accent);
   }
-  .home-link.is-home .home-icon {
-    display: none;
-  }
-  .home-link.is-home .home-dot {
-    display: block;
-  }
-  /* A marker doesn't lift; it just glows a soft halo when prodded. */
-  .home-link.is-home:hover,
-  .home-link.is-home:focus-visible {
-    transform: none;
-  }
-  .home-link.is-home:hover .home-dot,
-  .home-link.is-home:focus-visible .home-dot {
-    box-shadow: 0 0 0 6px var(--color-accent-soft);
+
+  .brand-copy {
+    display: grid;
+    line-height: 1.05;
   }
 
-  /* Tooltip — same recipe as the theme toggle's (global.css), anchored to
-     the left edge since this control sits at the bar's left end. */
-  .home-link::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    z-index: 200;
-    padding: 4px 8px;
-    border-radius: 6px;
-    background: var(--color-text);
-    color: var(--color-surface);
+  .brand-copy strong,
+  .brand-copy small {
     font-family: var(--font-display);
-    font-size: var(--fs-xs);
-    font-weight: 500;
-    line-height: 1.2;
     white-space: nowrap;
-    box-shadow: var(--shadow-card);
-    opacity: 0;
-    transform: translateY(-4px);
-    pointer-events: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
   }
-  .home-link:hover::after,
-  .home-link:focus-visible::after {
-    opacity: 1;
-    transform: translateY(0);
+
+  .brand-copy strong {
+    font-size: 0.82rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-copy small {
+    margin-top: 4px;
+    color: var(--color-text-muted);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+  }
+
+  .brand-link:focus-visible,
+  .breadcrumb a:focus-visible,
+  .primary-links a:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  .breadcrumb {
+    min-width: 0;
+    gap: 12px;
+  }
+
+  .breadcrumb span {
+    width: 24px;
+    height: 1px;
+    background: var(--color-border-strong);
+  }
+
+  .breadcrumb a {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 550;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-accent);
+  }
+
+  .primary-links {
+    gap: 2px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--color-surface-alt);
+  }
+
+  .primary-links a {
+    position: relative;
+    padding: 8px 14px;
+    border-radius: 9px;
+    color: var(--color-text-muted);
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    transition: color 180ms ease, background-color 180ms ease,
+      transform 180ms var(--ease-out), box-shadow 180ms ease;
+  }
+
+  .primary-links a:hover {
+    color: var(--color-text);
+    transform: translateY(-1px);
+  }
+
+  .primary-links a:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  .primary-links a.active {
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: 0 1px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+  }
+
+  .nav-actions {
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 720px) {
+    .top-nav {
+      padding: 10px 10px 0;
+    }
+
+    .nav-panel {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      min-height: 58px;
+      padding: 7px 8px;
+      border-radius: 16px;
+    }
+
+    .brand-copy,
+    .breadcrumb {
+      display: none;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+    }
+
+    .primary-links {
+      justify-self: center;
+    }
+
+    .primary-links a {
+      padding: 7px 12px;
+      font-size: 0.75rem;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .primary-links a {
+      padding-inline: 10px;
+    }
   }
 </style>

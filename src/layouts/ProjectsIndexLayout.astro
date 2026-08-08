@@ -11,45 +11,41 @@ interface Props {
 
 const { eyebrow, title, subtitle, linkPrefix } = Astro.props;
 const collectionName = linkPrefix.includes("mocked") ? "mockedProjects" : "projects";
-
 const projects = (await getCollection(collectionName)).sort(
   (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
 );
 ---
 
 <BaseLayout title={`${title} | Built by Woodley`}>
-  <main class="vt-project-index">
-    <section class="section-shell">
-      <div class="surface-section">
-        <p class="eyebrow" style="margin-bottom: var(--space-2);">
-          {eyebrow}
-        </p>
-        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
-          {title}
-        </h1>
-        <p class="page-subtitle" style="margin-bottom: var(--space-5);">
-          {subtitle}
-        </p>
-
-        <ul class="project-list">
-          {
-            projects.map((project) => (
-              <li class="project-list-item">
-                <a href={`${linkPrefix}${project.id}`}>
-                  <h2 class="project-list-title">{project.data.title}</h2>
-                  <p class="project-list-meta">
-                    {project.data.projectType} ·{" "}
-                    {project.data.publishDate.toLocaleDateString()}
-                  </p>
-                  {project.data.description && (
-                    <p class="project-list-desc">{project.data.description}</p>
-                  )}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
+  <main class="page-shell project-index-page vt-project-index">
+    <header class="page-intro">
+      <div>
+        <p class="eyebrow">{eyebrow}</p>
+        <h1 class="page-heading">{title}.</h1>
       </div>
-    </section>
+      <p class="page-subtitle">{subtitle}</p>
+    </header>
+
+    <ol class="project-list">
+      {projects.map((project, index) => (
+        <li class="project-list-item">
+          <a href={`${linkPrefix}${project.id}`}>
+            <span class="project-list-index" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <p class="project-list-meta">
+                {project.data.projectType} · {project.data.publishDate.toLocaleDateString()}
+              </p>
+              <h2 class="project-list-title">{project.data.title}</h2>
+              {project.data.description && (
+                <p class="project-list-desc">{project.data.description}</p>
+              )}
+            </div>
+            <span class="project-list-arrow" aria-hidden="true">↗</span>
+          </a>
+        </li>
+      ))}
+    </ol>
   </main>
 </BaseLayout>

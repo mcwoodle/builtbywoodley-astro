@@ -3,34 +3,58 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout>
-  <main style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; text-align: center; padding-top: 0; padding-bottom: 0;">
-    <h1 class="page-heading" style="margin-bottom: var(--space-2); font-size: clamp(3rem, 8vw, 5rem);">Matt Woodley</h1>
-    <p class="page-subtitle vt-tagline" style="margin-top: 0; margin-bottom: var(--space-5); font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.25rem); letter-spacing: 0.05em; color: var(--color-text-muted);">
-      Builder <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Mentor <span style="color: var(--color-accent); opacity: 0.7; margin: 0 var(--space-2);">|</span> Father
-    </p>
-    <nav class="craft-links craft-links--vertical" aria-label="Featured links">
-      <a href="/software" class="craft-link" data-direction="right">
-        <span class="craft-link-seed" aria-hidden="true"></span>
-        <span>Software Projects</span>
-        <span class="craft-link-arrow" aria-hidden="true">→</span>
-      </a>
-      <a href="/about" class="craft-link" data-direction="down">
-        <span class="craft-link-seed" aria-hidden="true"></span>
-        <span>About Me</span>
-        <span class="craft-link-arrow craft-link-arrow--down" aria-hidden="true">↓</span>
-      </a>
-    </nav>
+  <main class="landing-page">
+    <section class="landing-hero" aria-labelledby="landing-title">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">Engineering · Leadership · Mentorship</p>
+        <h1 id="landing-title" class="page-heading hero-title">
+          Matt<br /><span>Woodley.</span>
+        </h1>
+        <p class="hero-summary">
+          Principal software engineer turning ambiguous problems into useful,
+          durable systems—and helping teams do their best work along the way.
+        </p>
+        <div class="role-line vt-tagline" aria-label="Builder, mentor, father">
+          <span>Builder</span>
+          <span>Mentor</span>
+          <span>Father</span>
+        </div>
+      </div>
+
+      <nav class="route-grid" aria-label="Featured pages">
+        <a class="route-card route-card--work" href="/software" data-direction="right">
+          <div class="route-card-meta">
+            <span>01</span>
+            <span>Selected work</span>
+          </div>
+          <div class="route-card-copy">
+            <h2>Software projects</h2>
+            <p>Systems, integrations, and tools built around real constraints.</p>
+          </div>
+          <span class="route-card-arrow" aria-hidden="true">↗</span>
+        </a>
+
+        <a class="route-card route-card--about" href="/about" data-direction="down">
+          <div class="route-card-meta">
+            <span>02</span>
+            <span>Background</span>
+          </div>
+          <div class="route-card-copy">
+            <h2>About me</h2>
+            <p>How I approach leadership, craft, mentorship, and life beyond work.</p>
+          </div>
+          <span class="route-card-arrow" aria-hidden="true">↓</span>
+        </a>
+      </nav>
+    </section>
+
+    <footer class="landing-footer">
+      <p>Built with intention in Canada.</p>
+      <div>
+        <a href="mailto:matt@builtbywoodley.ca">Email</a>
+        <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+        <span>© 2026</span>
+      </div>
+    </footer>
   </main>
-
-  <div style="position: absolute; bottom: var(--space-6); left: 0; right: 0; text-align: center; padding-bottom: var(--space-4);">
-    <div style="display: flex; flex-direction: column; gap: var(--space-2); align-items: center;">
-      <a href="mailto:matt@builtbywoodley.ca" class="text-muted text-small" style="font-family: var(--font-display); letter-spacing: 0.05em; transition: color 0.2s ease;">
-        matt@builtbywoodley.ca
-      </a>
-      <span class="text-muted text-xs" style="font-family: var(--font-display); opacity: 0.6; letter-spacing: 0.05em;">
-        &copy; 2026
-      </span>
-    </div>
-  </div>
-
 </BaseLayout>

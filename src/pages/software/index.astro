@@ -8,51 +8,66 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <BaseLayout title="Software Projects | Built by Woodley">
-  <main>
-    <header class="section-shell">
-      <div class="surface-section">
-        <h1 class="page-heading">Software Projects</h1>
-        <p class="page-subtitle">
-          Each write-up covers the use-case motivation alongside the engineering
-          decisions, architecture, and agentic development approach behind it.
-        </p>
+  <main class="page-shell portfolio-page">
+    <header class="page-intro portfolio-intro">
+      <div>
+        <p class="eyebrow">Selected work · {String(sorted.length).padStart(2, "0")} case studies</p>
+        <h1 class="page-heading">Software projects.</h1>
       </div>
+      <p class="page-subtitle">
+        A closer look at the motivation, architecture, and engineering judgment
+        behind systems designed to solve something specific.
+      </p>
     </header>
 
-    <div class="section-shell">
-      <div class="grid-gap-md" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
-        {sorted.map((entry) => (
-          <a href={entry.data.cardUrl ?? `/software/${entry.id}`} style="text-decoration: none; color: inherit;">
-            <article class="surface" style="overflow: hidden; display: flex; flex-direction: column; height: 100%; transition: transform 0.25s ease, box-shadow 0.25s ease; border: 1px solid var(--color-border-subtle);">
-              <div style="width: 100%; height: 200px; overflow: hidden;">
-                <Image
-                  src={entry.data.coverImage}
-                  alt={`Cover image for ${entry.data.title}`}
-                  width={600}
-                  height={375}
-                  style="display: block; width: 100%; height: 100%; object-fit: cover;"
-                />
-              </div>
-              <div style="padding: var(--space-4); display: flex; flex-direction: column; flex: 1;">
-                <h2 style="font-size: var(--fs-heading); margin: 0 0 var(--space-2); line-height: var(--lh-heading);">
+    <section class="portfolio-grid" aria-label="Software case studies">
+      {sorted.map((entry, index) => (
+        <a
+          href={entry.data.cardUrl ?? `/software/${entry.id}`}
+          class="portfolio-card"
+        >
+          <article>
+            <div class="portfolio-card-media">
+              <Image
+                src={entry.data.coverImage}
+                alt={`Cover image for ${entry.data.title}`}
+                width={720}
+                height={450}
+              />
+              <span class="portfolio-card-number" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
+
+            <div class="portfolio-card-body">
+              <div>
+                <p class="portfolio-card-kicker">Case study</p>
+                <h2
+                  class="portfolio-card-title"
+                  style={`view-transition-name: software-title-${entry.id};`}
+                >
                   {entry.data.title}
                 </h2>
-                <p style="font-size: var(--fs-small); color: var(--color-text-muted); margin: 0 0 var(--space-3); flex: 1;">
-                  {entry.data.summary}
-                </p>
+                <p class="portfolio-card-summary">{entry.data.summary}</p>
+              </div>
+
+              <div class="portfolio-card-footer">
                 {entry.data.stack.length > 0 && (
-                  <div class="tags-row">
-                    {entry.data.stack.map((tech: string) => (
+                  <div class="tags-row" aria-label="Technology stack">
+                    {entry.data.stack.slice(0, 4).map((tech: string) => (
                       <span class="tag-chip">{tech}</span>
                     ))}
+                    {entry.data.stack.length > 4 && (
+                      <span class="tag-chip">+{entry.data.stack.length - 4}</span>
+                    )}
                   </div>
                 )}
+                <span class="card-action" aria-hidden="true">View project <b>↗</b></span>
               </div>
-            </article>
-          </a>
-        ))}
-      </div>
-    </div>
-
+            </div>
+          </article>
+        </a>
+      ))}
+    </section>
   </main>
 </BaseLayout>

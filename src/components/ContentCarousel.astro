@@ -13,69 +13,59 @@ const projects = (await getCollection(collectionName)).sort(
 );
 ---
 
-<section class="section-shell js-carousel-section">
-  <div class="surface-section">
-    <div class="section-header">
-      <div>
-        <h2 class="section-heading">Posts</h2>
-        <!-- <p class="page-subtitle" style="margin: 0;">
-          A quick glance at what was shipped most recently before we dive into
-          the full story.
-        </p> -->
-      </div>
+<section class="featured-section js-carousel-section">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Featured notes</p>
+      <h2 class="section-heading">Recent builds.</h2>
     </div>
+    <p>Drag to explore</p>
+  </div>
 
-    <div class="carousel-track js-carousel-track">
-      {
-        projects.map((project) => (
-          <article class="surface carousel-card js-carousel-card">
-            <a
-              href={`#project-${project.id}`}
-              class="carousel-card-link"
-              style="display: block; color: inherit; text-decoration: none;"
+  <div class="carousel-track js-carousel-track">
+    {projects.map((project, index) => (
+      <article class="carousel-card js-carousel-card">
+        <a href={`#project-${project.id}`} class="carousel-card-link">
+          {project.data.coverImage?.format !== "svg" && (
+            <div
+              class="carousel-card-media"
+              style={`--cover-focus: ${project.data.coverFocus}; --cover-zoom: ${project.data.coverZoom};`}
             >
-              {project.data.coverImage?.format !== "svg" && (
-                <div
-                  class="carousel-card-media"
-                  style={`--cover-focus: ${project.data.coverFocus}; --cover-zoom: ${project.data.coverZoom};`}
-                >
-                  <Image
-                    src={project.data.coverImage}
-                    alt=""
-                    widths={[320, 640]}
-                    sizes="320px"
-                    loading="lazy"
-                  />
-                </div>
-              )}
-              <div class="carousel-card-inner">
-                <p class="eyebrow" style="margin-bottom: var(--space-2);">
-                  {project.data.projectType}
-                </p>
-                <h3 class="carousel-card-title">{project.data.title}</h3>
-                {project.data.description && (
-                  <p class="carousel-card-desc">{project.data.description}</p>
-                )}
-                <p class="carousel-card-date">
-                  {project.data.publishDate.toLocaleDateString()}
-                </p>
-              </div>
-            </a>
-          </article>
-        ))
-      }
-    </div>
+              <Image
+                src={project.data.coverImage}
+                alt=""
+                widths={[420, 840]}
+                sizes="(max-width: 720px) 82vw, 380px"
+                loading="lazy"
+              />
+              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+            </div>
+          )}
+          <div class="carousel-card-inner">
+            <div class="carousel-card-meta">
+              <span>{project.data.projectType}</span>
+              <span>{project.data.publishDate.toLocaleDateString()}</span>
+            </div>
+            <h3 class="carousel-card-title">{project.data.title}</h3>
+            {project.data.description && (
+              <p class="carousel-card-desc">{project.data.description}</p>
+            )}
+            <span class="card-action" aria-hidden="true">Read note <b>↓</b></span>
+          </div>
+        </a>
+      </article>
+    ))}
+  </div>
 
-    <div
-      class="carousel-slider js-carousel-slider"
-      role="scrollbar"
-      aria-orientation="horizontal"
-      aria-label="Scroll posts"
-      hidden
-    >
-      <div class="carousel-slider-track">
-        <div class="carousel-slider-thumb js-carousel-thumb"></div>
-      </div>
+  <div
+    class="carousel-slider js-carousel-slider"
+    role="scrollbar"
+    aria-orientation="horizontal"
+    aria-label="Scroll posts"
+    hidden
+  >
+    <div class="carousel-slider-track">
+      <div class="carousel-slider-thumb js-carousel-thumb"></div>
     </div>
   </div>
 </section>
