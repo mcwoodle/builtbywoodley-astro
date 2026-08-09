@@ -4,13 +4,11 @@ import { renderProjectContent } from "../utils/content";
 import BlogEntry from "./BlogEntry.astro";
 
 interface Props {
-  eyebrow: string;
   title: string;
   linkPrefix: string;
 }
 
 const { 
-  eyebrow, 
   title, 
   linkPrefix
 } = Astro.props;
@@ -33,7 +31,6 @@ const projectsWithContent = await Promise.all(
   <section class="journal-log js-projects-log">
     <header class="section-header">
       <div>
-        <p class="eyebrow">{eyebrow}</p>
         <h2 class="section-heading">{title}.</h2>
       </div>
       <p>{projectsWithContent.length} {projectsWithContent.length === 1 ? 'entry' : 'entries'}</p>
