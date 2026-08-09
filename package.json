@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev --host 0.0.0.0 --port 5572",
+    "dev": "node scripts/dev-server.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
