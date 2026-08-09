@@ -23,13 +23,14 @@ const {
   <head>
     <!-- Resolve the colour theme before first paint. This script intentionally
          runs once; the transition coordinator carries its root attributes
-         across ClientRouter DOM swaps. -->
+         across ClientRouter DOM swaps. The redesigned dark palette is the
+         default, while explicit light and system preferences remain available. -->
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
-        var BG = { light: '#f1f4f2', dark: '#0d1413' };
+        var BG = { light: '#ede9e1', dark: '#181e21' };
 
         function systemTheme() {
           if (!window.matchMedia) return 'light';
@@ -40,9 +41,9 @@ const {
         function storedMode() {
           try {
             var value = localStorage.getItem(STORAGE_KEY);
-            return MODES[value] ? value : 'system';
+            return MODES[value] ? value : 'dark';
           } catch (error) {
-            return 'system';
+            return 'dark';
           }
         }
 
@@ -66,9 +67,9 @@ const {
         try {
           applyMode(storedMode());
         } catch (error) {
-          root.setAttribute('data-theme', 'light');
-          root.setAttribute('data-theme-mode', 'system');
-          syncCanvasBg('light');
+          root.setAttribute('data-theme', 'dark');
+          root.setAttribute('data-theme-mode', 'dark');
+          syncCanvasBg('dark');
         }
 
         try {

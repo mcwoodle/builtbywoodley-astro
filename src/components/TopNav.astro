@@ -24,10 +24,19 @@ const crumb = path.startsWith('/software/')
         aria-label={isHome ? 'Built by Woodley — home' : 'Back to home'}
         aria-current={isHome ? 'page' : undefined}
       >
-        <span class="brand-mark" aria-hidden="true">MW</span>
-        <span class="brand-copy">
-          <strong>Matt Woodley</strong>
-          <small>Principal engineer</small>
+        <span class="brand-mark" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m3 11 9-8 9 8"></path>
+            <path d="M5 10v11h14V10"></path>
+            <path d="M9 21v-7h6v7"></path>
+          </svg>
         </span>
       </a>
 

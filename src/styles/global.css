@@ -4,24 +4,34 @@
    Visual system
    ───────────────────────────────────────────── */
 :root {
-  --color-bg: #f1f4f2;
-  --color-surface: #f9fbfa;
-  --color-surface-raised: #ffffff;
-  --color-surface-alt: #e7ece9;
-  --color-border-subtle: rgba(20, 32, 29, 0.11);
-  --color-border-strong: rgba(20, 32, 29, 0.22);
-  --color-text: #14201d;
-  --color-text-muted: #65726e;
-  --color-accent: #0b6b60;
-  --color-accent-hover: #07554d;
-  --color-accent-soft: rgba(11, 107, 96, 0.11);
-  --color-on-accent: #f7fbf9;
-  --color-signal: #d87945;
-  --color-shadow: #0b1714;
+  /* Core redesign palette. */
+  --bg-primary: #181e21;
+  --bg-card: #1d2428;
+  --text-primary: #ede8df;
+  --text-muted: #8e969b;
+  --accent-sage: #6c826e;
+  --accent-copper: #b88463;
+  --accent-copper-glow: rgba(184, 132, 99, 0.25);
 
-  --shadow-nav: 0 16px 50px rgba(11, 23, 20, 0.09);
-  --shadow-card: 0 12px 32px rgba(11, 23, 20, 0.065);
-  --shadow-lift: 0 24px 64px rgba(11, 23, 20, 0.14);
+  /* Semantic aliases used throughout the existing component system. */
+  --color-bg: var(--bg-primary);
+  --color-surface: #1a2125;
+  --color-surface-raised: var(--bg-card);
+  --color-surface-alt: #222a2e;
+  --color-border-subtle: var(--accent-copper-glow);
+  --color-border-strong: rgba(184, 132, 99, 0.43);
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent-sage);
+  --color-accent-hover: #859987;
+  --color-accent-soft: rgba(108, 130, 110, 0.14);
+  --color-on-accent: #151a1d;
+  --color-signal: var(--accent-copper);
+  --color-shadow: #080b0d;
+
+  --shadow-nav: 0 18px 50px rgba(5, 8, 10, 0.24);
+  --shadow-card: 0 14px 38px rgba(5, 8, 10, 0.2);
+  --shadow-lift: 0 24px 58px rgba(5, 8, 10, 0.3);
 
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -51,30 +61,28 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.25);
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
-:root[data-theme="dark"] {
-  --color-bg: #0d1413;
-  --color-surface: #131c1a;
-  --color-surface-raised: #192421;
-  --color-surface-alt: #1b2825;
-  --color-border-subtle: rgba(225, 237, 232, 0.11);
-  --color-border-strong: rgba(225, 237, 232, 0.22);
-  --color-text: #f0f5f3;
-  --color-text-muted: #9aa8a3;
-  --color-accent: #72c5b6;
-  --color-accent-hover: #93d9cc;
-  --color-accent-soft: rgba(114, 197, 182, 0.13);
-  --color-on-accent: #0d1715;
-  --color-signal: #f0a06c;
-  --color-shadow: #000000;
-
-  --shadow-nav: 0 18px 54px rgba(0, 0, 0, 0.32);
-  --shadow-card: 0 12px 34px rgba(0, 0, 0, 0.24);
-  --shadow-lift: 0 28px 70px rgba(0, 0, 0, 0.42);
-
-  color-scheme: dark;
+:root[data-theme="light"] {
+  --bg-primary: #ede9e1;
+  --bg-card: #f6f2ea;
+  --text-primary: #263034;
+  --text-muted: #697378;
+  --accent-sage: #5f7763;
+  --accent-copper: #9e6d50;
+  --accent-copper-glow: rgba(158, 109, 80, 0.24);
+  --color-surface: #f3efe7;
+  --color-surface-alt: #e3ded5;
+  --color-border-strong: rgba(128, 83, 57, 0.38);
+  --color-accent-hover: #48634d;
+  --color-accent-soft: rgba(95, 119, 99, 0.12);
+  --color-on-accent: #f8f4ec;
+  --color-shadow: #2e2824;
+  --shadow-nav: 0 16px 44px rgba(47, 39, 34, 0.1);
+  --shadow-card: 0 12px 32px rgba(47, 39, 34, 0.08);
+  --shadow-lift: 0 22px 54px rgba(47, 39, 34, 0.14);
+  color-scheme: light;
 }
 
 /* ─────────────────────────────────────────────
@@ -102,8 +110,7 @@ html {
 body {
   min-width: 320px;
   background:
-    linear-gradient(180deg, var(--color-accent-soft), transparent 25rem),
-    var(--vt-bg, var(--color-bg));
+    radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--fs-body);
@@ -137,8 +144,24 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: var(--vt-bg, var(--color-bg));
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
   view-transition-name: page-backdrop;
+}
+
+.vt-page-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.72'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: soft-light;
+  opacity: 0.03;
+}
+
+:root[data-theme="light"] body,
+:root[data-theme="light"] .vt-page-backdrop {
+  background: radial-gradient(circle at 50% 20%, #f7f3eb 0%, #e6e1d9 100%);
 }
 
 body > main,
@@ -331,9 +354,9 @@ svg {
   max-width: 1180px;
   margin: 0 auto;
   padding: 8px 10px 8px 12px;
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid rgba(184, 132, 99, 0.2);
   border-radius: 18px;
-  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
   box-shadow: var(--shadow-nav);
   backdrop-filter: blur(22px) saturate(135%);
   -webkit-backdrop-filter: blur(22px) saturate(135%);
@@ -368,8 +391,8 @@ svg {
   width: 40px;
   height: 40px;
   border-radius: 11px;
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: var(--accent-sage);
+  color: var(--bg-primary);
   font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
@@ -380,32 +403,12 @@ svg {
 .top-nav .brand-link:hover .brand-mark,
 .top-nav .brand-link:focus-visible .brand-mark {
   transform: rotate(-4deg) scale(1.04);
-  background: var(--color-accent);
+  background: var(--color-accent-hover);
 }
 
-.top-nav .brand-copy {
-  display: grid;
-  line-height: 1.05;
-}
-
-.top-nav .brand-copy strong,
-.top-nav .brand-copy small {
-  font-family: var(--font-display);
-  white-space: nowrap;
-}
-
-.top-nav .brand-copy strong {
-  font-size: 0.82rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-.top-nav .brand-copy small {
-  margin-top: 4px;
-  color: var(--color-text-muted);
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+.top-nav .brand-mark svg {
+  width: 18px;
+  height: 18px;
 }
 
 .top-nav .brand-link:focus-visible,
@@ -444,12 +447,13 @@ svg {
   gap: 2px;
   padding: 4px;
   border-radius: 12px;
-  background: var(--color-surface-alt);
+  background: color-mix(in srgb, var(--color-surface-alt) 48%, transparent);
 }
 
 .top-nav .primary-links a {
   position: relative;
-  padding: 8px 14px;
+  padding: 7px 13px;
+  border: 1px solid transparent;
   border-radius: 9px;
   color: var(--color-text-muted);
   font-family: var(--font-display);
@@ -471,9 +475,10 @@ svg {
 }
 
 .top-nav .primary-links a.active {
-  background: var(--color-surface-raised);
-  color: var(--color-text);
-  box-shadow: 0 1px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+  border-color: var(--accent-copper);
+  background: transparent;
+  color: var(--text-primary);
+  box-shadow: 0 0 18px var(--accent-copper-glow);
 }
 
 .top-nav .nav-actions {
@@ -492,7 +497,6 @@ svg {
     border-radius: 16px;
   }
 
-  .top-nav .brand-copy,
   .top-nav .breadcrumb {
     display: none;
   }
@@ -751,7 +755,7 @@ svg {
 }
 
 .hero-title span {
-  color: var(--color-accent);
+  color: var(--accent-sage);
 }
 
 .hero-summary {
@@ -774,10 +778,10 @@ svg {
   min-height: 230px;
   padding: 28px;
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  color: var(--color-text);
+  border: 1px solid var(--accent-copper-glow);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
   box-shadow: var(--shadow-card);
   isolation: isolate;
   transition: color 220ms ease, background-color 220ms ease,
@@ -786,28 +790,16 @@ svg {
 }
 
 .route-card::before {
-  content: "";
-  position: absolute;
-  inset: auto -20% -80% auto;
-  z-index: -1;
-  width: 260px;
-  height: 260px;
-  border-radius: 50%;
-  background: var(--color-accent-soft);
-  transition: transform 480ms var(--ease-out), background-color 220ms ease;
+  content: none;
 }
 
 .route-card:hover,
 .route-card:focus-visible {
-  transform: translateY(-6px);
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border-subtle));
-  color: var(--color-text);
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent-copper) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 95%, var(--accent-copper));
+  color: var(--text-primary);
   box-shadow: var(--shadow-lift);
-}
-
-.route-card:hover::before,
-.route-card:focus-visible::before {
-  transform: translate(-20px, -20px) scale(1.25);
 }
 
 .route-card:active {
@@ -815,14 +807,14 @@ svg {
 }
 
 .route-card:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--accent-copper);
   outline-offset: 4px;
 }
 
 .route-card--work {
-  border-color: var(--color-text);
-  background: var(--color-text);
-  color: var(--color-bg);
+  border-color: var(--accent-copper-glow);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .route-card--work h2,
@@ -832,14 +824,14 @@ svg {
 }
 
 .route-card--work::before {
-  background: color-mix(in srgb, var(--color-accent) 38%, transparent);
+  content: none;
 }
 
 .route-card--work:hover,
 .route-card--work:focus-visible {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  border-color: color-mix(in srgb, var(--accent-copper) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 95%, var(--accent-copper));
+  color: var(--text-primary);
 }
 
 .route-card-meta {
@@ -852,6 +844,20 @@ svg {
   font-weight: 650;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.route-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-sage);
+  box-shadow: 0 0 0 3px rgba(108, 130, 110, 0.12);
 }
 
 .route-card-copy {
@@ -879,14 +885,10 @@ svg {
   position: absolute;
   right: 24px;
   bottom: 24px;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  font-size: 1rem;
-  opacity: 0.78;
+  color: var(--accent-copper);
+  font-size: 1.45rem;
+  line-height: 1;
+  opacity: 0.92;
   transition: transform 260ms var(--ease-spring), opacity 180ms ease;
 }
 
@@ -898,7 +900,7 @@ svg {
 
 .route-card--about:hover .route-card-arrow,
 .route-card--about:focus-visible .route-card-arrow {
-  transform: translateY(4px);
+  transform: translate(3px, 3px);
 }
 
 .landing-footer {
