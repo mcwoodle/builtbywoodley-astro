@@ -744,7 +744,6 @@ svg {
 .route-card {
   position: relative;
   display: grid;
-  min-height: 230px;
   padding: 28px;
   overflow: hidden;
   border: 1px solid var(--accent-copper-glow);
@@ -787,8 +786,7 @@ svg {
 }
 
 .route-card--work h2,
-.route-card--work p,
-.route-card--work .route-card-meta {
+.route-card--work p {
   color: inherit;
 }
 
@@ -801,32 +799,6 @@ svg {
   border-color: color-mix(in srgb, var(--accent-copper) 62%, transparent);
   background: color-mix(in srgb, var(--bg-card) 95%, var(--accent-copper));
   color: var(--text-primary);
-}
-
-.route-card-meta {
-  display: flex;
-  justify-content: space-between;
-  align-self: start;
-  margin-bottom: 50px;
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.route-card-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-sage);
-  box-shadow: 0 0 0 3px rgba(108, 130, 110, 0.12);
 }
 
 .route-card-copy {
@@ -1927,10 +1899,6 @@ svg {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
   }
 
-  .route-card {
-    min-height: 210px;
-  }
-
   .landing-footer {
     align-items: flex-start;
     flex-direction: column;
@@ -2065,12 +2033,7 @@ svg {
   }
 
   .route-card {
-    min-height: 198px;
     padding: 22px;
-  }
-
-  .route-card-meta {
-    margin-bottom: 36px;
   }
 
   .route-card-arrow {
