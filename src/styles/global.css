@@ -742,21 +742,12 @@ svg {
   padding-bottom: 72px;
 }
 
-.hero-eyebrow {
-  margin-bottom: 28px;
-}
-
 .hero-title {
   margin-bottom: 34px;
   font-size: clamp(4.6rem, 10vw, 8.6rem);
   font-weight: 650;
   letter-spacing: -0.085em;
   line-height: 0.78;
-}
-
-.hero-title-prefix {
-  display: inline-block;
-  font-size: calc(1em - 1rem);
 }
 
 .hero-title-name {
