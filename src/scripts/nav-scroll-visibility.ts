@@ -44,8 +44,8 @@ function scheduleVisibilityUpdate() {
 window.addEventListener('scroll', scheduleVisibilityUpdate, { passive: true });
 window.addEventListener('resize', resetNav);
 document.addEventListener('astro:page-load', resetNav);
-document.addEventListener('focusin', (event) => {
-  if (!(event.target instanceof Element) || !event.target.closest('.top-nav')) return;
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab') return;
   resetNav();
 });
 
