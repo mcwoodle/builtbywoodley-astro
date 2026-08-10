@@ -461,6 +461,8 @@ svg {
 @media (max-width: 720px) {
   .top-nav {
     padding: 10px 10px 0;
+    transform: translateY(var(--mobile-nav-offset, 0px));
+    will-change: transform;
   }
 
   .top-nav .nav-panel {
