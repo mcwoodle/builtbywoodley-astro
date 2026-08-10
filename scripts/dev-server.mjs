@@ -1,51 +1,48 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DEFAULT_PORT = 5572;
-const forwardedArgs = [];
-let portValue;
+import {
+  buildAstroArgs,
+  DEV_SERVER_USAGE,
+  findMissingMapArtifacts,
+  formatMissingArtifactsError,
+  parseDevServerArgs,
+} from "./dev-server-config.mjs";
+
+const astroDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fail(message) {
   console.error(`[dev-server] ${message}`);
-  console.error(
-    "Usage: npm run dev -- [PORT] or npm run dev -- --port PORT",
-  );
+  console.error(DEV_SERVER_USAGE);
   process.exit(1);
 }
 
-function setPort(value) {
-  if (portValue !== undefined) fail("provide the port only once.");
-  if (value === undefined || value === "") fail("a port number is required.");
-  portValue = value;
+let devServerOptions;
+try {
+  devServerOptions = parseDevServerArgs(process.argv.slice(2));
+} catch (error) {
+  fail(error.message);
 }
 
-const args = process.argv.slice(2);
-for (let index = 0; index < args.length; index += 1) {
-  const arg = args[index];
-
-  if (arg === "--port" || arg === "-p") {
-    setPort(args[index + 1]);
-    index += 1;
-  } else if (arg.startsWith("--port=")) {
-    setPort(arg.slice("--port=".length));
-  } else if (/^\d+$/.test(arg)) {
-    setPort(arg);
-  } else {
-    forwardedArgs.push(arg);
-  }
-}
-
-const port = Number(portValue ?? DEFAULT_PORT);
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  fail(`port must be an integer from 1 to 65535; received ${portValue}.`);
+const missingArtifacts = await findMissingMapArtifacts(astroDirectory);
+if (missingArtifacts.length > 0) {
+  console.error(
+    `[dev-server] ${formatMissingArtifactsError(
+      astroDirectory,
+      missingArtifacts,
+    )}`,
+  );
+  process.exit(1);
 }
 
 const astroCommand = process.platform === "win32" ? "astro.cmd" : "astro";
 const child = spawn(
   astroCommand,
-  ["dev", "--host", "0.0.0.0", "--port", String(port), ...forwardedArgs],
-  { stdio: "inherit" },
+  buildAstroArgs(devServerOptions),
+  { cwd: astroDirectory, stdio: "inherit" },
 );
 
 child.on("error", (error) => {
