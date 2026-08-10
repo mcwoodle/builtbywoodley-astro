@@ -4,7 +4,6 @@ import { unified } from '@astrojs/markdown-remark';
 
 import tailwindcss from '@tailwindcss/vite';
 
-import gtaMapDevRoutes from './scripts/gta-map-dev-routes.mjs';
 import rehypeLeadIn from './src/plugins/rehype-lead-in';
 
 // https://astro.build/config
@@ -18,7 +17,7 @@ export default defineConfig({
   },
 
   vite: {
-    plugins: [tailwindcss(), gtaMapDevRoutes()],
+    plugins: [tailwindcss()],
     server: {
       allowedHosts: [
         'local.builtbywoodley.ca',

@@ -4,7 +4,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 // Full-bleed framed view of the GTA Urban Analytics kepler.gl map. The site's
 // standard TopNav is hidden here (`hideNav`); in its place a single floating
 // "home tab" overlays the map, top-center. The map itself is an iframe of the
-// standalone build at /viz/gta-crime-map — kept isolated so it retains the
+// standalone build at /viz/gta-crime-map.html — kept isolated so it retains the
 // relaxed /viz/* CSP off this page's strict CSP. Same-origin framing is
 // permitted by `frame-ancestors 'self'` + `X-Frame-Options: SAMEORIGIN` on
 // /viz/*, and this page's `default-src 'self'`.
@@ -60,7 +60,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <noscript>
       <iframe
         class="map-frame map-frame--noscript"
-        src="/viz/gta-crime-map"
+        src="/viz/gta-crime-map.html"
         title="GTA Urban Analytics — interactive kepler.gl crime map"
         loading="eager"
         allowfullscreen
@@ -69,8 +69,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     <script is:inline data-astro-rerun>
       (function () {
-        var FULL = '/viz/gta-crime-map';
-        var LITE = '/viz/gta-crime-map-lite';
+        var FULL = '/viz/gta-crime-map.html';
+        var LITE = '/viz/gta-crime-map-lite.html';
 
         function isMobile() {
           var touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
