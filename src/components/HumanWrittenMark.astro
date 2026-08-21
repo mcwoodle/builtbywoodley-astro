@@ -1,0 +1,28 @@
+---
+// A small credit line certifying that a page was written by a person. The
+// crossed-out bot is intentionally a little dry and direct; it reads cleanly
+// at label size without asking the mark to compete with the page content.
+//
+// Drop it in as the last child of <main>; it right-aligns itself. Styles live
+// in src/styles/global.css with the rest of the visual system.
+
+interface Props {
+  /** Extra classes for page-specific placement. */
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<p class:list={['human-mark', className]}>
+  <svg class="human-mark-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+    <circle class="human-mark-ring" cx="10" cy="10" r="8.25" />
+    <g class="human-mark-bot">
+      <path d="M7.25 8.35h5.5c.66 0 1.2.54 1.2 1.2v2.75c0 .66-.54 1.2-1.2 1.2h-5.5c-.66 0-1.2-.54-1.2-1.2V9.55c0-.66.54-1.2 1.2-1.2Z" />
+      <path d="M10 8.35V6.5M8.85 6.5h2.3" />
+      <path d="M8.25 10.75h.01M11.74 10.75h.01" />
+    </g>
+    <path class="human-mark-slash" d="m4.15 4.15 11.7 11.7" />
+  </svg>
+  <span>Certified human written</span>
+</p>
