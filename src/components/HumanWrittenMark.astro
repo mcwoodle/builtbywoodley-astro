@@ -14,7 +14,15 @@ interface Props {
 const { class: className } = Astro.props;
 ---
 
-<p class:list={['human-mark', className]}>
+<button
+  type="button"
+  class:list={['human-mark', className]}
+  aria-expanded="false"
+  data-human-mark
+>
+  <span class="human-mark-reveal">
+    <span class="human-mark-label">Certified human written</span>
+  </span>
   <svg class="human-mark-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
     <circle class="human-mark-ring" cx="10" cy="10" r="8.25" />
     <g class="human-mark-bot">
@@ -24,5 +32,32 @@ const { class: className } = Astro.props;
     </g>
     <path class="human-mark-slash" d="m4.15 4.15 11.7 11.7" />
   </svg>
-  <span>Certified human written</span>
-</p>
+</button>
+
+<script>
+  const markSelector = '[data-human-mark]';
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>(markSelector)
+      : null;
+
+    document.querySelectorAll<HTMLButtonElement>(`${markSelector}[aria-expanded="true"]`).forEach((mark) => {
+      if (mark !== target) mark.setAttribute('aria-expanded', 'false');
+    });
+
+    if (target) {
+      const isExpanded = target.getAttribute('aria-expanded') === 'true';
+      target.setAttribute('aria-expanded', String(!isExpanded));
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    document.querySelectorAll<HTMLButtonElement>(`${markSelector}[aria-expanded="true"]`).forEach((mark) => {
+      mark.setAttribute('aria-expanded', 'false');
+      mark.focus();
+    });
+  });
+</script>
