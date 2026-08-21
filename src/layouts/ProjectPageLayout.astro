@@ -9,27 +9,41 @@ const { project } = Astro.props;
 ---
 
 <BaseLayout title={`${project.data.title} | Built by Woodley`}>
-  <main class="vt-project-page">
-    <article class="section-shell">
-      <div class="surface-section">
-        <header class="project-meta" style="margin-bottom: var(--space-4);">
-          <span>{project.data.projectType}</span>
-          <span>{project.data.publishDate.toLocaleDateString()}</span>
-        </header>
-        <h1 class="page-heading" style="margin-bottom: var(--space-3);">
-          {project.data.title}
-        </h1>
-        {
-          project.data.description && (
-            <p class="page-subtitle" style="margin-bottom: var(--space-5);">
-              {project.data.description}
-            </p>
-          )
-        }
-        <div class="prose">
+  <main class="detail-page vt-project-page">
+    <article class="detail-shell">
+      <header class="detail-hero">
+        <h1 class="page-heading">{project.data.title}</h1>
+        {project.data.description && (
+          <p class="page-subtitle">{project.data.description}</p>
+        )}
+      </header>
+
+      <div class="detail-content-grid">
+        <aside class="detail-aside" aria-label="Project details">
+          <p class="detail-aside-label">Build profile</p>
+          <dl>
+            <div>
+              <dt>Published</dt>
+              <dd>{project.data.publishDate.toLocaleDateString()}</dd>
+            </div>
+            <div>
+              <dt>Type</dt>
+              <dd>{project.data.projectType}</dd>
+            </div>
+          </dl>
+          {project.data.tags.length > 0 && (
+            <div class="tags-row detail-tags">
+              {project.data.tags.map((tag: string) => (
+                <span class="tag-chip">{tag}</span>
+              ))}
+            </div>
+          )}
+        </aside>
+
+        <div class="prose detail-prose">
           <slot />
+          <div class="post-end-mark" aria-hidden="true"></div>
         </div>
-        <div class="post-end-mark"></div>
       </div>
     </article>
   </main>

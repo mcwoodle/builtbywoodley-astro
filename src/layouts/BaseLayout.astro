@@ -23,13 +23,14 @@ const {
   <head>
     <!-- Resolve the colour theme before first paint. This script intentionally
          runs once; the transition coordinator carries its root attributes
-         across ClientRouter DOM swaps. -->
+         across ClientRouter DOM swaps. New sessions follow the system setting,
+         while explicit light and dark preferences remain available. -->
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
         var root = document.documentElement;
         var MODES = { light: 1, dark: 1, system: 1 };
-        var BG = { light: '#FAF8F4', dark: '#15120F' };
+        var BG = { light: '#ede9e1', dark: '#181e21' };
 
         function systemTheme() {
           if (!window.matchMedia) return 'light';
@@ -66,9 +67,13 @@ const {
         try {
           applyMode(storedMode());
         } catch (error) {
-          root.setAttribute('data-theme', 'light');
+          var fallbackTheme = 'light';
+          try {
+            fallbackTheme = systemTheme();
+          } catch (fallbackError) {}
+          root.setAttribute('data-theme', fallbackTheme);
           root.setAttribute('data-theme-mode', 'system');
-          syncCanvasBg('light');
+          syncCanvasBg(fallbackTheme);
         }
 
         try {
@@ -103,6 +108,7 @@ const {
     {!hideNav && <TopNav />}
     <slot />
     <script>
+      import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';
     </script>
   </body>
