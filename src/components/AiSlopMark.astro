@@ -1,5 +1,5 @@
 ---
-const message = 'This page is AI slop!';
+const message = "I'm sorry, this page is AI slop!";
 const warning = Array.from(message);
 const spitY = ['2px', '9px', '4px', '12px', '6px', '14px'];
 const spitRotate = ['-24deg', '31deg', '-16deg', '38deg', '-28deg', '22deg'];
@@ -15,7 +15,7 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
   type="button"
   class="ai-slop-mark"
   aria-expanded="false"
-  aria-label="This page is AI slop!"
+  aria-label={message}
   data-ai-slop-mark
 >
   <svg class="ai-slop-robot" viewBox="0 0 46 42" aria-hidden="true" focusable="false">
@@ -68,7 +68,12 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
     if (target) {
       const isExpanded = target.getAttribute('aria-expanded') === 'true';
       target.setAttribute('aria-expanded', String(!isExpanded));
+      target.toggleAttribute('data-force-compact', isExpanded);
     }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(slopMarkSelector).forEach((mark) => {
+    mark.addEventListener('pointerleave', () => mark.removeAttribute('data-force-compact'));
   });
 
   document.addEventListener('keydown', (event) => {
@@ -76,6 +81,7 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
 
     document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
       mark.setAttribute('aria-expanded', 'false');
+      mark.setAttribute('data-force-compact', '');
       mark.focus();
     });
   });

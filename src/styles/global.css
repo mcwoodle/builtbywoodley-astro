@@ -465,13 +465,16 @@ svg {
 .ai-slop-mark {
   --slop-color: #d8a557;
   --slop-glow: rgba(216, 165, 87, 0.22);
+  --slop-surface: rgba(24, 30, 33, 0.94);
+  --slop-surface-shadow: rgba(5, 8, 10, 0.24);
   position: fixed;
   bottom: max(18px, env(safe-area-inset-bottom));
   left: 50%;
   z-index: 120;
   display: flex;
   align-items: center;
-  width: 46px;
+  width: fit-content;
+  min-width: 46px;
   height: 46px;
   padding: 0;
   overflow: visible;
@@ -483,16 +486,39 @@ svg {
   font-family: var(--font-display);
   isolation: isolate;
   transform: translateX(-50%);
-  transition: width 0.48s var(--ease-out);
 }
 
 :root[data-theme="light"] .ai-slop-mark {
   --slop-color: #a66135;
   --slop-glow: rgba(166, 97, 53, 0.18);
+  --slop-surface: rgba(247, 243, 235, 0.94);
+  --slop-surface-shadow: rgba(47, 39, 34, 0.14);
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
-  width: 230px;
+.ai-slop-mark::before {
+  content: "";
+  position: absolute;
+  inset: 2px -4px;
+  z-index: 0;
+  border-radius: 14px;
+  background: var(--slop-surface);
+  box-shadow: 0 10px 28px var(--slop-surface-shadow);
+  opacity: 0;
+  transform: scaleX(0.72) scaleY(0.88);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.34s var(--ease-out);
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+)::before {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.28s, 0.08s;
 }
 
 .ai-slop-mark:focus-visible {
@@ -563,20 +589,29 @@ svg {
 
 .ai-slop-copy {
   position: relative;
+  z-index: 1;
   display: grid;
   align-items: center;
-  flex: 1;
+  flex: none;
+  width: max-content;
+  max-width: 0;
   min-width: 0;
   height: 20px;
   opacity: 0;
   visibility: hidden;
   transform: translateX(-8px);
   transition:
+    max-width 0.48s var(--ease-out),
     opacity 0.14s 0.28s ease,
     transform 0.32s var(--ease-out);
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-copy {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-copy {
+  max-width: min(18rem, calc(100vw - 62px));
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
@@ -633,35 +668,67 @@ svg {
   transform: translate(-7px, -50%) scale(0.45);
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-head {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-robot-head {
   animation: ai-slop-head-turn 0.42s 0.06s var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-pupil {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-robot-pupil {
   animation: ai-slop-look-right 0.22s 0.15s var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-closed {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-closed {
   animation: ai-slop-mouth-close 0.13s 0.48s ease forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-open {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-open {
   animation: ai-slop-mouth-open 0.24s 0.51s var(--ease-spring) forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-teeth {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-teeth {
   animation: ai-slop-teeth-in 0.15s 0.6s ease forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-puke-stream {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-puke-stream {
   animation: ai-slop-puke-stream 0.7s 0.68s var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-garble-char {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-garble-char {
   animation: ai-slop-spew 0.92s calc(0.7s + var(--i) * 0.035s) cubic-bezier(0.22, 0.65, 0.35, 1) both;
 }
 
-.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-warning-char {
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-warning-char {
   animation: ai-slop-letter-lock 0.56s calc(1.32s + var(--i) * 0.024s) var(--ease-out) forwards;
 }
 
@@ -803,10 +870,6 @@ svg {
     font-size: 0.75rem;
   }
 
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
-    width: 220px;
-  }
-
   .ai-slop-warning {
     font-size: 0.68rem;
     letter-spacing: 0.015em;
@@ -816,10 +879,6 @@ svg {
 @media (max-width: 390px) {
   .top-nav .primary-links a {
     padding-inline: 10px;
-  }
-
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
-    width: 212px;
   }
 
   .ai-slop-warning {
@@ -1570,21 +1629,37 @@ svg {
   stroke-width: 1.65;
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-reveal {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-reveal {
   max-width: 11rem;
   opacity: 1;
   transform: translateX(0);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-label::after {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-label::after {
   transform: scaleX(1);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-glyph {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-glyph {
   transform: rotate(-6deg) scale(1.05);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-slash {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-slash {
   animation: human-mark-strike 0.42s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -2594,16 +2669,32 @@ svg {
     animation: none !important;
   }
 
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-head {
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-robot-head {
     transform: translateX(2px) rotate(7deg) scaleX(0.9);
   }
 
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-closed {
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-closed {
     opacity: 0;
   }
 
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-open,
-  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-teeth {
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-open,
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-teeth {
     opacity: 1;
     transform: none;
   }
