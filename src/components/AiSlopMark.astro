@@ -1,0 +1,82 @@
+---
+const message = 'This page is AI slop!';
+const warning = Array.from(message);
+const spitY = ['2px', '9px', '4px', '12px', '6px', '14px'];
+const spitRotate = ['-24deg', '31deg', '-16deg', '38deg', '-28deg', '22deg'];
+const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) => ({
+  char,
+  x: `${15 + index * 8.4}px`,
+  y: spitY[index % spitY.length],
+  rotate: spitRotate[index % spitRotate.length],
+}));
+---
+
+<button
+  type="button"
+  class="ai-slop-mark"
+  aria-expanded="false"
+  aria-label="This page is AI slop!"
+  data-ai-slop-mark
+>
+  <svg class="ai-slop-robot" viewBox="0 0 46 42" aria-hidden="true" focusable="false">
+    <g class="ai-slop-robot-head">
+      <path d="M6 15H3v10h3M38 15h3v10h-3" />
+      <rect class="ai-slop-robot-shell" x="6" y="7" width="32" height="29" rx="7" />
+      <path d="M22 7V3.5M19.5 3.5h5" />
+      <circle class="ai-slop-robot-eye" cx="15" cy="18" r="3.2" />
+      <circle class="ai-slop-robot-eye" cx="29" cy="18" r="3.2" />
+      <path class="ai-slop-robot-pupil" d="M15 18h.01M29 18h.01" />
+      <path class="ai-slop-mouth-closed" d="M16 28h12" />
+      <rect class="ai-slop-mouth-open" x="15" y="24" width="14" height="9" rx="3" />
+      <path class="ai-slop-mouth-teeth" d="M19 24v3M25 24v3" />
+    </g>
+    <path class="ai-slop-puke-stream" d="M28 29c4.2-.2 5.5 2.2 8.2 1.6 2.1-.45 3.2.3 6.3 1.4" />
+  </svg>
+
+  <span class="ai-slop-copy" aria-hidden="true">
+    <span class="ai-slop-garble">
+      {spatLetters.map(({ char, x, y, rotate }, index) => (
+        <span
+          class="ai-slop-garble-char"
+          style={`--i: ${index}; --garble-x: ${x}; --garble-y: ${y}; --garble-rotate: ${rotate};`}
+        >{char}</span>
+      ))}
+    </span>
+
+    <span class="ai-slop-warning">
+      {warning.map((char, index) => (
+        <span class="ai-slop-warning-char" style={`--i: ${index};`}>
+          {char === ' ' ? '\u00a0' : char}
+        </span>
+      ))}
+    </span>
+  </span>
+</button>
+
+<script>
+  const slopMarkSelector = '[data-ai-slop-mark]';
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>(slopMarkSelector)
+      : null;
+
+    document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
+      if (mark !== target) mark.setAttribute('aria-expanded', 'false');
+    });
+
+    if (target) {
+      const isExpanded = target.getAttribute('aria-expanded') === 'true';
+      target.setAttribute('aria-expanded', String(!isExpanded));
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
+      mark.setAttribute('aria-expanded', 'false');
+      mark.focus();
+    });
+  });
+</script>

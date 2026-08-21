@@ -460,6 +460,319 @@ svg {
   justify-content: flex-end;
 }
 
+/* The mocked journal is intentionally conspicuous about its generated copy.
+   A fixed robot spits the warning's own letters into their final positions. */
+.ai-slop-mark {
+  --slop-color: #d8a557;
+  --slop-glow: rgba(216, 165, 87, 0.22);
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--slop-color);
+  cursor: pointer;
+  font-family: var(--font-display);
+  isolation: isolate;
+  transform: translateX(-50%);
+  transition: width 0.48s var(--ease-out);
+}
+
+:root[data-theme="light"] .ai-slop-mark {
+  --slop-color: #a66135;
+  --slop-glow: rgba(166, 97, 53, 0.18);
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
+  width: 230px;
+}
+
+.ai-slop-mark:focus-visible {
+  outline: none;
+}
+
+.ai-slop-robot {
+  z-index: 1;
+  flex: none;
+  width: 46px;
+  height: 42px;
+  overflow: visible;
+}
+
+.ai-slop-robot-head,
+.ai-slop-puke-stream {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ai-slop-robot-head {
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-robot-shell {
+  fill: color-mix(in srgb, var(--slop-color) 6%, transparent);
+}
+
+.ai-slop-robot-eye {
+  stroke-width: 1.3;
+}
+
+.ai-slop-robot-pupil {
+  stroke-width: 3;
+}
+
+.ai-slop-mouth-closed {
+  opacity: 1;
+  stroke-width: 1.6;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-mouth-open {
+  fill: #151a1d;
+  opacity: 0;
+  stroke-width: 1.45;
+  transform: scaleY(0.08);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-mouth-teeth {
+  opacity: 0;
+  stroke-width: 1.1;
+}
+
+.ai-slop-puke-stream {
+  opacity: 0;
+  stroke-width: 1.35;
+  stroke-dasharray: 9;
+  stroke-dashoffset: 9;
+}
+
+.ai-slop-copy {
+  position: relative;
+  display: grid;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-8px);
+  transition:
+    opacity 0.14s 0.28s ease,
+    transform 0.32s var(--ease-out);
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-copy {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.ai-slop-warning,
+.ai-slop-garble {
+  grid-area: 1 / 1;
+}
+
+.ai-slop-warning {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ai-slop-warning-char {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(2px);
+  transform: translate(6px, -6px) rotate(18deg) scale(1.35);
+}
+
+.ai-slop-warning-char:nth-child(3n + 2) {
+  transform: translate(-5px, 7px) rotate(-22deg) scale(1.2);
+}
+
+.ai-slop-warning-char:nth-child(3n) {
+  transform: translate(3px, 9px) rotate(27deg) scale(1.4);
+}
+
+.ai-slop-garble {
+  position: relative;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ai-slop-garble-char {
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  color: currentColor;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0;
+  text-shadow: 0 0 8px var(--slop-glow);
+  transform: translate(-7px, -50%) scale(0.45);
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-head {
+  animation: ai-slop-head-turn 0.42s 0.06s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-pupil {
+  animation: ai-slop-look-right 0.22s 0.15s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-closed {
+  animation: ai-slop-mouth-close 0.13s 0.48s ease forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-open {
+  animation: ai-slop-mouth-open 0.24s 0.51s var(--ease-spring) forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-teeth {
+  animation: ai-slop-teeth-in 0.15s 0.6s ease forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-puke-stream {
+  animation: ai-slop-puke-stream 0.7s 0.68s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-garble-char {
+  animation: ai-slop-spew 0.92s calc(0.7s + var(--i) * 0.035s) cubic-bezier(0.22, 0.65, 0.35, 1) both;
+}
+
+.ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-warning-char {
+  animation: ai-slop-letter-lock 0.56s calc(1.32s + var(--i) * 0.024s) var(--ease-out) forwards;
+}
+
+@keyframes ai-slop-head-turn {
+  0% {
+    transform: none;
+  }
+
+  62% {
+    transform: translateX(2px) rotate(9deg) scaleX(0.87);
+  }
+
+  100% {
+    transform: translateX(2px) rotate(7deg) scaleX(0.9);
+  }
+}
+
+@keyframes ai-slop-look-right {
+  to {
+    transform: translateX(1.6px);
+  }
+}
+
+@keyframes ai-slop-mouth-close {
+  to {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+}
+
+@keyframes ai-slop-mouth-open {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.08);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scaleY(1.12);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ai-slop-teeth-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ai-slop-puke-stream {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 9;
+  }
+
+  30%,
+  72% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ai-slop-spew {
+  0% {
+    opacity: 0;
+    transform: translate(-7px, -50%) scale(0.45) rotate(0deg);
+  }
+
+  14%,
+  58% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--garble-x), calc(-50% + var(--garble-y))) scale(0.92) rotate(var(--garble-rotate));
+  }
+}
+
+@keyframes ai-slop-letter-lock {
+  0% {
+    opacity: 0;
+  }
+
+  45% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  72% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(-1px) rotate(-2deg) scale(1.05);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
 @media (max-width: 720px) {
   .top-nav {
     padding: 10px 10px 0;
@@ -489,11 +802,29 @@ svg {
     padding: 7px 12px;
     font-size: 0.75rem;
   }
+
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
+    width: 220px;
+  }
+
+  .ai-slop-warning {
+    font-size: 0.68rem;
+    letter-spacing: 0.015em;
+  }
 }
 
 @media (max-width: 390px) {
   .top-nav .primary-links a {
     padding-inline: 10px;
+  }
+
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) {
+    width: 212px;
+  }
+
+  .ai-slop-warning {
+    font-size: 0.65rem;
+    letter-spacing: 0.005em;
   }
 }
 
@@ -2248,5 +2579,39 @@ svg {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .ai-slop-garble,
+  .ai-slop-puke-stream {
+    display: none;
+  }
+
+  .ai-slop-robot-head,
+  .ai-slop-robot-pupil,
+  .ai-slop-mouth-closed,
+  .ai-slop-mouth-open,
+  .ai-slop-mouth-teeth {
+    animation: none !important;
+  }
+
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-robot-head {
+    transform: translateX(2px) rotate(7deg) scaleX(0.9);
+  }
+
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-closed {
+    opacity: 0;
+  }
+
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-open,
+  .ai-slop-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .ai-slop-mouth-teeth {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ai-slop-warning-char {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    animation-delay: 0s !important;
   }
 }

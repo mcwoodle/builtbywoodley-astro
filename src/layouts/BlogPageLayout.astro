@@ -9,17 +9,19 @@ interface Props {
   linkPrefix: string;
   headerSubtitle: string;
   logTitle: string;
+  aiSlop?: boolean;
 }
 
 const { 
   collectionName, 
   linkPrefix, 
   headerSubtitle, 
-  logTitle 
+  logTitle,
+  aiSlop = false,
 } = Astro.props;
 ---
 
-<BaseLayout title="Workshop Journal | Built by Woodley">
+<BaseLayout title="Workshop Journal | Built by Woodley" aiSlop={aiSlop}>
   <main class="journal-page vt-blog-page">
     <div class="page-shell">
       <Header subtitle={headerSubtitle} />

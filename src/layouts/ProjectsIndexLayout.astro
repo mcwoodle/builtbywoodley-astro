@@ -6,16 +6,17 @@ interface Props {
   title: string;
   subtitle: string;
   linkPrefix: string;
+  aiSlop?: boolean;
 }
 
-const { title, subtitle, linkPrefix } = Astro.props;
+const { title, subtitle, linkPrefix, aiSlop = false } = Astro.props;
 const collectionName = linkPrefix.includes("mocked") ? "mockedProjects" : "projects";
 const projects = (await getCollection(collectionName)).sort(
   (a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime()
 );
 ---
 
-<BaseLayout title={`${title} | Built by Woodley`}>
+<BaseLayout title={`${title} | Built by Woodley`} aiSlop={aiSlop}>
   <main class="page-shell project-index-page vt-project-index">
     <header class="page-intro">
       <div>
