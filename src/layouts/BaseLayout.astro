@@ -23,8 +23,8 @@ const {
   <head>
     <!-- Resolve the colour theme before first paint. This script intentionally
          runs once; the transition coordinator carries its root attributes
-         across ClientRouter DOM swaps. The redesigned dark palette is the
-         default, while explicit light and system preferences remain available. -->
+         across ClientRouter DOM swaps. New sessions follow the system setting,
+         while explicit light and dark preferences remain available. -->
     <script is:inline>
       (function () {
         var STORAGE_KEY = 'theme';
@@ -41,9 +41,9 @@ const {
         function storedMode() {
           try {
             var value = localStorage.getItem(STORAGE_KEY);
-            return MODES[value] ? value : 'dark';
+            return MODES[value] ? value : 'system';
           } catch (error) {
-            return 'dark';
+            return 'system';
           }
         }
 
@@ -67,9 +67,13 @@ const {
         try {
           applyMode(storedMode());
         } catch (error) {
-          root.setAttribute('data-theme', 'dark');
-          root.setAttribute('data-theme-mode', 'dark');
-          syncCanvasBg('dark');
+          var fallbackTheme = 'light';
+          try {
+            fallbackTheme = systemTheme();
+          } catch (fallbackError) {}
+          root.setAttribute('data-theme', fallbackTheme);
+          root.setAttribute('data-theme-mode', 'system');
+          syncCanvasBg(fallbackTheme);
         }
 
         try {
