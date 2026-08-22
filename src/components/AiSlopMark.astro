@@ -1,13 +1,21 @@
 ---
 const message = "I'm sorry, this page is AI slop!";
-const warning = Array.from(message);
-const spitY = ['2px', '9px', '4px', '12px', '6px', '14px'];
-const spitRotate = ['-24deg', '31deg', '-16deg', '38deg', '-28deg', '22deg'];
-const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) => ({
+const binaryPattern = Array.from('0110100110010110');
+const bitX = ['-9px', '7px', '-4px', '10px', '-7px', '5px'];
+const bitY = ['-7px', '6px', '8px', '-5px', '4px', '-9px'];
+const bitRotate = ['-28deg', '24deg', '-17deg', '31deg', '-22deg', '19deg'];
+const bitMidX = ['6px', '-8px', '9px', '-5px', '7px', '-10px'];
+const bitMidY = ['8px', '-5px', '6px', '-9px', '5px', '-7px'];
+const bitMidRotate = ['19deg', '-31deg', '26deg', '-18deg', '33deg', '-24deg'];
+const resolvedCharacters = Array.from(message).map((char, index) => ({
+  bit: binaryPattern[index % binaryPattern.length],
   char,
-  x: `${15 + index * 8.4}px`,
-  y: spitY[index % spitY.length],
-  rotate: spitRotate[index % spitRotate.length],
+  midRotate: bitMidRotate[index % bitMidRotate.length],
+  midX: bitMidX[index % bitMidX.length],
+  midY: bitMidY[index % bitMidY.length],
+  x: bitX[index % bitX.length],
+  y: bitY[index % bitY.length],
+  rotate: bitRotate[index % bitRotate.length],
 }));
 ---
 
@@ -34,18 +42,13 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
   </svg>
 
   <span class="ai-slop-copy" aria-hidden="true">
-    <span class="ai-slop-garble">
-      {spatLetters.map(({ char, x, y, rotate }, index) => (
-        <span
-          class="ai-slop-garble-char"
-          style={`--i: ${index}; --garble-x: ${x}; --garble-y: ${y}; --garble-rotate: ${rotate};`}
-        >{char}</span>
-      ))}
-    </span>
-
     <span class="ai-slop-warning">
-      {warning.map((char, index) => (
-        <span class="ai-slop-warning-char" style={`--i: ${index};`}>
+      {resolvedCharacters.map(({ bit, char, midRotate, midX, midY, rotate, x, y }, index) => (
+        <span
+          class="ai-slop-warning-char"
+          data-bit={bit}
+          style={`--i: ${index}; --bit-x: ${x}; --bit-y: ${y}; --bit-rotate: ${rotate}; --bit-mid-x: ${midX}; --bit-mid-y: ${midY}; --bit-mid-rotate: ${midRotate};`}
+        >
           {char === ' ' ? '\u00a0' : char}
         </span>
       ))}
@@ -55,6 +58,24 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
 
 <script>
   const slopMarkSelector = '[data-ai-slop-mark]';
+
+  const positionSlopBits = (mark: HTMLButtonElement) => {
+    const robot = mark.querySelector<SVGElement>('.ai-slop-robot');
+    if (!robot) return;
+
+    const robotRect = robot.getBoundingClientRect();
+    const mouthX = robotRect.left + robotRect.width * (28 / 46);
+    const mouthY = robotRect.top + robotRect.height * (29 / 42);
+
+    mark.querySelectorAll<HTMLElement>('.ai-slop-warning-char').forEach((character) => {
+      const characterRect = character.getBoundingClientRect();
+      const originX = mouthX - (characterRect.left + characterRect.width / 2);
+      const originY = mouthY - (characterRect.top + characterRect.height / 2);
+
+      character.style.setProperty('--bit-origin-x', `${originX}px`);
+      character.style.setProperty('--bit-origin-y', `${originY}px`);
+    });
+  };
 
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element
@@ -73,6 +94,9 @@ const spatLetters = Array.from(message.replaceAll(' ', '')).map((char, index) =>
   });
 
   document.querySelectorAll<HTMLButtonElement>(slopMarkSelector).forEach((mark) => {
+    requestAnimationFrame(() => positionSlopBits(mark));
+    mark.addEventListener('pointerenter', () => positionSlopBits(mark));
+    mark.addEventListener('focus', () => positionSlopBits(mark));
     mark.addEventListener('pointerleave', () => mark.removeAttribute('data-force-compact'));
   });
 
