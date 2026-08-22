@@ -1146,6 +1146,134 @@ svg {
 }
 
 /* ─────────────────────────────────────────────
+   Human-written mark
+   A compact credit line for the foot of a page. The no-bot seal supplies the
+   wit; the words stay in the same micro-label voice as the rest of the page.
+   ───────────────────────────────────────────── */
+.human-mark {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 7px;
+  margin: clamp(40px, 5vw, 60px) 0 0 auto;
+  padding: 5px 0 5px 5px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.105em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.human-mark-reveal {
+  display: block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(9px);
+  transition:
+    max-width 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.human-mark-label {
+  position: relative;
+  display: block;
+  padding-bottom: 4px;
+  white-space: nowrap;
+}
+
+.human-mark-label::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-copper));
+  content: "";
+  opacity: 0.7;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.45s 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.human-mark-glyph {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--accent-copper);
+  overflow: visible;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.human-mark-ring,
+.human-mark-bot,
+.human-mark-slash {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.human-mark-ring {
+  stroke-width: 1.25;
+  opacity: 0.85;
+}
+
+.human-mark-bot {
+  stroke-width: 1.05;
+}
+
+.human-mark-bot path:last-child {
+  stroke-width: 2.1;
+}
+
+.human-mark-slash {
+  stroke-dasharray: 17;
+  stroke-dashoffset: 0;
+  stroke-width: 1.65;
+}
+
+.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-reveal {
+  max-width: 11rem;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-label::after {
+  transform: scaleX(1);
+}
+
+.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-glyph {
+  transform: rotate(-6deg) scale(1.05);
+}
+
+.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-slash {
+  animation: human-mark-strike 0.42s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.human-mark:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
+@keyframes human-mark-strike {
+  from {
+    stroke-dashoffset: 17;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────
    Journal and carousel
    ───────────────────────────────────────────── */
 .journal-page {
