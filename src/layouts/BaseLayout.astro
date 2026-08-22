@@ -1,5 +1,6 @@
 ---
 import NavigationTransitionHead from '../components/NavigationTransitionHead.astro';
+import AiSlopMark from '../components/AiSlopMark.astro';
 import TopNav from '../components/TopNav.astro';
 import '../styles/global.css';
 import '../styles/view-transitions.css';
@@ -7,12 +8,15 @@ import '../styles/view-transitions.css';
 interface Props {
   /** Hide the sticky TopNav — for full-bleed pages that supply their own navigation UI. */
   hideNav?: boolean;
+  /** Show the fixed AI-generated-content warning at the bottom of the viewport. */
+  aiSlop?: boolean;
   title?: string;
   description?: string;
 }
 
 const {
   hideNav = false,
+  aiSlop = false,
   title = 'Built by Woodley',
   description = "Stuff that I've built",
 } = Astro.props;
@@ -106,6 +110,7 @@ const {
   <body>
     <div class="vt-page-backdrop" aria-hidden="true"></div>
     {!hideNav && <TopNav />}
+    {aiSlop && <AiSlopMark />}
     <slot />
     <script>
       import '../scripts/nav-scroll-visibility';

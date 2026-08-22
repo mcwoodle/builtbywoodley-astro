@@ -3,12 +3,13 @@ import BaseLayout from "./BaseLayout.astro";
 
 interface Props {
   project: any;
+  aiSlop?: boolean;
 }
 
-const { project } = Astro.props;
+const { project, aiSlop = false } = Astro.props;
 ---
 
-<BaseLayout title={`${project.data.title} | Built by Woodley`}>
+<BaseLayout title={`${project.data.title} | Built by Woodley`} aiSlop={aiSlop}>
   <main class="detail-page vt-project-page">
     <article class="detail-shell">
       <header class="detail-hero">

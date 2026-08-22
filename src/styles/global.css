@@ -460,6 +460,398 @@ svg {
   justify-content: flex-end;
 }
 
+/* The mocked journal is intentionally conspicuous about its generated copy.
+   A fixed robot spits the warning's own letters into their final positions. */
+.ai-slop-mark {
+  --slop-color: #d8a557;
+  --slop-glow: rgba(216, 165, 87, 0.22);
+  --slop-surface: rgba(24, 30, 33, 0.94);
+  --slop-surface-shadow: rgba(5, 8, 10, 0.24);
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-width: 46px;
+  height: 46px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--slop-color);
+  cursor: pointer;
+  font-family: var(--font-display);
+  isolation: isolate;
+  transform: translateX(-50%);
+}
+
+:root[data-theme="light"] .ai-slop-mark {
+  --slop-color: #a66135;
+  --slop-glow: rgba(166, 97, 53, 0.18);
+  --slop-surface: rgba(247, 243, 235, 0.94);
+  --slop-surface-shadow: rgba(47, 39, 34, 0.14);
+}
+
+.ai-slop-mark::before {
+  content: "";
+  position: absolute;
+  inset: 2px -4px;
+  z-index: 0;
+  border-radius: 14px;
+  background: var(--slop-surface);
+  box-shadow: 0 10px 28px var(--slop-surface-shadow);
+  opacity: 0;
+  transform: scaleX(0.72) scaleY(0.88);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.34s var(--ease-out);
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+)::before {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.28s, 0.08s;
+}
+
+.ai-slop-mark:focus-visible {
+  outline: none;
+}
+
+.ai-slop-robot {
+  z-index: 1;
+  flex: none;
+  width: 46px;
+  height: 42px;
+  overflow: visible;
+}
+
+.ai-slop-robot-head,
+.ai-slop-puke-stream {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ai-slop-robot-head {
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-robot-shell {
+  fill: color-mix(in srgb, var(--slop-color) 6%, transparent);
+}
+
+.ai-slop-robot-eye {
+  stroke-width: 1.3;
+}
+
+.ai-slop-robot-pupil {
+  stroke-width: 3;
+}
+
+.ai-slop-mouth-closed {
+  opacity: 1;
+  stroke-width: 1.6;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-mouth-open {
+  fill: #151a1d;
+  opacity: 0;
+  stroke-width: 1.45;
+  transform: scaleY(0.08);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ai-slop-mouth-teeth {
+  opacity: 0;
+  stroke-width: 1.1;
+}
+
+.ai-slop-puke-stream {
+  opacity: 0;
+  stroke-width: 1.35;
+  stroke-dasharray: 9;
+  stroke-dashoffset: 9;
+}
+
+.ai-slop-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-items: center;
+  flex: none;
+  width: max-content;
+  max-width: 0;
+  min-width: 0;
+  height: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-8px);
+  transition:
+    max-width 0.48s var(--ease-out),
+    opacity 0.12s 0.06s ease,
+    transform 0.32s var(--ease-out);
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-copy {
+  max-width: min(18rem, calc(100vw - 62px));
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.ai-slop-warning {
+  display: flex;
+  grid-area: 1 / 1;
+  align-items: center;
+  justify-content: flex-start;
+  color: currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ai-slop-warning-char {
+  position: relative;
+  display: inline-block;
+  color: transparent;
+  transform-origin: center;
+}
+
+.ai-slop-warning-char::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: var(--slop-color);
+  content: attr(data-bit);
+  filter: blur(1.5px);
+  opacity: 0;
+  text-shadow: 0 0 8px var(--slop-glow);
+  transform: translate(-50%, -50%) scale(0.45);
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-robot-head {
+  animation: ai-slop-head-turn 0.42s 0.06s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-robot-pupil {
+  animation: ai-slop-look-right 0.22s 0.15s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-closed {
+  animation: ai-slop-mouth-close 0.12s 0.06s ease forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-open {
+  animation: ai-slop-mouth-open 0.26s 0.08s var(--ease-spring) forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-mouth-teeth {
+  animation: ai-slop-teeth-in 0.14s 0.16s ease forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-puke-stream {
+  animation: ai-slop-puke-stream 1s 0.12s var(--ease-out) forwards;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-warning-char::before {
+  animation: ai-slop-bit-face 2s calc(0.1s + var(--i) * 0.022s) linear both;
+}
+
+.ai-slop-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .ai-slop-warning-char {
+  animation: ai-slop-bit-travel 2s calc(0.1s + var(--i) * 0.022s) linear forwards;
+}
+
+@keyframes ai-slop-head-turn {
+  0% {
+    transform: none;
+  }
+
+  62% {
+    transform: translateX(2px) rotate(9deg) scaleX(0.87);
+  }
+
+  100% {
+    transform: translateX(2px) rotate(7deg) scaleX(0.9);
+  }
+}
+
+@keyframes ai-slop-look-right {
+  to {
+    transform: translateX(1.6px);
+  }
+}
+
+@keyframes ai-slop-mouth-close {
+  to {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+}
+
+@keyframes ai-slop-mouth-open {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.08);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scaleY(1.12);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ai-slop-teeth-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ai-slop-puke-stream {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 9;
+  }
+
+  30%,
+  72% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ai-slop-bit-travel {
+  0% {
+    color: transparent;
+    filter: blur(1px);
+    transform: translate(var(--bit-origin-x, -20px), var(--bit-origin-y, 7px)) rotate(var(--bit-rotate)) scale(0.45);
+  }
+
+  8%,
+  30% {
+    color: transparent;
+    filter: blur(0.5px);
+    transform: translate(var(--bit-origin-x, -20px), var(--bit-origin-y, 7px)) rotate(var(--bit-rotate)) scale(0.82);
+  }
+
+  72%,
+  82% {
+    color: transparent;
+    filter: none;
+    transform: none;
+  }
+
+  90% {
+    color: var(--slop-color);
+    filter: blur(0.5px);
+    transform: rotate(-3deg) scale(1.16);
+  }
+
+  100% {
+    color: var(--slop-color);
+    filter: none;
+    transform: none;
+  }
+}
+
+@keyframes ai-slop-bit-face {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--bit-x)), calc(-50% + var(--bit-y))) rotate(var(--bit-rotate)) scale(0.45);
+  }
+
+  5% {
+    opacity: 1;
+  }
+
+  30% {
+    opacity: 1;
+    filter: blur(0.5px);
+    transform: translate(calc(-50% + var(--bit-mid-x)), calc(-50% + var(--bit-mid-y))) rotate(var(--bit-mid-rotate)) scale(0.92);
+  }
+
+  58% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(calc(-50% + var(--bit-x)), calc(-50% + var(--bit-y))) rotate(var(--bit-rotate)) scale(1);
+  }
+
+  72%,
+  82% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate(-50%, -50%) rotate(0) scale(1);
+  }
+
+  90%,
+  100% {
+    opacity: 0;
+    filter: blur(0);
+    transform: translate(-50%, -50%) rotate(90deg) scale(0.15);
+  }
+}
+
 @media (max-width: 720px) {
   .top-nav {
     padding: 10px 10px 0;
@@ -489,11 +881,21 @@ svg {
     padding: 7px 12px;
     font-size: 0.75rem;
   }
+
+  .ai-slop-warning {
+    font-size: 0.68rem;
+    letter-spacing: 0.015em;
+  }
 }
 
 @media (max-width: 390px) {
   .top-nav .primary-links a {
     padding-inline: 10px;
+  }
+
+  .ai-slop-warning {
+    font-size: 0.65rem;
+    letter-spacing: 0.005em;
   }
 }
 
@@ -1204,8 +1606,8 @@ svg {
 
 .human-mark-glyph {
   flex: none;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   color: var(--accent-copper);
   overflow: visible;
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1221,39 +1623,67 @@ svg {
 }
 
 .human-mark-ring {
-  stroke-width: 1.25;
+  stroke-width: 2.1;
   opacity: 0.85;
 }
 
 .human-mark-bot {
-  stroke-width: 1.05;
+  stroke-width: 2.2;
 }
 
-.human-mark-bot path:last-child {
-  stroke-width: 2.1;
+.human-mark-bot-shell {
+  fill: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.human-mark-bot-eye {
+  stroke-width: 1.9;
+}
+
+.human-mark-bot-pupil {
+  stroke-width: 4;
+}
+
+.human-mark-bot-mouth {
+  stroke-width: 2.3;
 }
 
 .human-mark-slash {
-  stroke-dasharray: 17;
+  stroke-dasharray: 50;
   stroke-dashoffset: 0;
-  stroke-width: 1.65;
+  stroke-width: 2.7;
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-reveal {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-reveal {
   max-width: 11rem;
   opacity: 1;
   transform: translateX(0);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-label::after {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-label::after {
   transform: scaleX(1);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-glyph {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-glyph {
   transform: rotate(-6deg) scale(1.05);
 }
 
-.human-mark:is(:hover, :focus-visible, [aria-expanded="true"]) .human-mark-slash {
+.human-mark:is(
+  [aria-expanded="true"],
+  :hover:not([data-force-compact]),
+  :focus-visible:not([data-force-compact])
+) .human-mark-slash {
   animation: human-mark-strike 0.42s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1265,7 +1695,7 @@ svg {
 
 @keyframes human-mark-strike {
   from {
-    stroke-dashoffset: 17;
+    stroke-dashoffset: 50;
   }
 
   to {
@@ -2248,5 +2678,58 @@ svg {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .ai-slop-puke-stream {
+    display: none;
+  }
+
+  .ai-slop-robot-head,
+  .ai-slop-robot-pupil,
+  .ai-slop-mouth-closed,
+  .ai-slop-mouth-open,
+  .ai-slop-mouth-teeth {
+    animation: none !important;
+  }
+
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-robot-head {
+    transform: translateX(2px) rotate(7deg) scaleX(0.9);
+  }
+
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-closed {
+    opacity: 0;
+  }
+
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-open,
+  .ai-slop-mark:is(
+    [aria-expanded="true"],
+    :hover:not([data-force-compact]),
+    :focus-visible:not([data-force-compact])
+  ) .ai-slop-mouth-teeth {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ai-slop-warning-char {
+    color: var(--slop-color);
+    filter: none;
+    transform: none;
+    animation: none !important;
+  }
+
+  .ai-slop-warning-char::before {
+    display: none;
   }
 }

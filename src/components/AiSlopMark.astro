@@ -1,0 +1,112 @@
+---
+const message = "I'm sorry, this page is AI slop!";
+const binaryPattern = Array.from('0110100110010110');
+const bitX = ['-9px', '7px', '-4px', '10px', '-7px', '5px'];
+const bitY = ['-7px', '6px', '8px', '-5px', '4px', '-9px'];
+const bitRotate = ['-28deg', '24deg', '-17deg', '31deg', '-22deg', '19deg'];
+const bitMidX = ['6px', '-8px', '9px', '-5px', '7px', '-10px'];
+const bitMidY = ['8px', '-5px', '6px', '-9px', '5px', '-7px'];
+const bitMidRotate = ['19deg', '-31deg', '26deg', '-18deg', '33deg', '-24deg'];
+const resolvedCharacters = Array.from(message).map((char, index) => ({
+  bit: binaryPattern[index % binaryPattern.length],
+  char,
+  midRotate: bitMidRotate[index % bitMidRotate.length],
+  midX: bitMidX[index % bitMidX.length],
+  midY: bitMidY[index % bitMidY.length],
+  x: bitX[index % bitX.length],
+  y: bitY[index % bitY.length],
+  rotate: bitRotate[index % bitRotate.length],
+}));
+---
+
+<button
+  type="button"
+  class="ai-slop-mark"
+  aria-expanded="false"
+  aria-label={message}
+  data-ai-slop-mark
+>
+  <svg class="ai-slop-robot" viewBox="0 0 46 42" aria-hidden="true" focusable="false">
+    <g class="ai-slop-robot-head">
+      <path d="M6 15H3v10h3M38 15h3v10h-3" />
+      <rect class="ai-slop-robot-shell" x="6" y="7" width="32" height="29" rx="7" />
+      <path d="M22 7V3.5M19.5 3.5h5" />
+      <circle class="ai-slop-robot-eye" cx="15" cy="18" r="3.2" />
+      <circle class="ai-slop-robot-eye" cx="29" cy="18" r="3.2" />
+      <path class="ai-slop-robot-pupil" d="M15 18h.01M29 18h.01" />
+      <path class="ai-slop-mouth-closed" d="M16 28h12" />
+      <rect class="ai-slop-mouth-open" x="15" y="24" width="14" height="9" rx="3" />
+      <path class="ai-slop-mouth-teeth" d="M19 24v3M25 24v3" />
+    </g>
+    <path class="ai-slop-puke-stream" d="M28 29c4.2-.2 5.5 2.2 8.2 1.6 2.1-.45 3.2.3 6.3 1.4" />
+  </svg>
+
+  <span class="ai-slop-copy" aria-hidden="true">
+    <span class="ai-slop-warning">
+      {resolvedCharacters.map(({ bit, char, midRotate, midX, midY, rotate, x, y }, index) => (
+        <span
+          class="ai-slop-warning-char"
+          data-bit={bit}
+          style={`--i: ${index}; --bit-x: ${x}; --bit-y: ${y}; --bit-rotate: ${rotate}; --bit-mid-x: ${midX}; --bit-mid-y: ${midY}; --bit-mid-rotate: ${midRotate};`}
+        >
+          {char === ' ' ? '\u00a0' : char}
+        </span>
+      ))}
+    </span>
+  </span>
+</button>
+
+<script>
+  const slopMarkSelector = '[data-ai-slop-mark]';
+
+  const positionSlopBits = (mark: HTMLButtonElement) => {
+    const robot = mark.querySelector<SVGElement>('.ai-slop-robot');
+    if (!robot) return;
+
+    const robotRect = robot.getBoundingClientRect();
+    const mouthX = robotRect.left + robotRect.width * (28 / 46);
+    const mouthY = robotRect.top + robotRect.height * (29 / 42);
+
+    mark.querySelectorAll<HTMLElement>('.ai-slop-warning-char').forEach((character) => {
+      const characterRect = character.getBoundingClientRect();
+      const originX = mouthX - (characterRect.left + characterRect.width / 2);
+      const originY = mouthY - (characterRect.top + characterRect.height / 2);
+
+      character.style.setProperty('--bit-origin-x', `${originX}px`);
+      character.style.setProperty('--bit-origin-y', `${originY}px`);
+    });
+  };
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>(slopMarkSelector)
+      : null;
+
+    document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
+      if (mark !== target) mark.setAttribute('aria-expanded', 'false');
+    });
+
+    if (target) {
+      const isExpanded = target.getAttribute('aria-expanded') === 'true';
+      target.setAttribute('aria-expanded', String(!isExpanded));
+      target.toggleAttribute('data-force-compact', isExpanded);
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(slopMarkSelector).forEach((mark) => {
+    requestAnimationFrame(() => positionSlopBits(mark));
+    mark.addEventListener('pointerenter', () => positionSlopBits(mark));
+    mark.addEventListener('focus', () => positionSlopBits(mark));
+    mark.addEventListener('pointerleave', () => mark.removeAttribute('data-force-compact'));
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
+      mark.setAttribute('aria-expanded', 'false');
+      mark.setAttribute('data-force-compact', '');
+      mark.focus();
+    });
+  });
+</script>

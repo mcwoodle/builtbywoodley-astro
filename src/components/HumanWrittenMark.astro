@@ -1,7 +1,7 @@
 ---
 // A small credit line certifying that a page was written by a person. The
-// crossed-out bot is intentionally a little dry and direct; it reads cleanly
-// at label size without asking the mark to compete with the page content.
+// crossed-out, closed-mouth bot mirrors the AI-slop mark while staying quiet
+// enough not to compete with the page content.
 //
 // Drop it in as the last child of <main>; it right-aligns itself. Styles live
 // in src/styles/global.css with the rest of the visual system.
@@ -23,14 +23,18 @@ const { class: className } = Astro.props;
   <span class="human-mark-reveal">
     <span class="human-mark-label">Certified human written</span>
   </span>
-  <svg class="human-mark-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-    <circle class="human-mark-ring" cx="10" cy="10" r="8.25" />
-    <g class="human-mark-bot">
-      <path d="M7.25 8.35h5.5c.66 0 1.2.54 1.2 1.2v2.75c0 .66-.54 1.2-1.2 1.2h-5.5c-.66 0-1.2-.54-1.2-1.2V9.55c0-.66.54-1.2 1.2-1.2Z" />
-      <path d="M10 8.35V6.5M8.85 6.5h2.3" />
-      <path d="M8.25 10.75h.01M11.74 10.75h.01" />
+  <svg class="human-mark-glyph" viewBox="0 0 52 52" aria-hidden="true" focusable="false">
+    <circle class="human-mark-ring" cx="26" cy="26" r="23" />
+    <g class="human-mark-bot" transform="translate(6.5 9) scale(.88)">
+      <path d="M6 15H3v10h3M38 15h3v10h-3" />
+      <rect class="human-mark-bot-shell" x="6" y="7" width="32" height="29" rx="7" />
+      <path d="M22 7V3.5M19.5 3.5h5" />
+      <circle class="human-mark-bot-eye" cx="15" cy="18" r="3.2" />
+      <circle class="human-mark-bot-eye" cx="29" cy="18" r="3.2" />
+      <path class="human-mark-bot-pupil" d="M15 18h.01M29 18h.01" />
+      <path class="human-mark-bot-mouth" d="M16 28h12" />
     </g>
-    <path class="human-mark-slash" d="m4.15 4.15 11.7 11.7" />
+    <path class="human-mark-slash" d="m9 9 34 34" />
   </svg>
 </button>
 
@@ -49,7 +53,12 @@ const { class: className } = Astro.props;
     if (target) {
       const isExpanded = target.getAttribute('aria-expanded') === 'true';
       target.setAttribute('aria-expanded', String(!isExpanded));
+      target.toggleAttribute('data-force-compact', isExpanded);
     }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(markSelector).forEach((mark) => {
+    mark.addEventListener('pointerleave', () => mark.removeAttribute('data-force-compact'));
   });
 
   document.addEventListener('keydown', (event) => {
@@ -57,6 +66,7 @@ const { class: className } = Astro.props;
 
     document.querySelectorAll<HTMLButtonElement>(`${markSelector}[aria-expanded="true"]`).forEach((mark) => {
       mark.setAttribute('aria-expanded', 'false');
+      mark.setAttribute('data-force-compact', '');
       mark.focus();
     });
   });
