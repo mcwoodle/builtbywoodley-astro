@@ -1594,8 +1594,8 @@ svg {
 
 .human-mark-glyph {
   flex: none;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   color: var(--accent-copper);
   overflow: visible;
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1611,22 +1611,34 @@ svg {
 }
 
 .human-mark-ring {
-  stroke-width: 1.25;
+  stroke-width: 2.1;
   opacity: 0.85;
 }
 
 .human-mark-bot {
-  stroke-width: 1.05;
+  stroke-width: 2.2;
 }
 
-.human-mark-bot path:last-child {
-  stroke-width: 2.1;
+.human-mark-bot-shell {
+  fill: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.human-mark-bot-eye {
+  stroke-width: 1.9;
+}
+
+.human-mark-bot-pupil {
+  stroke-width: 4;
+}
+
+.human-mark-bot-mouth {
+  stroke-width: 2.3;
 }
 
 .human-mark-slash {
-  stroke-dasharray: 17;
+  stroke-dasharray: 50;
   stroke-dashoffset: 0;
-  stroke-width: 1.65;
+  stroke-width: 2.7;
 }
 
 .human-mark:is(
@@ -1671,7 +1683,7 @@ svg {
 
 @keyframes human-mark-strike {
   from {
-    stroke-dashoffset: 17;
+    stroke-dashoffset: 50;
   }
 
   to {
