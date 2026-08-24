@@ -61,12 +61,22 @@ const crumb = path.startsWith('/software/')
         aria-current={isPhotography ? 'page' : undefined}
         data-direction="left"
       >Photography</a>
+    </div>
+
+    <div class="nav-actions">
       <a
         href="/about"
-        class:list={{ active: isAbout }}
+        class:list={['about-link', { active: isAbout }]}
+        aria-label="About me"
         aria-current={isAbout ? 'page' : undefined}
+        data-tooltip="About me"
         data-direction="down"
-      >About</a>
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="8.2" r="3.5"></circle>
+          <path d="M5.8 19.6a6.6 6.6 0 0 1 12.4 0"></path>
+        </svg>
+      </a>
     </div>
   </nav>
 </header>

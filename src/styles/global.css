@@ -397,9 +397,64 @@ svg {
 
 .top-nav .brand-link:focus-visible,
 .top-nav .breadcrumb a:focus-visible,
-.top-nav .primary-links a:focus-visible {
+.top-nav .primary-links a:focus-visible,
+.top-nav .about-link:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+/* About holds the right-hand corner as a tile the same size and shape as the
+   house on the left, so the panel reads as balanced with the links centred
+   between them. It stays the quieter of the two: the sage mark is the brand. */
+.top-nav .nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.top-nav .about-link {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 11px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  transition: color 180ms ease, border-color 180ms ease,
+    background-color 180ms ease, transform 220ms var(--ease-out),
+    box-shadow 180ms ease;
+}
+
+.top-nav .about-link svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The house leans one way on hover; this leans the other. */
+.top-nav .about-link:hover,
+.top-nav .about-link:focus-visible {
+  transform: rotate(4deg) scale(1.04);
+  border-color: var(--color-border-strong);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.top-nav .about-link:active {
+  transform: rotate(0deg) scale(0.96);
+}
+
+/* On the page itself it wears the same copper mark as an active link. */
+.top-nav .about-link.active {
+  border-color: var(--accent-copper);
+  color: var(--color-text);
+  box-shadow: 0 0 18px var(--accent-copper-glow);
 }
 
 .top-nav .breadcrumb {
@@ -869,18 +924,13 @@ svg {
     border-radius: 16px;
   }
 
-  /* Nothing occupies the third column since the theme control moved to the
-     footer, so a spacer the width of the brand mark keeps the links centred. */
-  .top-nav .nav-panel::after {
-    content: "";
-    width: 38px;
-  }
 
   .top-nav .breadcrumb {
     display: none;
   }
 
-  .top-nav .brand-mark {
+  .top-nav .brand-mark,
+  .top-nav .about-link {
     width: 38px;
     height: 38px;
   }
@@ -901,17 +951,14 @@ svg {
 }
 
 @media (max-width: 390px) {
-  /* Three primary links only just fit at this width, so the row tightens up. */
+  /* Two links between two tiles only just fit here, so the row tightens up. */
   .top-nav .nav-panel {
     padding-inline: 6px;
     column-gap: 6px;
   }
 
-  .top-nav .nav-panel::after {
-    width: 34px;
-  }
-
-  .top-nav .brand-mark {
+  .top-nav .brand-mark,
+  .top-nav .about-link {
     width: 34px;
     height: 34px;
   }
@@ -994,12 +1041,11 @@ svg {
   display: block;
 }
 
-/* The page edge is directly below, so the tooltip hangs above the button. */
-.theme-toggle::after {
+/* Icon-only controls say what they are in a small label — the theme cycle in
+   the footer, About in the nav. Each one places it; the look is shared. */
+[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
   z-index: 200;
   padding: 7px 10px;
   border-radius: 8px;
@@ -1012,16 +1058,39 @@ svg {
   white-space: nowrap;
   box-shadow: var(--shadow-card);
   opacity: 0;
-  transform: translate(-50%, 4px) scale(0.98);
   pointer-events: none;
   transition: opacity 150ms ease, transform 180ms var(--ease-out);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after,
+[data-tooltip][data-tooltip-open]::after {
+  opacity: 1;
+}
+
+/* The page edge is directly below the footer control, so its label hangs
+   above; the nav sits at the top of the window, so its label hangs below. */
+.theme-toggle::after {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, 4px) scale(0.98);
 }
 
 .theme-toggle:hover::after,
 .theme-toggle:focus-visible::after,
 .theme-toggle[data-tooltip-open]::after {
-  opacity: 1;
   transform: translate(-50%, 0) scale(1);
+}
+
+.top-nav .about-link::after {
+  top: calc(100% + 10px);
+  right: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
+.top-nav .about-link:hover::after,
+.top-nav .about-link:focus-visible::after {
+  transform: translateY(0) scale(1);
 }
 
 /* ─────────────────────────────────────────────
