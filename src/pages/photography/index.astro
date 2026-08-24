@@ -1,9 +1,10 @@
 ---
+import { getImage } from "astro:assets";
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../../components/HumanWrittenMark.astro";
-import PhotoContactStrip from "../../components/PhotoContactStrip.astro";
-import PhotoEntry from "../../components/PhotoEntry.astro";
+import PhotoTile from "../../components/PhotoTile.astro";
+import PhotoViewer, { type ViewerFrame } from "../../components/PhotoViewer.astro";
 
 const [manifest] = await getCollection("photos");
 const photos = [...manifest.data.photos].sort(
@@ -23,15 +24,48 @@ const frames = photos.map((photo) => {
   return { photo, anchor: seen === 1 ? base : `${base}-${seen}` };
 });
 
-// Frames alternate against the left and right edge of the shell, counted across
-// the whole archive so the zigzag does not reset at each year.
-let position = 0;
+// The first row is above the fold on most screens, so it loads with the page.
+const EAGER_TILES = 3;
+
 const years = [...new Set(photos.map((photo) => photo.date.getUTCFullYear()))].map(
   (year) => ({
     year,
-    frames: frames
-      .filter(({ photo }) => photo.date.getUTCFullYear() === year)
-      .map((frame) => ({ ...frame, offset: position++ % 2 === 1 })),
+    frames: frames.filter(({ photo }) => photo.date.getUTCFullYear() === year),
+  }),
+);
+
+// UTC accessors: z.coerce.date() parses "2015-09-21" as UTC midnight, so local
+// getters would shift the date back a day for anyone west of Greenwich.
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const stampFor = (date: Date) =>
+  `${String(date.getUTCDate()).padStart(2, "0")} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+
+// The viewer shows the uncropped photograph, so it needs its own larger set of
+// sources. They are built here and handed over as data rather than markup, so
+// only the frame someone actually opens is ever downloaded.
+const VIEWER_SIZES = "(max-width: 900px) 94vw, min(1180px, 86vw)";
+const viewerFrames: ViewerFrame[] = await Promise.all(
+  frames.map(async ({ photo, anchor }) => {
+    const large = await getImage({
+      src: photo.src,
+      widths: [640, 960, 1280, 1600, 1840],
+      sizes: VIEWER_SIZES,
+      format: "webp",
+    });
+    return {
+      anchor,
+      alt: photo.alt,
+      title: photo.title,
+      note: photo.note ?? "",
+      stamp: stampFor(photo.date),
+      datetime: photo.date.toISOString().slice(0, 10),
+      place: photo.location,
+      src: large.src,
+      srcset: large.srcSet.attribute,
+      sizes: VIEWER_SIZES,
+      width: photo.src.width,
+      height: photo.src.height,
+    };
   }),
 );
 
@@ -46,8 +80,6 @@ const count = `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`;
   description="An archive of places, mostly at odd hours."
 >
   <main class="photography-page">
-    <PhotoContactStrip frames={frames} />
-
     <div class="photo-shell">
       <header class="photo-masthead">
         <div>
@@ -68,14 +100,22 @@ const count = `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`;
             <h2 class="photo-set-year" id={`y${group.year}`}>
               {group.year}
             </h2>
-            {group.frames.map(({ photo, anchor, offset }) => (
-              <PhotoEntry photo={photo} anchor={anchor} offset={offset} />
-            ))}
+            <ul class="photo-grid">
+              {group.frames.map(({ photo, anchor }) => (
+                <PhotoTile
+                  photo={photo}
+                  anchor={anchor}
+                  eager={frames.findIndex((frame) => frame.anchor === anchor) < EAGER_TILES}
+                />
+              ))}
+            </ul>
           </section>
         ))
       }
 
       <HumanWrittenMark />
     </div>
+
+    <PhotoViewer frames={viewerFrames} />
   </main>
 </BaseLayout>

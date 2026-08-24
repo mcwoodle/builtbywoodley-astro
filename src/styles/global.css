@@ -1489,84 +1489,18 @@ svg {
 
 /* ─────────────────────────────────────────────
    Photography
-   The page is a viewing surface. Pictures carry no card chrome — no border,
-   no radius, no shadow — and every piece of type around them is deliberately
-   quieter than the picture it belongs to.
+   A contact sheet you can read at a glance, held to a column narrower than the
+   window so it stays calm, and a viewer panel for looking at any one frame
+   properly. Pictures carry no card chrome; the type around them stays quieter
+   than the picture it belongs to.
    ───────────────────────────────────────────── */
 .photography-page {
   padding-bottom: clamp(88px, 10vw, 132px);
 }
 
 .photo-shell {
-  width: min(1340px, calc(100% - 48px));
+  width: min(1120px, calc(100% - 48px));
   margin-inline: auto;
-}
-
-/* Contact strip ─────────────────────────────────
-   The archive indexes itself: one narrow slice per frame, newest first, each
-   linking down to the full picture. It is the page's first impression and it
-   is made of photographs rather than chrome. */
-.photo-contact {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 3px;
-  height: clamp(250px, 44vh, 430px);
-  background: var(--color-bg);
-}
-
-.photo-contact-slice {
-  display: block;
-  position: relative;
-  overflow: hidden;
-}
-
-.photo-contact-slice:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -3px;
-}
-
-.photo-contact-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Each frame names the part of itself worth keeping in a slice this narrow. */
-  object-position: var(--focus, 50% 50%);
-  filter: brightness(0.84) saturate(0.94);
-  transition: filter 320ms var(--ease-out);
-}
-
-.photo-contact-slice:hover .photo-contact-image,
-.photo-contact-slice:focus-visible .photo-contact-image {
-  filter: none;
-}
-
-.photo-contact-tag {
-  position: absolute;
-  inset: auto 0 0;
-  padding: 44px 12px 12px;
-  /* Sits over the photograph, so it reads white in either theme. */
-  background: linear-gradient(to top, rgba(8, 11, 13, 0.76), transparent);
-  color: #f4f1ea;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.05em;
-  line-height: 1.35;
-  opacity: 0;
-  transition: opacity 220ms var(--ease-out);
-}
-
-.photo-contact-slice:hover .photo-contact-tag,
-.photo-contact-slice:focus-visible .photo-contact-tag {
-  opacity: 1;
-}
-
-/* Nothing hovers on a touch screen, so the labels simply stay put. */
-@media (hover: none) {
-  .photo-contact-tag {
-    opacity: 1;
-  }
 }
 
 /* Masthead ───────────────────────────────────── */
@@ -1576,7 +1510,7 @@ svg {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 20px 48px;
-  padding: clamp(40px, 5vw, 76px) 0 0;
+  padding: clamp(64px, 7vw, 104px) 0 0;
 }
 
 .photo-masthead .page-heading {
@@ -1607,13 +1541,13 @@ svg {
   text-transform: uppercase;
 }
 
-/* Frames ─────────────────────────────────────── */
+/* The sheet ──────────────────────────────────── */
 .photo-set {
   padding-top: clamp(46px, 5vw, 78px);
 }
 
 .photo-set + .photo-set {
-  padding-top: clamp(88px, 11vw, 156px);
+  padding-top: clamp(72px, 9vw, 120px);
 }
 
 .photo-set-year {
@@ -1621,13 +1555,13 @@ svg {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 18px;
-  margin-bottom: clamp(36px, 5vw, 68px);
+  margin-bottom: clamp(28px, 3.5vw, 44px);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.24em;
-  /* Clear the sticky nav when a strip slice jumps into this set. */
+  /* Clear the sticky nav when a year is jumped to. */
   scroll-margin-top: 96px;
 }
 
@@ -1637,96 +1571,261 @@ svg {
   background: var(--color-border-subtle);
 }
 
-/* Frames keep one size and alternate against the left and right edge of the
-   shell. The offset is what gives the column its rhythm — the pictures do not
-   change scale to create it. */
-.photo-frame {
-  width: min(100%, 960px);
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2.2vw, 30px);
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-tile {
+  min-width: 0;
+  /* Land below the sticky nav when a shared link points at this frame. */
   scroll-margin-top: 104px;
 }
 
-.photo-frame--offset {
-  margin-left: auto;
+.photo-tile-link {
+  display: grid;
+  gap: 12px;
+  color: inherit;
 }
 
-.photo-frame + .photo-frame {
-  margin-top: clamp(72px, 10vw, 136px);
+.photo-tile-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 5px;
 }
 
-.photo-frame-plate {
-  /* The frame takes the photograph's own shape, so nothing is ever cropped
-     and the box is reserved before the image loads. */
-  aspect-ratio: var(--ar, 1);
+/* Tiles are square whatever shape the photograph is: a sheet reads as a sheet
+   only if the modules match. Each frame names the crop worth keeping, and the
+   viewer shows it uncropped. */
+.photo-tile-plate {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 1;
   background: var(--color-surface);
 }
 
-.photo-frame-image {
+.photo-tile-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: var(--focus, 50% 50%);
+  transition: transform 480ms var(--ease-out);
 }
 
-/* The hairline under each picture, carrying the caption on the left and the
-   coordinates on the right. */
-.photo-frame-caption {
+.photo-tile-link:hover .photo-tile-image,
+.photo-tile-link:focus-visible .photo-tile-image {
+  transform: scale(1.025);
+}
+
+.photo-tile-caption {
+  display: block;
+  min-width: 0;
+}
+
+.photo-tile-title {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.photo-tile-place {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+  opacity: 0.78;
+}
+
+/* Viewer ─────────────────────────────────────────
+   A darkroom rather than a page: the surround is the same deep neutral in
+   either theme so the colour in a photograph is the only colour on screen. */
+.photo-viewer {
+  --viewer-ground: #0b0e10;
+  --viewer-ink: #f2efe8;
+  --viewer-ink-muted: rgba(242, 239, 232, 0.6);
+  --viewer-rule: rgba(242, 239, 232, 0.2);
+
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(14px, 2.4vw, 30px);
+  border: 0;
+  background: var(--viewer-ground);
+  color: var(--viewer-ink);
+  overscroll-behavior: contain;
+}
+
+.photo-viewer[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 22px);
+}
+
+.photo-viewer::backdrop {
+  background: var(--viewer-ground, #0b0e10);
+}
+
+body.is-photo-viewing {
+  position: fixed;
+  width: 100%;
+}
+
+.photo-viewer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.photo-viewer-steps {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-viewer-count {
+  margin-bottom: 0;
+  color: var(--viewer-ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+}
+
+.photo-viewer-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--viewer-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--viewer-ink);
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.photo-viewer-button:hover {
+  background: rgba(242, 239, 232, 0.1);
+  border-color: rgba(242, 239, 232, 0.42);
+}
+
+.photo-viewer-button:focus-visible {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 3px;
+}
+
+.photo-viewer-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.photo-viewer-figure {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(12px, 1.6vw, 18px);
+  width: min(1180px, 100%);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+/* Flex, not grid: a flex item's percentage max-height resolves against the
+   container's definite height, which is what keeps the picture inside the
+   panel without any measuring. */
+.photo-viewer-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.photo-viewer-image {
+  display: block;
+  /* The element takes the picture's own size, capped by the space the panel has
+     left. Intrinsic width and height come from the manifest, so the frame is
+     the right shape before the image arrives. */
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* A steady footer across the panel: the metadata sits in the same place from
+   one frame to the next, rather than shifting with each picture's shape. */
+.photo-viewer-caption {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   column-gap: 40px;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--color-border-subtle);
+  width: 100%;
+  padding-top: 13px;
+  border-top: 1px solid var(--viewer-rule);
 }
 
-.photo-frame-title {
-  margin-bottom: 6px;
-  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+.photo-viewer-title {
+  margin-bottom: 5px;
+  color: var(--viewer-ink);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.25;
-  text-wrap: balance;
 }
 
-.photo-frame-note {
+.photo-viewer-note {
   max-width: 54ch;
   margin-bottom: 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
+  color: var(--viewer-ink-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 
-.photo-frame-meta {
+.photo-viewer-meta {
   display: grid;
   gap: 5px;
   justify-items: end;
   margin-bottom: 0;
-  color: var(--color-text-muted);
+  color: var(--viewer-ink-muted);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   letter-spacing: 0.09em;
   line-height: 1.4;
   text-align: right;
 }
 
-.photo-frame-date {
+.photo-viewer-date {
   text-transform: uppercase;
 }
 
-.photo-frame-place {
+.photo-viewer-place {
   display: inline-flex;
   align-items: center;
   gap: 9px;
 }
 
-/* The single copper note per frame. */
-.photo-frame-place::before {
+/* The single copper note in the darkroom. */
+.photo-viewer-place::before {
   content: "";
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-signal);
+  background: var(--accent-copper);
 }
 
 /* ─────────────────────────────────────────────
@@ -2661,6 +2760,10 @@ svg {
    Responsive
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
+  .photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .landing-hero {
     grid-template-columns: 1fr 0.86fr;
     gap: 44px;
@@ -2695,20 +2798,8 @@ svg {
 }
 
 @media (max-width: 760px) {
-  /* The strip has no room for six slices side by side, so it folds into a
-     small contact sheet instead of thinning out to colour bars. */
-  .photo-contact {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, 1fr);
-    height: auto;
-  }
-
-  .photo-contact-slice {
-    aspect-ratio: 1;
-  }
-
   .photo-shell {
-    width: min(100% - 28px, 1340px);
+    width: min(100% - 28px, 1120px);
   }
 
   .photo-masthead-count {
@@ -2717,13 +2808,14 @@ svg {
     text-align: left;
   }
 
-  /* The caption stacks: coordinates first, the way a print is labelled. */
-  .photo-frame-caption {
+  /* The caption stacks under the photograph, coordinates first, the way a
+     print is labelled on the back. */
+  .photo-viewer-caption {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: 10px;
+    row-gap: 8px;
   }
 
-  .photo-frame-meta {
+  .photo-viewer-meta {
     justify-items: start;
     order: -1;
     text-align: left;
@@ -2889,12 +2981,8 @@ svg {
 }
 
 @media (max-width: 520px) {
-  .photo-frame + .photo-frame {
-    margin-top: 56px;
-  }
-
   .photo-shell {
-    width: min(100% - 22px, 1340px);
+    width: min(100% - 22px, 1120px);
   }
   .page-shell,
   .detail-shell,
