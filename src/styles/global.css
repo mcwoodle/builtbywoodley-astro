@@ -381,7 +381,8 @@ svg {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  transition: transform 220ms var(--ease-out), background-color 200ms ease;
+  transition: color 180ms ease, transform 220ms var(--ease-out),
+    background-color 200ms ease;
 }
 
 .top-nav .brand-link:hover .brand-mark,
@@ -423,8 +424,8 @@ svg {
   border-radius: 11px;
   background: var(--accent-sage);
   color: var(--bg-primary);
-  transition: background-color 200ms ease, transform 220ms var(--ease-out),
-    box-shadow 180ms ease;
+  transition: color 180ms ease, background-color 200ms ease,
+    transform 220ms var(--ease-out);
 }
 
 .top-nav .about-link svg {
@@ -447,10 +448,11 @@ svg {
   transform: rotate(0deg) scale(0.96);
 }
 
-/* On the page itself it wears the same copper mark as an active link. With no
-   border to colour, the ring is drawn as a shadow so the tile keeps its fill. */
-.top-nav .about-link.active {
-  box-shadow: 0 0 0 1.5px var(--accent-copper), 0 0 18px var(--accent-copper-glow);
+/* Each tile marks its own page by drawing its glyph in copper — the same
+   signal the text links use, carried by the line rather than by a ring. */
+.top-nav .about-link.active,
+.top-nav .brand-link[aria-current="page"] .brand-mark {
+  color: var(--accent-copper);
 }
 
 .top-nav .breadcrumb {
