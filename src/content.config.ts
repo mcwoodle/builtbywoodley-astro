@@ -71,10 +71,6 @@ const photos = defineCollection({
             location: z.string(),
             // Short editorial line shown in the caption. Not EXIF.
             note: z.string().optional(),
-            // CSS object-position for the contact-strip crop. The strip slices
-            // each frame into a narrow column, so the centre of the picture is
-            // often the wrong part to keep.
-            focus: z.string().default('50% 50%'),
           }),
         )
         .min(1),

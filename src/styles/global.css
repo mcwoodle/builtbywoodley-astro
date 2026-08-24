@@ -1503,149 +1503,93 @@ svg {
   margin-inline: auto;
 }
 
-/* Masthead ───────────────────────────────────── */
-.photo-masthead {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 20px 48px;
-  padding: clamp(64px, 7vw, 104px) 0 0;
-}
+/* The wall ───────────────────────────────────────
+   Pictures hang at their own proportions in a column narrower than the window,
+   with nothing set between them. What each frame is belongs to the viewer;
+   here a hover names it and that is all. */
+.photo-gallery {
+  --gallery-gap: clamp(14px, 1.6vw, 22px);
 
-.photo-masthead .page-heading {
-  margin-bottom: 14px;
-}
-
-.photo-masthead-subtitle {
-  max-width: 46ch;
-  margin-bottom: 0;
-  color: var(--color-text-muted);
-  font-size: clamp(1.05rem, 1.7vw, 1.25rem);
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-
-.photo-masthead-count {
-  display: grid;
-  gap: 5px;
-  justify-items: end;
-  margin-bottom: 0;
-  padding-bottom: 6px;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.11em;
-  line-height: 1.4;
-  text-align: right;
-  text-transform: uppercase;
-}
-
-/* The sheet ──────────────────────────────────── */
-.photo-set {
-  padding-top: clamp(46px, 5vw, 78px);
-}
-
-.photo-set + .photo-set {
-  padding-top: clamp(72px, 9vw, 120px);
-}
-
-.photo-set-year {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  margin-bottom: clamp(28px, 3.5vw, 44px);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.24em;
-  /* Clear the sticky nav when a year is jumped to. */
-  scroll-margin-top: 96px;
-}
-
-.photo-set-year::after {
-  content: "";
-  height: 1px;
-  background: var(--color-border-subtle);
-}
-
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(18px, 2.2vw, 30px);
+  columns: 3;
+  column-gap: var(--gallery-gap);
   margin: 0;
-  padding: 0;
+  padding: clamp(28px, 4vw, 56px) 0 0;
   list-style: none;
 }
 
 .photo-tile {
-  min-width: 0;
+  display: block;
+  margin-bottom: var(--gallery-gap);
+  break-inside: avoid;
   /* Land below the sticky nav when a shared link points at this frame. */
   scroll-margin-top: 104px;
 }
 
 .photo-tile-link {
-  display: grid;
-  gap: 12px;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
   color: inherit;
 }
 
 .photo-tile-link:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 5px;
-}
-
-/* Tiles are square whatever shape the photograph is: a sheet reads as a sheet
-   only if the modules match. Each frame names the crop worth keeping, and the
-   viewer shows it uncropped. */
-.photo-tile-plate {
-  display: block;
-  overflow: hidden;
-  aspect-ratio: 1;
-  background: var(--color-surface);
+  outline-offset: 4px;
 }
 
 .photo-tile-image {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: var(--focus, 50% 50%);
-  transition: transform 480ms var(--ease-out);
+  height: auto;
+  transition: transform 620ms var(--ease-out);
 }
 
 .photo-tile-link:hover .photo-tile-image,
 .photo-tile-link:focus-visible .photo-tile-image {
-  transform: scale(1.025);
+  transform: scale(1.035);
 }
 
-.photo-tile-caption {
-  display: block;
-  min-width: 0;
+.photo-tile-label {
+  display: grid;
+  position: absolute;
+  inset: auto 0 0;
+  gap: 3px;
+  padding: 46px 14px 13px;
+  /* Sits over the photograph, so it reads white in either theme. */
+  background: linear-gradient(to top, rgba(8, 11, 13, 0.78), transparent);
+  opacity: 0;
+  transition: opacity 240ms var(--ease-out);
+}
+
+.photo-tile-link:hover .photo-tile-label,
+.photo-tile-link:focus-visible .photo-tile-label {
+  opacity: 1;
 }
 
 .photo-tile-title {
-  display: block;
-  color: var(--color-text);
-  font-size: 0.94rem;
+  color: #f4f1ea;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .photo-tile-place {
-  display: block;
-  margin-top: 5px;
-  color: var(--color-text-muted);
+  color: rgba(244, 241, 234, 0.72);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   letter-spacing: 0.07em;
-  line-height: 1.4;
-  opacity: 0.78;
+  line-height: 1.35;
 }
 
+/* Nothing hovers on a touch screen, and a caption under every picture would
+   turn the wall back into a list — the viewer names each frame instead. */
+@media (hover: none) {
+  .photo-tile-label {
+    display: none;
+  }
+}
 /* Viewer ─────────────────────────────────────────
    A darkroom rather than a page: the surround is the same deep neutral in
    either theme so the colour in a photograph is the only colour on screen. */
@@ -2760,8 +2704,9 @@ body.is-photo-viewing {
    Responsive
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
-  .photo-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Drop a column before the pictures get too small to be worth hanging. */
+  .photo-gallery {
+    columns: 2;
   }
 
   .landing-hero {
@@ -2800,12 +2745,6 @@ body.is-photo-viewing {
 @media (max-width: 760px) {
   .photo-shell {
     width: min(100% - 28px, 1120px);
-  }
-
-  .photo-masthead-count {
-    justify-items: start;
-    padding-bottom: 0;
-    text-align: left;
   }
 
   /* The caption stacks under the photograph, coordinates first, the way a
@@ -2983,6 +2922,11 @@ body.is-photo-viewing {
 @media (max-width: 520px) {
   .photo-shell {
     width: min(100% - 22px, 1120px);
+  }
+
+  /* One picture at a time: a phone-width column is a gallery, two is a sheet. */
+  .photo-gallery {
+    columns: 1;
   }
   .page-shell,
   .detail-shell,

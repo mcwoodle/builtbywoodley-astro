@@ -27,13 +27,6 @@ const frames = photos.map((photo) => {
 // The first row is above the fold on most screens, so it loads with the page.
 const EAGER_TILES = 3;
 
-const years = [...new Set(photos.map((photo) => photo.date.getUTCFullYear()))].map(
-  (year) => ({
-    year,
-    frames: frames.filter(({ photo }) => photo.date.getUTCFullYear() === year),
-  }),
-);
-
 // UTC accessors: z.coerce.date() parses "2015-09-21" as UTC midnight, so local
 // getters would shift the date back a day for anyone west of Greenwich.
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -69,10 +62,6 @@ const viewerFrames: ViewerFrame[] = await Promise.all(
   }),
 );
 
-const newest = photos[0].date.getUTCFullYear();
-const oldest = photos[photos.length - 1].date.getUTCFullYear();
-const span = newest === oldest ? `${newest}` : `${oldest} — ${newest}`;
-const count = `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`;
 ---
 
 <BaseLayout
@@ -81,37 +70,17 @@ const count = `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`;
 >
   <main class="photography-page">
     <div class="photo-shell">
-      <header class="photo-masthead">
-        <div>
-          <h1 class="page-heading">Photography</h1>
-          <p class="photo-masthead-subtitle">
-            An archive of places, mostly at odd hours.
-          </p>
-        </div>
-        <p class="photo-masthead-count">
-          <span>{count}</span>
-          <span>{span}</span>
-        </p>
-      </header>
+      {/* The pictures are the page, so the heading is there for assistive
+          technology and search results rather than for the wall. */}
+      <h1 class="sr-only">Photography — an archive of places, mostly at odd hours.</h1>
 
-      {
-        years.map((group) => (
-          <section class="photo-set" aria-labelledby={`y${group.year}`}>
-            <h2 class="photo-set-year" id={`y${group.year}`}>
-              {group.year}
-            </h2>
-            <ul class="photo-grid">
-              {group.frames.map(({ photo, anchor }) => (
-                <PhotoTile
-                  photo={photo}
-                  anchor={anchor}
-                  eager={frames.findIndex((frame) => frame.anchor === anchor) < EAGER_TILES}
-                />
-              ))}
-            </ul>
-          </section>
-        ))
-      }
+      <ul class="photo-gallery">
+        {
+          frames.map(({ photo, anchor }, position) => (
+            <PhotoTile photo={photo} anchor={anchor} eager={position < EAGER_TILES} />
+          ))
+        }
+      </ul>
 
       <HumanWrittenMark />
     </div>
