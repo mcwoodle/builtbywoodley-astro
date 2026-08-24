@@ -110,7 +110,10 @@ html {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   min-width: 320px;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
   color: var(--color-text);
@@ -167,9 +170,14 @@ body {
 }
 
 body > main,
-body > header:not(.top-nav) {
+body > header:not(.top-nav),
+body > footer {
   position: relative;
   z-index: 1;
+}
+
+body > main {
+  flex: 1 0 auto;
 }
 
 body > .top-nav {
@@ -1126,9 +1134,8 @@ svg {
   display: flex;
   flex-direction: column;
   width: min(1180px, calc(100% - 40px));
-  min-height: calc(100dvh - 80px);
   margin-inline: auto;
-  padding-block: clamp(64px, 8vw, 110px) 28px;
+  padding-block: clamp(64px, 8vw, 110px) 0;
 }
 
 .landing-hero {
@@ -1286,33 +1293,46 @@ svg {
   transform: translate(4px, 0);
 }
 
-.landing-footer {
+/* ─────────────────────────────────────────────
+   Site footer
+   BaseLayout hangs this under every route, so it carries its own shell width
+   and bottom padding instead of inheriting a page's.
+   ───────────────────────────────────────────── */
+.site-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding-top: 22px;
+  width: min(1180px, calc(100% - 40px));
+  margin-inline: auto;
+  padding-block: 22px 28px;
   border-top: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
   font-size: 0.74rem;
 }
 
-.landing-footer p {
+/* Pages carrying the AI-slop mark park a fixed button at bottom centre; step
+   the sign-off up so the two never share the same patch of screen. */
+.site-footer--clear-mark {
+  padding-bottom: 86px;
+}
+
+.site-footer p {
   margin-bottom: 0;
 }
 
-.landing-footer div {
+.site-footer div {
   display: flex;
   align-items: center;
   gap: 20px;
 }
 
-.landing-footer a {
+.site-footer a {
   color: var(--color-text-muted);
   font-weight: 600;
 }
 
-.landing-footer a:hover {
+.site-footer a:hover {
   color: var(--color-accent);
 }
 
@@ -2730,10 +2750,13 @@ body.is-photo-viewing {
 /* ─────────────────────────────────────────────
    404
    ───────────────────────────────────────────── */
+/* The body flex column already hands this page the space between the nav and
+   the footer, so the card just centres itself in whatever is left. The lighter
+   bottom padding keeps the sign-off on screen: nothing here is worth a scroll. */
 .not-found-page {
   display: grid;
   place-items: center;
-  min-height: calc(100dvh - 96px);
+  padding-bottom: 48px;
 }
 
 .not-found-card {
@@ -2884,7 +2907,8 @@ body.is-photo-viewing {
   .page-shell,
   .detail-shell,
   .landing-page,
-  .journal-featured {
+  .journal-featured,
+  .site-footer {
     width: min(100% - 28px, 1180px);
   }
 
@@ -2906,7 +2930,6 @@ body.is-photo-viewing {
   }
 
   .landing-page {
-    min-height: auto;
     padding-top: 58px;
   }
 
@@ -2920,7 +2943,7 @@ body.is-photo-viewing {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
   }
 
-  .landing-footer {
+  .site-footer {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -3049,7 +3072,8 @@ body.is-photo-viewing {
   .page-shell,
   .detail-shell,
   .landing-page,
-  .journal-featured {
+  .journal-featured,
+  .site-footer {
     width: min(100% - 22px, 1180px);
   }
 
@@ -3070,7 +3094,7 @@ body.is-photo-viewing {
     bottom: 18px;
   }
 
-  .landing-footer div {
+  .site-footer div {
     width: 100%;
     justify-content: space-between;
     gap: 12px;

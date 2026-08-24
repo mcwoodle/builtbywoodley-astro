@@ -64,6 +64,8 @@ The site is built as a static site using Astro.
 
 ### Pages & Layouts (`src/pages/`, `src/layouts/`)
 The main entry points are in `src/pages/`. Layout components are in `src/layouts/BaseLayout.astro`.
+`BaseLayout` supplies the site chrome — the sticky `TopNav` and the `SiteFooter` — so every page
+gets both for free. Full-bleed routes that own the whole window opt out with `hideNav` / `hideFooter`.
 
 ### Components (`src/components/`)
 Astro components used to build the UI (e.g., Header, ContentCarousel, BlogEntry).

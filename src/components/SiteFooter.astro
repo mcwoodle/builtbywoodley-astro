@@ -1,0 +1,21 @@
+---
+// The site's sign-off. BaseLayout renders it beneath every route, so a new page
+// inherits the footer without asking for it — see `hideFooter` there for the
+// full-bleed exceptions.
+
+interface Props {
+  /** Reserve room above the fixed AI-slop mark so it never lands on the links. */
+  clearAiMark?: boolean;
+}
+
+const { clearAiMark = false } = Astro.props;
+---
+
+<footer class:list={["site-footer", { "site-footer--clear-mark": clearAiMark }]}>
+  <p>Built in Canada.</p>
+  <div>
+    <a href="mailto:matt@builtbywoodley.ca">Email</a>
+    <a href="https://www.linkedin.com/in/mattwoodley" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+    <span>© 2026</span>
+  </div>
+</footer>
