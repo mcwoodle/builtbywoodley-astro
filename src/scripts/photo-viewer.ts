@@ -38,6 +38,25 @@ function start() {
   let lockedScrollY = 0;
   let scrollLocked = false;
 
+  // Swipe state. A drag moves the picture under the finger; letting go either
+  // carries it off and advances, or springs it back.
+  const SWIPE_DISTANCE = 64;
+  const SWIPE_FLICK_DISTANCE = 22;
+  const SWIPE_FLICK_SPEED = 0.45; // px per ms
+  let dragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragStartAt = 0;
+  let dragOffset = 0;
+  let dragMoved = false;
+  /** A drag ends in a click the panel must not read as "dismiss". */
+  let swallowClick = false;
+  /** Where the incoming picture should slide in from, set by the outgoing one. */
+  let enterFrom = 0;
+
+  const reducedMotion = () =>
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
   const el = <T extends Element>(selector: string) =>
     document.querySelector<T>(selector);
 
@@ -87,6 +106,119 @@ function start() {
     window.scrollTo(0, lockedScrollY);
   }
 
+  function image() {
+    return el<HTMLImageElement>("[data-photo-image]");
+  }
+
+  function paintDrag(offset: number) {
+    const picture = image();
+    if (!picture) return;
+    picture.style.transform = `translate3d(0, ${offset}px, 0)`;
+    // Fades out as it travels, so a swipe reads as the frame leaving.
+    picture.style.opacity = String(Math.max(0, 1 - Math.abs(offset) / 340));
+  }
+
+  function clearDrag() {
+    const picture = image();
+    if (!picture) return;
+    picture.style.transform = "";
+    picture.style.opacity = "";
+  }
+
+  /** Animate the picture to a resting place and leave it there. */
+  function glideTo(offset: number, opacity: number, duration: number) {
+    const picture = image();
+    if (!picture) return Promise.resolve();
+
+    const settle = () => {
+      picture.style.transform = `translate3d(0, ${offset}px, 0)`;
+      picture.style.opacity = String(opacity);
+    };
+
+    if (reducedMotion() || !picture.animate) {
+      settle();
+      return Promise.resolve();
+    }
+
+    const motion = picture.animate(
+      [
+        {
+          transform: picture.style.transform || "translate3d(0, 0, 0)",
+          opacity: picture.style.opacity || "1",
+        },
+        { transform: `translate3d(0, ${offset}px, 0)`, opacity: String(opacity) },
+      ],
+      { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" },
+    );
+
+    return motion.finished
+      .catch(() => {})
+      .then(() => {
+        settle();
+        motion.cancel();
+      });
+  }
+
+  function endDrag(cancelled: boolean) {
+    if (!dragging) return;
+    dragging = false;
+
+    const travelled = Math.abs(dragOffset);
+    const speed = travelled / Math.max(1, performance.now() - dragStartAt);
+    const carried =
+      !cancelled &&
+      (travelled > SWIPE_DISTANCE ||
+        (travelled > SWIPE_FLICK_DISTANCE && speed > SWIPE_FLICK_SPEED));
+
+    if (!carried) {
+      void glideTo(0, 1, 280).then(clearDrag);
+      return;
+    }
+
+    // Swiping up carries the frame away and brings the next one up behind it,
+    // the way a stack of prints is dealt through.
+    const direction = dragOffset < 0 ? 1 : -1;
+    const exit = direction === 1 ? -window.innerHeight : window.innerHeight;
+    enterFrom = -exit;
+    void glideTo(exit, 0, 190).then(() => step(direction));
+  }
+
+  function onTouchStart(event: TouchEvent) {
+    if (openIndex < 0 || event.touches.length !== 1) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const stage = el(".photo-viewer-stage");
+    if (!target || !stage?.contains(target) || target.closest("button")) return;
+
+    dragging = true;
+    dragMoved = false;
+    swallowClick = false;
+    dragOffset = 0;
+    dragStartAt = performance.now();
+    dragStartX = event.touches[0].clientX;
+    dragStartY = event.touches[0].clientY;
+  }
+
+  function onTouchMove(event: TouchEvent) {
+    if (!dragging || event.touches.length !== 1) return;
+
+    const deltaY = event.touches[0].clientY - dragStartY;
+    const deltaX = event.touches[0].clientX - dragStartX;
+
+    // A sideways gesture is not ours; hand it back rather than fighting it.
+    if (!dragMoved && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 12) {
+      endDrag(true);
+      return;
+    }
+
+    if (Math.abs(deltaY) > 6) {
+      dragMoved = true;
+      swallowClick = true;
+    }
+
+    dragOffset = deltaY;
+    paintDrag(deltaY);
+  }
+
   function render(index: number) {
     const dialog = panel();
     const frame = frames[index];
@@ -94,14 +226,29 @@ function start() {
 
     openIndex = index;
 
-    const image = el<HTMLImageElement>("[data-photo-image]");
-    if (image) {
-      image.width = frame.width;
-      image.height = frame.height;
-      image.src = frame.src;
-      image.srcset = frame.srcset;
-      image.sizes = frame.sizes;
-      image.alt = frame.alt;
+    const picture = image();
+    if (picture) {
+      picture.width = frame.width;
+      picture.height = frame.height;
+      picture.src = frame.src;
+      picture.srcset = frame.srcset;
+      picture.sizes = frame.sizes;
+      picture.alt = frame.alt;
+
+      if (enterFrom) {
+        // Start it off-screen and bring it in once it has actually decoded,
+        // otherwise the old frame is what slides.
+        const from = enterFrom;
+        enterFrom = 0;
+        paintDrag(from);
+        const arrive = () => {
+          requestAnimationFrame(() => void glideTo(0, 1, 300).then(clearDrag));
+        };
+        if (picture.complete) arrive();
+        else picture.addEventListener("load", arrive, { once: true });
+      } else {
+        clearDrag();
+      }
     }
 
     const title = el("[data-photo-title]");
@@ -134,6 +281,9 @@ function start() {
     if (dialog?.open) dialog.close();
     openIndex = -1;
     pushedByGrid = false;
+    dragging = false;
+    enterFrom = 0;
+    clearDrag();
     releaseScroll();
   }
 
@@ -196,8 +346,15 @@ function start() {
         return;
       }
 
-      if (target.closest("[data-photo-close]") || target.matches(".photo-viewer")) {
+      // Anywhere else inside the panel dismisses it — except the click that
+      // trails a swipe, which was a gesture rather than a tap.
+      const dialog = panel();
+      if (dialog?.open && (target === dialog || dialog.contains(target))) {
         event.preventDefault();
+        if (swallowClick) {
+          swallowClick = false;
+          return;
+        }
         requestClose();
       }
     },
@@ -218,6 +375,11 @@ function start() {
   // Astro's router settles a same-page hash link with pushState and a synthetic
   // popstate, which means no hashchange fires for a tile click — both events are
   // needed to catch every way the hash can change.
+  document.addEventListener("touchstart", onTouchStart, { passive: true });
+  document.addEventListener("touchmove", onTouchMove, { passive: true });
+  document.addEventListener("touchend", () => endDrag(false));
+  document.addEventListener("touchcancel", () => endDrag(true));
+
   window.addEventListener("hashchange", sync);
   window.addEventListener("popstate", sync);
   document.addEventListener("astro:before-swap", close);

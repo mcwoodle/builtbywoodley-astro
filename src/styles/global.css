@@ -1626,24 +1626,28 @@ body.is-photo-viewing {
   width: 100%;
 }
 
+/* The bar keeps the count centred with the close button at its end; stepping
+   between frames belongs beside the picture, not up here. */
 .photo-viewer-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
 }
 
-.photo-viewer-steps {
-  display: flex;
-  gap: 8px;
-}
-
 .photo-viewer-count {
+  grid-column: 2;
   margin-bottom: 0;
+  text-align: center;
   color: var(--viewer-ink-muted);
   font-family: var(--font-mono);
   font-size: 0.66rem;
   letter-spacing: 0.16em;
+}
+
+.photo-viewer-close {
+  grid-column: 3;
+  justify-self: end;
 }
 
 .photo-viewer-button {
@@ -1695,13 +1699,48 @@ body.is-photo-viewing {
    panel without any measuring. */
 .photo-viewer-stage {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   min-height: 0;
+  /* Vertical drags belong to the swipe handler; pinch to zoom still belongs to
+     the browser. */
+  touch-action: pinch-zoom;
+}
+
+/* Flanking the picture at its middle, and large enough to be the obvious way
+   through the archive. */
+.photo-viewer-step {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  translate: 0 -50%;
+  border-color: rgba(242, 239, 232, 0.34);
+  background: rgba(11, 14, 16, 0.55);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.photo-viewer-step[data-photo-step="-1"] {
+  left: 0;
+}
+
+.photo-viewer-step[data-photo-step="1"] {
+  right: 0;
+}
+
+.photo-viewer-step svg {
+  width: 21px;
+  height: 21px;
 }
 
 .photo-viewer-image {
   display: block;
+  /* The swipe writes transform and opacity straight onto this element and
+     animates the release itself, so there is no transition here to fight. */
+  will-change: transform, opacity;
   /* The element takes the picture's own size, capped by the space the panel has
      left. Intrinsic width and height come from the manifest, so the frame is
      the right shape before the image arrives. */
@@ -2745,6 +2784,31 @@ body.is-photo-viewing {
 @media (max-width: 760px) {
   .photo-shell {
     width: min(100% - 28px, 1120px);
+  }
+
+  /* Touch moves through the archive vertically, so the steps move with it:
+     above and below the picture, pointing the way the swipe goes. */
+  .photo-viewer-step {
+    top: auto;
+    bottom: auto;
+    translate: -50% 0;
+  }
+
+  /* Both edges are restated here: the desktop rules pin left and right by
+     attribute, which outranks anything set on the class alone. */
+  .photo-viewer-step[data-photo-step="-1"] {
+    top: 0;
+    left: 50%;
+  }
+
+  .photo-viewer-step[data-photo-step="1"] {
+    bottom: 0;
+    right: auto;
+    left: 50%;
+  }
+
+  .photo-viewer-step svg {
+    rotate: 90deg;
   }
 
   /* The caption stacks under the photograph, coordinates first, the way a

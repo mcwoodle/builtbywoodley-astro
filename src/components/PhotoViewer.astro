@@ -26,34 +26,11 @@ const { frames } = Astro.props;
 
 <dialog class="photo-viewer" aria-label="Photograph">
   <div class="photo-viewer-bar">
-    <div class="photo-viewer-steps">
-      <button
-        type="button"
-        class="photo-viewer-button"
-        data-photo-step="-1"
-        aria-label="Previous photograph"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="m14.5 5-7 7 7 7"></path>
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="photo-viewer-button"
-        data-photo-step="1"
-        aria-label="Next photograph"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="m9.5 5 7 7-7 7"></path>
-        </svg>
-      </button>
-    </div>
-
     <p class="photo-viewer-count" data-photo-count aria-live="polite"></p>
 
     <button
       type="button"
-      class="photo-viewer-button"
+      class="photo-viewer-button photo-viewer-close"
       data-photo-close
       aria-label="Close viewer"
     >
@@ -64,8 +41,32 @@ const { frames } = Astro.props;
   </div>
 
   <figure class="photo-viewer-figure">
-    <div class="photo-viewer-stage">
+    {/* The steps flank the picture itself. On a touch screen they turn to point
+        up and down, matching the swipe. */}
+    <div class="photo-viewer-stage" data-photo-swipe>
+      <button
+        type="button"
+        class="photo-viewer-button photo-viewer-step"
+        data-photo-step="-1"
+        aria-label="Previous photograph"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m14.5 5-7 7 7 7"></path>
+        </svg>
+      </button>
+
       <img class="photo-viewer-image" data-photo-image alt="" />
+
+      <button
+        type="button"
+        class="photo-viewer-button photo-viewer-step"
+        data-photo-step="1"
+        aria-label="Next photograph"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m9.5 5 7 7-7 7"></path>
+        </svg>
+      </button>
     </div>
     <figcaption class="photo-viewer-caption" data-photo-caption>
       <div>
