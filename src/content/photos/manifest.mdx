@@ -4,7 +4,9 @@
 #
 # src      - relative to this file; resolved into Astro's asset pipeline
 # alt      - describes the image for screen readers; never repeat the title
-# note     - one short line of context shown in the margin
+# note     - one short line of context shown under the picture
+# focus    - object-position for the contact-strip slice at the top of the
+#            page; name the part of the frame worth keeping in a narrow crop
 photos:
   - src: ./images/toronto-skyline.jpg
     title: Blue hour from the hill
@@ -12,6 +14,7 @@ photos:
     date: 2015-09-21
     location: Riverdale Park, Toronto
     note: The city switching its lights on, seen from the top of the hill.
+    focus: "50% 40%"
 
   - src: ./images/kinkaku-ji.jpg
     title: Kinkaku-ji
@@ -19,6 +22,7 @@ photos:
     date: 2015-08-31
     location: Kyoto, Japan
     note: Still water, no wind — so the pavilion got to sit there twice.
+    focus: "68% 44%"
 
   - src: ./images/perseid-over-the-barn.jpg
     title: Perseid
@@ -26,6 +30,7 @@ photos:
     date: 2015-08-13
     location: Rural Ontario
     note: The shower peaked overnight. This one came in green.
+    focus: "72% 46%"
 
   - src: ./images/allium.jpg
     title: Allium, backlit
@@ -33,6 +38,7 @@ photos:
     date: 2015-08-03
     location: In the garden
     note: Shot straight into the light to get the whole head to glow.
+    focus: "48% 42%"
 
   - src: ./images/fort-amherst.jpg
     title: The Narrows
@@ -40,6 +46,7 @@ photos:
     date: 2015-06-28
     location: St. John's, Newfoundland
     note: Green hills, cold water, and a supply boat heading out past the light.
+    focus: "42% 58%"
 
   - src: ./images/space-needle-sunset.jpg
     title: Needle at last light
@@ -47,4 +54,5 @@ photos:
     date: 2014-10-20
     location: Seattle, Washington
     note: The plane slid into frame just as the sky went copper.
+    focus: "62% 50%"
 ---

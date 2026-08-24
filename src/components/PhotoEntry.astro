@@ -6,45 +6,51 @@ type Photo = CollectionEntry<"photos">["data"]["photos"][number];
 
 type Props = {
   photo: Photo;
-  /** 1-based position in the archive, rendered as the editorial index. */
-  index: number;
-  /** Mirror the layout so entries alternate down the page. */
-  flip?: boolean;
-  /** The first entry is the LCP element and must not lazy-load. */
-  eager?: boolean;
+  /** In-page anchor. The contact-strip slice for this frame points here. */
+  anchor: string;
+  /** Push the frame to the right edge of the shell so the column zigzags. */
+  offset?: boolean;
 };
 
-const { photo, index, flip = false, eager = false } = Astro.props;
+const { photo, anchor, offset = false } = Astro.props;
 
 // UTC accessors: z.coerce.date() parses "2015-09-21" as UTC midnight, so local
 // getters would shift the date back a day for anyone west of Greenwich.
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 const day = String(photo.date.getUTCDate()).padStart(2, "0");
 const stamp = `${day} ${MONTHS[photo.date.getUTCMonth()]} ${photo.date.getUTCFullYear()}`;
-const ordinal = String(index).padStart(2, "0");
+
+// The plate reserves the photograph's own shape before the image loads, so
+// nothing is cropped and nothing shifts.
+const ratio = photo.src.width / photo.src.height;
 ---
 
-<article class:list={["photo-entry", flip && "photo-entry--flip"]}>
-  <figure class="photo-entry-plate">
+<figure
+  class:list={["photo-frame", offset && "photo-frame--offset"]}
+  id={anchor}
+  style={`--ar: ${ratio}`}
+>
+  <div class="photo-frame-plate">
     <Image
       src={photo.src}
       alt={photo.alt}
-      class="photo-entry-image"
-      widths={[480, 760, 1120, 1600]}
-      sizes="(max-width: 760px) 92vw, min(690px, 60vw)"
-      loading={eager ? "eager" : "lazy"}
-      decoding={eager ? "auto" : "async"}
-      fetchpriority={eager ? "high" : undefined}
+      class="photo-frame-image"
+      widths={[480, 720, 960, 1440, 1840]}
+      sizes="(max-width: 1032px) calc(100vw - 48px), 960px"
+      loading="lazy"
+      decoding="async"
     />
-  </figure>
-  <div class="photo-entry-note">
-    <p class="photo-entry-meta">
-      <span class="photo-entry-index">{ordinal}</span>
-      <time datetime={photo.date.toISOString().slice(0, 10)}>{stamp}</time>
-    </p>
-    <h3 class="photo-entry-place">{photo.location}</h3>
-    <hr class="photo-entry-rule" />
-    <p class="photo-entry-title">{photo.title}</p>
-    {photo.note && <p class="photo-entry-text">{photo.note}</p>}
   </div>
-</article>
+  <figcaption class="photo-frame-caption">
+    <div>
+      <h3 class="photo-frame-title">{photo.title}</h3>
+      {photo.note && <p class="photo-frame-note">{photo.note}</p>}
+    </div>
+    <p class="photo-frame-meta">
+      <time class="photo-frame-date" datetime={photo.date.toISOString().slice(0, 10)}>
+        {stamp}
+      </time>
+      <span class="photo-frame-place">{photo.location}</span>
+    </p>
+  </figcaption>
+</figure>

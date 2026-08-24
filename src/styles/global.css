@@ -49,6 +49,8 @@
 
   --font-display: "Outfit", sans-serif;
   --font-body: "Outfit", sans-serif;
+  /* Dates, places and counts are machine data; they get the machine's voice. */
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --fs-display: clamp(3rem, 6vw, 5.4rem);
   --fs-heading: clamp(1.55rem, 2.8vw, 2.25rem);
   --fs-body: 1rem;
@@ -1486,157 +1488,245 @@ svg {
 }
 
 /* ─────────────────────────────────────────────
-   Photography logbook
+   Photography
+   The page is a viewing surface. Pictures carry no card chrome — no border,
+   no radius, no shadow — and every piece of type around them is deliberately
+   quieter than the picture it belongs to.
    ───────────────────────────────────────────── */
-.photography-intro .page-heading {
-  margin-bottom: 12px;
+.photography-page {
+  padding-bottom: clamp(88px, 10vw, 132px);
 }
 
-.photo-years {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 7px;
+.photo-shell {
+  width: min(1340px, calc(100% - 48px));
+  margin-inline: auto;
 }
 
-.photo-year-link {
-  transition:
-    border-color 180ms ease,
-    color 180ms ease;
+/* Contact strip ─────────────────────────────────
+   The archive indexes itself: one narrow slice per frame, newest first, each
+   linking down to the full picture. It is the page's first impression and it
+   is made of photographs rather than chrome. */
+.photo-contact {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  height: clamp(250px, 44vh, 430px);
+  background: var(--color-bg);
 }
 
-.photo-year-link:hover,
-.photo-year-link:focus-visible {
-  border-color: var(--color-accent);
-  color: var(--color-text);
+.photo-contact-slice {
+  display: block;
+  position: relative;
+  overflow: hidden;
 }
 
-.photo-year-link:focus-visible {
+.photo-contact-slice:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 
-.photo-log {
-  margin-top: clamp(56px, 7vw, 92px);
+.photo-contact-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Each frame names the part of itself worth keeping in a slice this narrow. */
+  object-position: var(--focus, 50% 50%);
+  filter: brightness(0.84) saturate(0.94);
+  transition: filter 320ms var(--ease-out);
 }
 
-.photo-year-group + .photo-year-group {
-  margin-top: clamp(72px, 11vw, 148px);
+.photo-contact-slice:hover .photo-contact-image,
+.photo-contact-slice:focus-visible .photo-contact-image {
+  filter: none;
 }
 
-.photo-year {
-  margin-bottom: clamp(32px, 4vw, 52px);
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border-subtle);
+.photo-contact-tag {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 44px 12px 12px;
+  /* Sits over the photograph, so it reads white in either theme. */
+  background: linear-gradient(to top, rgba(8, 11, 13, 0.76), transparent);
+  color: #f4f1ea;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  opacity: 0;
+  transition: opacity 220ms var(--ease-out);
+}
+
+.photo-contact-slice:hover .photo-contact-tag,
+.photo-contact-slice:focus-visible .photo-contact-tag {
+  opacity: 1;
+}
+
+/* Nothing hovers on a touch screen, so the labels simply stay put. */
+@media (hover: none) {
+  .photo-contact-tag {
+    opacity: 1;
+  }
+}
+
+/* Masthead ───────────────────────────────────── */
+.photo-masthead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 48px;
+  padding: clamp(40px, 5vw, 76px) 0 0;
+}
+
+.photo-masthead .page-heading {
+  margin-bottom: 14px;
+}
+
+.photo-masthead-subtitle {
+  max-width: 46ch;
+  margin-bottom: 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  /* Clear the sticky nav when a year link jumps here. */
+  font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.photo-masthead-count {
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  margin-bottom: 0;
+  padding-bottom: 6px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.11em;
+  line-height: 1.4;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+/* Frames ─────────────────────────────────────── */
+.photo-set {
+  padding-top: clamp(46px, 5vw, 78px);
+}
+
+.photo-set + .photo-set {
+  padding-top: clamp(88px, 11vw, 156px);
+}
+
+.photo-set-year {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  margin-bottom: clamp(36px, 5vw, 68px);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  /* Clear the sticky nav when a strip slice jumps into this set. */
   scroll-margin-top: 96px;
 }
 
-/* One entry per photo. Plate and note swap sides down the page, but only
-   visually — DOM order is always plate then note, so tab order stays linear. */
-.photo-entry {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(240px, 0.62fr);
-  align-items: center;
-  gap: clamp(24px, 5vw, 72px);
+.photo-set-year::after {
+  content: "";
+  height: 1px;
+  background: var(--color-border-subtle);
 }
 
-.photo-entry + .photo-entry {
-  margin-top: clamp(72px, 11vw, 148px);
-}
-
-.photo-entry--flip .photo-entry-plate {
-  grid-row: 1;
-  grid-column: 2;
-}
-
-.photo-entry--flip .photo-entry-note {
-  grid-row: 1;
-  grid-column: 1;
-  text-align: right;
-}
-
-.photo-entry-plate {
+/* Frames keep one size and alternate against the left and right edge of the
+   shell. The offset is what gives the column its rhythm — the pictures do not
+   change scale to create it. */
+.photo-frame {
+  width: min(100%, 960px);
   margin: 0;
-  overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-alt);
-  box-shadow: var(--shadow-card);
+  scroll-margin-top: 104px;
 }
 
-.photo-entry-image {
+.photo-frame--offset {
+  margin-left: auto;
+}
+
+.photo-frame + .photo-frame {
+  margin-top: clamp(72px, 10vw, 136px);
+}
+
+.photo-frame-plate {
+  /* The frame takes the photograph's own shape, so nothing is ever cropped
+     and the box is reserved before the image loads. */
+  aspect-ratio: var(--ar, 1);
+  background: var(--color-surface);
+}
+
+.photo-frame-image {
   display: block;
   width: 100%;
-  /* No fixed aspect-ratio: each plate takes the photo's own shape, so swapping
-     in higher-resolution masters later cannot break the layout. */
-  height: auto;
+  height: 100%;
+  object-fit: cover;
 }
 
-.photo-entry-note {
-  min-width: 0;
+/* The hairline under each picture, carrying the caption on the left and the
+   coordinates on the right. */
+.photo-frame-caption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 40px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
-.photo-entry-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-  font-weight: 620;
-  letter-spacing: 0.1em;
-}
-
-.photo-entry--flip .photo-entry-meta {
-  justify-content: flex-end;
-}
-
-.photo-entry-index {
-  color: var(--color-accent);
-}
-
-.photo-entry-place {
-  margin-bottom: 14px;
-  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-  font-weight: 620;
-  letter-spacing: -0.045em;
-  line-height: 1.12;
+.photo-frame-title {
+  margin-bottom: 6px;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
   text-wrap: balance;
 }
 
-.photo-entry-rule {
-  width: 46px;
-  margin: 0 0 14px;
-  border: 0;
-  border-top: 1px solid var(--color-signal);
-}
-
-.photo-entry--flip .photo-entry-rule {
-  margin-left: auto;
-}
-
-.photo-entry-title {
-  margin-bottom: 6px;
-  color: var(--color-text);
-  font-size: var(--fs-small);
-  font-weight: 600;
-}
-
-.photo-entry-text {
-  max-width: 34ch;
+.photo-frame-note {
+  max-width: 54ch;
   margin-bottom: 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-small);
-  line-height: 1.6;
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
-.photo-entry--flip .photo-entry-text {
-  margin-left: auto;
+.photo-frame-meta {
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.photo-frame-date {
+  text-transform: uppercase;
+}
+
+.photo-frame-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* The single copper note per frame. */
+.photo-frame-place::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-signal);
 }
 
 /* ─────────────────────────────────────────────
@@ -2571,10 +2661,6 @@ svg {
    Responsive
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
-  .photo-entry {
-    grid-template-columns: minmax(0, 1fr) minmax(200px, 0.55fr);
-    gap: 32px;
-  }
   .landing-hero {
     grid-template-columns: 1fr 0.86fr;
     gap: 44px;
@@ -2609,37 +2695,38 @@ svg {
 }
 
 @media (max-width: 760px) {
-  .photo-years {
-    justify-content: flex-start;
+  /* The strip has no room for six slices side by side, so it folds into a
+     small contact sheet instead of thinning out to colour bars. */
+  .photo-contact {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, 1fr);
+    height: auto;
   }
 
-  .photo-entry {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+  .photo-contact-slice {
+    aspect-ratio: 1;
   }
 
-  /* Collapse the mirrored layout: stacked, always left-aligned. */
-  .photo-entry--flip .photo-entry-plate,
-  .photo-entry--flip .photo-entry-note {
-    grid-column: 1;
+  .photo-shell {
+    width: min(100% - 28px, 1340px);
   }
 
-  .photo-entry--flip .photo-entry-plate {
-    grid-row: 1;
-  }
-
-  .photo-entry--flip .photo-entry-note {
-    grid-row: 2;
+  .photo-masthead-count {
+    justify-items: start;
+    padding-bottom: 0;
     text-align: left;
   }
 
-  .photo-entry--flip .photo-entry-meta {
-    justify-content: flex-start;
+  /* The caption stacks: coordinates first, the way a print is labelled. */
+  .photo-frame-caption {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 10px;
   }
 
-  .photo-entry--flip .photo-entry-rule,
-  .photo-entry--flip .photo-entry-text {
-    margin-left: 0;
+  .photo-frame-meta {
+    justify-items: start;
+    order: -1;
+    text-align: left;
   }
   :root {
     --fs-body: 1.025rem;
@@ -2802,12 +2889,12 @@ svg {
 }
 
 @media (max-width: 520px) {
-  .photo-entry + .photo-entry {
+  .photo-frame + .photo-frame {
     margin-top: 56px;
   }
 
-  .photo-year-group + .photo-year-group {
-    margin-top: 56px;
+  .photo-shell {
+    width: min(100% - 22px, 1340px);
   }
   .page-shell,
   .detail-shell,

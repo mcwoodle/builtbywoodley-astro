@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../../components/HumanWrittenMark.astro";
+import PhotoContactStrip from "../../components/PhotoContactStrip.astro";
 import PhotoEntry from "../../components/PhotoEntry.astro";
 
 const [manifest] = await getCollection("photos");
@@ -9,61 +10,72 @@ const photos = [...manifest.data.photos].sort(
   (a, b) => b.date.getTime() - a.date.getTime(),
 );
 
-// Group into years for the jump links, keeping one continuous index across the
-// whole archive so the editorial numbering does not restart each year.
-let counter = 0;
-const groups = [...new Set(photos.map((photo) => photo.date.getUTCFullYear()))].map(
+// Anchors are titles so a shared link says what it points at. The counter only
+// kicks in if two frames ever end up with the same title.
+const slugify = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+const taken = new Map<string, number>();
+const frames = photos.map((photo) => {
+  const base = slugify(photo.title) || "frame";
+  const seen = (taken.get(base) ?? 0) + 1;
+  taken.set(base, seen);
+  return { photo, anchor: seen === 1 ? base : `${base}-${seen}` };
+});
+
+// Frames alternate against the left and right edge of the shell, counted across
+// the whole archive so the zigzag does not reset at each year.
+let position = 0;
+const years = [...new Set(photos.map((photo) => photo.date.getUTCFullYear()))].map(
   (year) => ({
     year,
-    entries: photos
-      .filter((photo) => photo.date.getUTCFullYear() === year)
-      .map((photo) => ({ photo, index: ++counter })),
+    frames: frames
+      .filter(({ photo }) => photo.date.getUTCFullYear() === year)
+      .map((frame) => ({ ...frame, offset: position++ % 2 === 1 })),
   }),
 );
+
+const newest = photos[0].date.getUTCFullYear();
+const oldest = photos[photos.length - 1].date.getUTCFullYear();
+const span = newest === oldest ? `${newest}` : `${oldest} — ${newest}`;
+const count = `${photos.length} ${photos.length === 1 ? "frame" : "frames"}`;
 ---
 
 <BaseLayout
   title="Photography | Built by Woodley"
   description="An archive of places, mostly at odd hours."
 >
-  <main class="page-shell photography-page">
-    <header class="page-intro photography-intro">
-      <div>
-        <h1 class="page-heading">Photography</h1>
-        <p class="page-subtitle">An archive of places, mostly at odd hours.</p>
-      </div>
+  <main class="photography-page">
+    <PhotoContactStrip frames={frames} />
 
-      <nav class="photo-years" aria-label="Jump to year">
-        {
-          groups.map((group) => (
-            <a class="tag-chip photo-year-link" href={`#y${group.year}`}>
-              {group.year}
-            </a>
-          ))
-        }
-      </nav>
-    </header>
+    <div class="photo-shell">
+      <header class="photo-masthead">
+        <div>
+          <h1 class="page-heading">Photography</h1>
+          <p class="photo-masthead-subtitle">
+            An archive of places, mostly at odd hours.
+          </p>
+        </div>
+        <p class="photo-masthead-count">
+          <span>{count}</span>
+          <span>{span}</span>
+        </p>
+      </header>
 
-    <div class="photo-log">
       {
-        groups.map((group) => (
-          <section class="photo-year-group" aria-labelledby={`y${group.year}`}>
-            <h2 class="photo-year" id={`y${group.year}`}>
+        years.map((group) => (
+          <section class="photo-set" aria-labelledby={`y${group.year}`}>
+            <h2 class="photo-set-year" id={`y${group.year}`}>
               {group.year}
             </h2>
-            {group.entries.map(({ photo, index }) => (
-              <PhotoEntry
-                photo={photo}
-                index={index}
-                flip={index % 2 === 0}
-                eager={index === 1}
-              />
+            {group.frames.map(({ photo, anchor, offset }) => (
+              <PhotoEntry photo={photo} anchor={anchor} offset={offset} />
             ))}
           </section>
         ))
       }
-    </div>
 
-    <HumanWrittenMark />
+      <HumanWrittenMark />
+    </div>
   </main>
 </BaseLayout>

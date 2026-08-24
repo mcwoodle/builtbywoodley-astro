@@ -1,0 +1,42 @@
+---
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+
+type Photo = CollectionEntry<"photos">["data"]["photos"][number];
+
+type Props = {
+  /** Every frame in the archive, newest first, with the anchor it lives at. */
+  frames: { photo: Photo; anchor: string }[];
+};
+
+const { frames } = Astro.props;
+---
+
+{/* The archive indexes itself. Each slice is a narrow crop of one frame and a
+    link down to the full picture, so the page opens on photographs rather than
+    on a row of navigation chips. The pictures below carry the alt text, so the
+    slices are labelled on the link and the image itself stays decorative. */}
+<nav class="photo-contact" aria-label="Frames in this archive">
+  {
+    frames.map(({ photo, anchor }, position) => (
+      <a
+        class="photo-contact-slice"
+        href={`#${anchor}`}
+        style={`--focus: ${photo.focus}`}
+        aria-label={`${photo.title} — ${photo.location}`}
+      >
+        <Image
+          src={photo.src}
+          alt=""
+          class="photo-contact-image"
+          widths={[240, 360, 520, 720]}
+          sizes="(max-width: 760px) 34vw, 460px"
+          loading="eager"
+          decoding="auto"
+          fetchpriority={position === 0 ? "high" : undefined}
+        />
+        <span class="photo-contact-tag" aria-hidden="true">{photo.location}</span>
+      </a>
+    ))
+  }
+</nav>
