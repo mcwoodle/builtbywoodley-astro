@@ -1608,17 +1608,41 @@ svg {
   border: 0;
   background: var(--viewer-ground);
   color: var(--viewer-ink);
+  opacity: 0;
   overscroll-behavior: contain;
+  transition:
+    opacity 260ms var(--ease-out),
+    display 260ms allow-discrete,
+    overlay 260ms allow-discrete;
 }
 
 .photo-viewer[open] {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(12px, 2vw, 22px);
+  opacity: 1;
 }
 
 .photo-viewer::backdrop {
   background: var(--viewer-ground, #0b0e10);
+  opacity: 0;
+  transition:
+    opacity 260ms var(--ease-out),
+    display 260ms allow-discrete,
+    overlay 260ms allow-discrete;
+}
+
+.photo-viewer[open]::backdrop {
+  opacity: 1;
+}
+
+/* The state the panel animates away from on the way in. Engines without
+   @starting-style skip the fade and simply appear. */
+@starting-style {
+  .photo-viewer[open],
+  .photo-viewer[open]::backdrop {
+    opacity: 0;
+  }
 }
 
 body.is-photo-viewing {
@@ -1664,9 +1688,15 @@ body.is-photo-viewing {
   transition: background-color 180ms ease, border-color 180ms ease;
 }
 
-.photo-viewer-button:hover {
+.photo-viewer-button:hover:not(:disabled) {
   background: rgba(242, 239, 232, 0.1);
   border-color: rgba(242, 239, 232, 0.42);
+}
+
+/* Nothing further to reach in that direction. */
+.photo-viewer-button:disabled {
+  opacity: 0.26;
+  cursor: default;
 }
 
 .photo-viewer-button:focus-visible {
@@ -1721,6 +1751,10 @@ body.is-photo-viewing {
   background: rgba(11, 14, 16, 0.55);
   backdrop-filter: blur(7px);
   -webkit-backdrop-filter: blur(7px);
+}
+
+.photo-viewer-step:hover:not(:disabled) {
+  background: rgba(11, 14, 16, 0.78);
 }
 
 .photo-viewer-step[data-photo-step="-1"] {
