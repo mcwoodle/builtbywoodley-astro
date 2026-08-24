@@ -1,0 +1,90 @@
+---
+import { getImage } from "astro:assets";
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import HumanWrittenMark from "../../components/HumanWrittenMark.astro";
+import PhotoTile from "../../components/PhotoTile.astro";
+import PhotoViewer, { type ViewerFrame } from "../../components/PhotoViewer.astro";
+
+const [manifest] = await getCollection("photos");
+const photos = [...manifest.data.photos].sort(
+  (a, b) => b.date.getTime() - a.date.getTime(),
+);
+
+// Anchors are titles so a shared link says what it points at. The counter only
+// kicks in if two frames ever end up with the same title.
+const slugify = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+const taken = new Map<string, number>();
+const frames = photos.map((photo) => {
+  const base = slugify(photo.title) || "frame";
+  const seen = (taken.get(base) ?? 0) + 1;
+  taken.set(base, seen);
+  return { photo, anchor: seen === 1 ? base : `${base}-${seen}` };
+});
+
+// The first row is above the fold on most screens, so it loads with the page.
+const EAGER_TILES = 3;
+
+// UTC accessors: z.coerce.date() parses "2015-09-21" as UTC midnight, so local
+// getters would shift the date back a day for anyone west of Greenwich.
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const stampFor = (date: Date) =>
+  `${String(date.getUTCDate()).padStart(2, "0")} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+
+// The viewer shows the uncropped photograph, so it needs its own larger set of
+// sources. They are built here and handed over as data rather than markup, so
+// only the frame someone actually opens is ever downloaded.
+const VIEWER_SIZES = "(max-width: 900px) 94vw, min(1180px, 86vw)";
+const viewerFrames: ViewerFrame[] = await Promise.all(
+  frames.map(async ({ photo, anchor }) => {
+    const large = await getImage({
+      src: photo.src,
+      widths: [640, 960, 1280, 1600, 1840],
+      sizes: VIEWER_SIZES,
+      format: "webp",
+    });
+    return {
+      anchor,
+      alt: photo.alt,
+      title: photo.title,
+      note: photo.note ?? "",
+      stamp: stampFor(photo.date),
+      datetime: photo.date.toISOString().slice(0, 10),
+      place: photo.location,
+      src: large.src,
+      srcset: large.srcSet.attribute,
+      sizes: VIEWER_SIZES,
+      width: photo.src.width,
+      height: photo.src.height,
+    };
+  }),
+);
+
+---
+
+<BaseLayout
+  title="Photography | Built by Woodley"
+  description="An archive of places, mostly at odd hours."
+>
+  <main class="photography-page">
+    <div class="photo-shell">
+      {/* The pictures are the page, so the heading is there for assistive
+          technology and search results rather than for the wall. */}
+      <h1 class="sr-only">Photography — an archive of places, mostly at odd hours.</h1>
+
+      <ul class="photo-gallery">
+        {
+          frames.map(({ photo, anchor }, position) => (
+            <PhotoTile photo={photo} anchor={anchor} eager={position < EAGER_TILES} />
+          ))
+        }
+      </ul>
+
+      <HumanWrittenMark />
+    </div>
+
+    <PhotoViewer frames={viewerFrames} />
+  </main>
+</BaseLayout>

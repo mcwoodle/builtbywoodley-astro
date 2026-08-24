@@ -1,0 +1,89 @@
+---
+// The large view. One panel serves every frame: the grid links to #<anchor>,
+// and the script below fills the panel from the manifest it ships with. Because
+// the open photo lives in the URL, Back closes the panel and a link to a single
+// photograph works.
+export type ViewerFrame = {
+  anchor: string;
+  alt: string;
+  title: string;
+  note: string;
+  stamp: string;
+  datetime: string;
+  place: string;
+  src: string;
+  srcset: string;
+  sizes: string;
+  /** Intrinsic size, so the panel reserves the frame's shape before it loads. */
+  width: number;
+  height: number;
+};
+
+type Props = { frames: ViewerFrame[] };
+
+const { frames } = Astro.props;
+---
+
+<dialog class="photo-viewer" aria-label="Photograph">
+  <div class="photo-viewer-bar">
+    <p class="photo-viewer-count" data-photo-count aria-live="polite"></p>
+
+    <button
+      type="button"
+      class="photo-viewer-button photo-viewer-close"
+      data-photo-close
+      aria-label="Close viewer"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m6 6 12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+  </div>
+
+  <figure class="photo-viewer-figure">
+    {/* The steps flank the picture itself. On a touch screen they turn to point
+        up and down, matching the swipe. */}
+    <div class="photo-viewer-stage" data-photo-swipe>
+      <button
+        type="button"
+        class="photo-viewer-button photo-viewer-step"
+        data-photo-step="-1"
+        aria-label="Previous photograph"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m14.5 5-7 7 7 7"></path>
+        </svg>
+      </button>
+
+      <img class="photo-viewer-image" data-photo-image alt="" />
+
+      <button
+        type="button"
+        class="photo-viewer-button photo-viewer-step"
+        data-photo-step="1"
+        aria-label="Next photograph"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m9.5 5 7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
+    <figcaption class="photo-viewer-caption" data-photo-caption>
+      <div>
+        <h2 class="photo-viewer-title" data-photo-title></h2>
+        <p class="photo-viewer-note" data-photo-note></p>
+      </div>
+      <p class="photo-viewer-meta">
+        <time class="photo-viewer-date" data-photo-date></time>
+        <span class="photo-viewer-place" data-photo-place></span>
+      </p>
+    </figcaption>
+  </figure>
+</dialog>
+
+<script type="application/json" data-photo-frames is:inline set:html={JSON.stringify(frames)}
+></script>
+
+<script>
+  import "../scripts/photo-viewer";
+</script>

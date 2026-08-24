@@ -9,6 +9,7 @@ export type TransitionRoute = {
   kind:
     | 'home'
     | 'about'
+    | 'photography'
     | 'software-index'
     | 'software-detail'
     | 'blog-index'
@@ -37,6 +38,9 @@ export function classifyRoute(url: URL | string): TransitionRoute {
 
   if (path === '/') return { kind: 'home', path, point: { x: 0, y: 0 } };
   if (path === '/about') return { kind: 'about', path, point: { x: 0, y: 1 } };
+  if (path === '/photography' || path.startsWith('/photography/')) {
+    return { kind: 'photography', path, point: { x: -1, y: 0 } };
+  }
   if (path === '/software') {
     return { kind: 'software-index', path, point: { x: 1, y: 0 } };
   }

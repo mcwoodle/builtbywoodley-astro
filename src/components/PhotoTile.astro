@@ -1,0 +1,38 @@
+---
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+
+type Photo = CollectionEntry<"photos">["data"]["photos"][number];
+
+type Props = {
+  photo: Photo;
+  /** Anchor for this frame. Opening the viewer navigates to it. */
+  anchor: string;
+  /** The first few tiles are above the fold and must not lazy-load. */
+  eager?: boolean;
+};
+
+const { photo, anchor, eager = false } = Astro.props;
+---
+
+{/* A real hash link, so the viewer is a place you can navigate to, share and
+    back out of. Without JavaScript it simply jumps to the tile. The picture is
+    hung at its own proportions, and the label over its foot names the frame for
+    everyone — which is also what gives the link its accessible name. */}
+<li class="photo-tile" id={anchor}>
+  <a class="photo-tile-link" href={`#${anchor}`} data-photo-open>
+    <Image
+      src={photo.src}
+      alt=""
+      class="photo-tile-image"
+      widths={[360, 480, 720, 960]}
+      sizes="(max-width: 560px) 92vw, (max-width: 900px) 46vw, 360px"
+      loading={eager ? "eager" : "lazy"}
+      decoding={eager ? "auto" : "async"}
+    />
+    <span class="photo-tile-label">
+      <span class="photo-tile-title">{photo.title}</span>
+      <span class="photo-tile-place">{photo.location}</span>
+    </span>
+  </a>
+</li>

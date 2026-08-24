@@ -4,6 +4,7 @@ import ThemeToggle from './ThemeToggle.astro';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
 const isSoftware = path === '/software' || path.startsWith('/software/');
+const isPhotography = path === '/photography' || path.startsWith('/photography/');
 const isAbout = path === '/about';
 
 const crumb = path.startsWith('/software/')
@@ -55,6 +56,12 @@ const crumb = path.startsWith('/software/')
         aria-current={isSoftware ? 'page' : undefined}
         data-direction="right"
       >Projects</a>
+      <a
+        href="/photography"
+        class:list={{ active: isPhotography }}
+        aria-current={isPhotography ? 'page' : undefined}
+        data-direction="left"
+      >Photography</a>
       <a
         href="/about"
         class:list={{ active: isAbout }}

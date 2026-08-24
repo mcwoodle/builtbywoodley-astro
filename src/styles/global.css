@@ -49,6 +49,8 @@
 
   --font-display: "Outfit", sans-serif;
   --font-body: "Outfit", sans-serif;
+  /* Dates, places and counts are machine data; they get the machine's voice. */
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --fs-display: clamp(3rem, 6vw, 5.4rem);
   --fs-heading: clamp(1.55rem, 2.8vw, 2.25rem);
   --fs-body: 1rem;
@@ -889,8 +891,27 @@ svg {
 }
 
 @media (max-width: 390px) {
+  /* Three primary links only just fit at this width; tighten the row so the
+     last one is not clipped by the theme toggle on very narrow phones. */
+  .top-nav .nav-panel {
+    padding-inline: 6px;
+    column-gap: 6px;
+  }
+
+  .top-nav .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .top-nav .primary-links {
+    gap: 0;
+    padding: 3px;
+  }
+
   .top-nav .primary-links a {
-    padding-inline: 10px;
+    padding-inline: 7px;
+    font-size: 0.72rem;
+    letter-spacing: 0;
   }
 
   .ai-slop-warning {
@@ -1259,6 +1280,12 @@ svg {
   transform: translate(3px, 3px);
 }
 
+/* This one points straight ahead, so it nudges the way it is pointing. */
+.route-card--photo:hover .route-card-arrow,
+.route-card--photo:focus-visible .route-card-arrow {
+  transform: translate(4px, 0);
+}
+
 .landing-footer {
   display: flex;
   align-items: center;
@@ -1459,6 +1486,383 @@ svg {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
   border-radius: var(--radius-lg);
+}
+
+/* ─────────────────────────────────────────────
+   Photography
+   A contact sheet you can read at a glance, held to a column narrower than the
+   window so it stays calm, and a viewer panel for looking at any one frame
+   properly. Pictures carry no card chrome; the type around them stays quieter
+   than the picture it belongs to.
+   ───────────────────────────────────────────── */
+.photography-page {
+  padding-bottom: clamp(88px, 10vw, 132px);
+}
+
+.photo-shell {
+  width: min(1120px, calc(100% - 48px));
+  margin-inline: auto;
+}
+
+/* The wall ───────────────────────────────────────
+   Pictures hang at their own proportions in a column narrower than the window,
+   with nothing set between them. What each frame is belongs to the viewer;
+   here a hover names it and that is all. */
+.photo-gallery {
+  --gallery-gap: clamp(14px, 1.6vw, 22px);
+
+  columns: 3;
+  column-gap: var(--gallery-gap);
+  margin: 0;
+  padding: clamp(28px, 4vw, 56px) 0 0;
+  list-style: none;
+}
+
+.photo-tile {
+  display: block;
+  margin-bottom: var(--gallery-gap);
+  break-inside: avoid;
+  /* Land below the sticky nav when a shared link points at this frame. */
+  scroll-margin-top: 104px;
+}
+
+.photo-tile-link {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: inherit;
+}
+
+.photo-tile-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.photo-tile-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 620ms var(--ease-out);
+}
+
+.photo-tile-link:hover .photo-tile-image,
+.photo-tile-link:focus-visible .photo-tile-image {
+  transform: scale(1.035);
+}
+
+/* Every frame names itself. The label holds back a little until the picture is
+   hovered, so the wall stays quiet without ever making you guess. */
+.photo-tile-label {
+  display: grid;
+  position: absolute;
+  inset: auto 0 0;
+  gap: 3px;
+  padding: 44px 14px 13px;
+  /* Sits over the photograph, so it reads white in either theme. Strongest
+     where the type is, gone well before the middle of the frame. The scrim
+     holds steady while the type fades — dimming both together would take the
+     text's ground away with it. */
+  background: linear-gradient(
+    to top,
+    rgba(8, 11, 13, 0.72),
+    rgba(8, 11, 13, 0.38) 46%,
+    transparent
+  );
+}
+
+.photo-tile-title {
+  color: rgba(244, 241, 234, 0.6);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  transition: color 240ms var(--ease-out);
+}
+
+.photo-tile-place {
+  color: rgba(244, 241, 234, 0.42);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+  transition: color 240ms var(--ease-out);
+}
+
+.photo-tile-link:hover .photo-tile-title,
+.photo-tile-link:focus-visible .photo-tile-title {
+  color: #f4f1ea;
+}
+
+.photo-tile-link:hover .photo-tile-place,
+.photo-tile-link:focus-visible .photo-tile-place {
+  color: rgba(244, 241, 234, 0.78);
+}
+
+/* Nothing hovers on a touch screen, so there is no held-back state to sit in:
+   the type is simply at full strength. */
+@media (hover: none) {
+  .photo-tile-title {
+    color: #f4f1ea;
+  }
+
+  .photo-tile-place {
+    color: rgba(244, 241, 234, 0.78);
+  }
+}
+/* Viewer ─────────────────────────────────────────
+   A darkroom rather than a page: the surround is the same deep neutral in
+   either theme so the colour in a photograph is the only colour on screen. */
+.photo-viewer {
+  --viewer-ground: #0b0e10;
+  --viewer-ink: #f2efe8;
+  --viewer-ink-muted: rgba(242, 239, 232, 0.6);
+  --viewer-rule: rgba(242, 239, 232, 0.2);
+
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(14px, 2.4vw, 30px);
+  border: 0;
+  background: var(--viewer-ground);
+  color: var(--viewer-ink);
+  opacity: 0;
+  overscroll-behavior: contain;
+  transition:
+    opacity 260ms var(--ease-out),
+    display 260ms allow-discrete,
+    overlay 260ms allow-discrete;
+}
+
+.photo-viewer[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 22px);
+  opacity: 1;
+}
+
+.photo-viewer::backdrop {
+  background: var(--viewer-ground, #0b0e10);
+  opacity: 0;
+  transition:
+    opacity 260ms var(--ease-out),
+    display 260ms allow-discrete,
+    overlay 260ms allow-discrete;
+}
+
+.photo-viewer[open]::backdrop {
+  opacity: 1;
+}
+
+/* The state the panel animates away from on the way in. Engines without
+   @starting-style skip the fade and simply appear. */
+@starting-style {
+  .photo-viewer[open],
+  .photo-viewer[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+body.is-photo-viewing {
+  position: fixed;
+  width: 100%;
+}
+
+/* The bar keeps the count centred with the close button at its end; stepping
+   between frames belongs beside the picture, not up here. */
+.photo-viewer-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.photo-viewer-count {
+  grid-column: 2;
+  margin-bottom: 0;
+  text-align: center;
+  color: var(--viewer-ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+}
+
+.photo-viewer-close {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.photo-viewer-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--viewer-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--viewer-ink);
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.photo-viewer-button:hover:not(:disabled) {
+  background: rgba(242, 239, 232, 0.1);
+  border-color: rgba(242, 239, 232, 0.42);
+}
+
+/* Nothing further to reach in that direction. */
+.photo-viewer-button:disabled {
+  opacity: 0.26;
+  cursor: default;
+}
+
+.photo-viewer-button:focus-visible {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 3px;
+}
+
+.photo-viewer-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.photo-viewer-figure {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(12px, 1.6vw, 18px);
+  width: min(1180px, 100%);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+/* Flex, not grid: a flex item's percentage max-height resolves against the
+   container's definite height, which is what keeps the picture inside the
+   panel without any measuring. */
+.photo-viewer-stage {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  /* Vertical drags belong to the swipe handler; pinch to zoom still belongs to
+     the browser. */
+  touch-action: pinch-zoom;
+}
+
+/* Flanking the picture at its middle, and large enough to be the obvious way
+   through the archive. */
+.photo-viewer-step {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  translate: 0 -50%;
+  border-color: rgba(242, 239, 232, 0.34);
+  background: rgba(11, 14, 16, 0.55);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.photo-viewer-step:hover:not(:disabled) {
+  background: rgba(11, 14, 16, 0.78);
+}
+
+.photo-viewer-step[data-photo-step="-1"] {
+  left: 0;
+}
+
+.photo-viewer-step[data-photo-step="1"] {
+  right: 0;
+}
+
+.photo-viewer-step svg {
+  width: 21px;
+  height: 21px;
+}
+
+.photo-viewer-image {
+  display: block;
+  /* The swipe writes transform and opacity straight onto this element and
+     animates the release itself, so there is no transition here to fight. */
+  will-change: transform, opacity;
+  /* The element takes the picture's own size, capped by the space the panel has
+     left. Intrinsic width and height come from the manifest, so the frame is
+     the right shape before the image arrives. */
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* A steady footer across the panel: the metadata sits in the same place from
+   one frame to the next, rather than shifting with each picture's shape. */
+.photo-viewer-caption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 40px;
+  width: 100%;
+  padding-top: 13px;
+  border-top: 1px solid var(--viewer-rule);
+}
+
+.photo-viewer-title {
+  margin-bottom: 5px;
+  color: var(--viewer-ink);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.photo-viewer-note {
+  max-width: 54ch;
+  margin-bottom: 0;
+  color: var(--viewer-ink-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.photo-viewer-meta {
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  margin-bottom: 0;
+  color: var(--viewer-ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.photo-viewer-date {
+  text-transform: uppercase;
+}
+
+.photo-viewer-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* The single copper note in the darkroom. */
+.photo-viewer-place::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-copper);
 }
 
 /* ─────────────────────────────────────────────
@@ -2393,6 +2797,11 @@ svg {
    Responsive
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
+  /* Drop a column before the pictures get too small to be worth hanging. */
+  .photo-gallery {
+    columns: 2;
+  }
+
   .landing-hero {
     grid-template-columns: 1fr 0.86fr;
     gap: 44px;
@@ -2427,6 +2836,47 @@ svg {
 }
 
 @media (max-width: 760px) {
+  .photo-shell {
+    width: min(100% - 28px, 1120px);
+  }
+
+  /* Touch moves through the archive vertically, so the steps move with it:
+     above and below the picture, pointing the way the swipe goes. */
+  .photo-viewer-step {
+    top: auto;
+    bottom: auto;
+    translate: -50% 0;
+  }
+
+  /* Both edges are restated here: the desktop rules pin left and right by
+     attribute, which outranks anything set on the class alone. */
+  .photo-viewer-step[data-photo-step="-1"] {
+    top: 0;
+    left: 50%;
+  }
+
+  .photo-viewer-step[data-photo-step="1"] {
+    bottom: 0;
+    right: auto;
+    left: 50%;
+  }
+
+  .photo-viewer-step svg {
+    rotate: 90deg;
+  }
+
+  /* The caption stacks under the photograph, coordinates first, the way a
+     print is labelled on the back. */
+  .photo-viewer-caption {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
+  }
+
+  .photo-viewer-meta {
+    justify-items: start;
+    order: -1;
+    text-align: left;
+  }
   :root {
     --fs-body: 1.025rem;
   }
@@ -2588,6 +3038,14 @@ svg {
 }
 
 @media (max-width: 520px) {
+  .photo-shell {
+    width: min(100% - 22px, 1120px);
+  }
+
+  /* One picture at a time: a phone-width column is a gallery, two is a sheet. */
+  .photo-gallery {
+    columns: 1;
+  }
   .page-shell,
   .detail-shell,
   .landing-page,
