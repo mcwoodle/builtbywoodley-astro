@@ -1309,6 +1309,7 @@ svg {
   border-top: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
   font-size: 0.74rem;
+  white-space: nowrap;
 }
 
 /* Pages carrying the AI-slop mark park a fixed button at bottom centre; step
@@ -1334,6 +1335,34 @@ svg {
 
 .site-footer a:hover {
   color: var(--color-accent);
+}
+
+.site-footer-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  transition: color 180ms ease, transform 220ms var(--ease-out);
+}
+
+.site-footer-icon svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-footer-icon:hover,
+.site-footer-icon:focus-visible {
+  color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.site-footer-icon:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 /* ─────────────────────────────────────────────
@@ -2943,11 +2972,6 @@ body.is-photo-viewing {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
   }
 
-  .site-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .portfolio-card,
   .portfolio-card:first-child,
   .portfolio-card:nth-child(2) {
@@ -3094,10 +3118,9 @@ body.is-photo-viewing {
     bottom: 18px;
   }
 
+  .site-footer,
   .site-footer div {
-    width: 100%;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 14px;
   }
 
   .portfolio-card-body {
