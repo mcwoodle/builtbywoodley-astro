@@ -1280,9 +1280,10 @@ svg {
   transform: translate(3px, 3px);
 }
 
+/* This one points straight ahead, so it nudges the way it is pointing. */
 .route-card--photo:hover .route-card-arrow,
 .route-card--photo:focus-visible .route-card-arrow {
-  transform: translate(-3px, -3px);
+  transform: translate(4px, 0);
 }
 
 .landing-footer {
