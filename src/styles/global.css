@@ -935,8 +935,11 @@ svg {
 
 /* ─────────────────────────────────────────────
    Theme control
-   Lives in the site footer; styled globally so the persistent ClientRouter
-   swap cannot load it with a stale component style module.
+   Lives in the site footer and reads as part of that line rather than as a
+   button: the glyph shows what the page is currently wearing, the word beside
+   it says which of the three modes chose it. Styled here in the global visual
+   system so the persistent ClientRouter navigation cannot load it with a stale
+   component style module.
    ───────────────────────────────────────────── */
 .theme-toggle {
   position: relative;
@@ -944,66 +947,85 @@ svg {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  background: var(--color-surface-raised);
+  gap: 7px;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
   color: var(--color-text-muted);
-  box-shadow: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
-  transition: color 180ms ease, border-color 180ms ease,
-    background-color 180ms ease, transform 180ms var(--ease-out),
-    box-shadow 180ms ease;
+  transition: color 180ms ease, transform 220ms var(--ease-out);
 }
 
-.theme-toggle:hover {
-  transform: translateY(-2px) rotate(2deg);
-  border-color: var(--color-border-strong);
-  background: var(--color-accent-soft);
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  transform: translateY(-1px);
   color: var(--color-accent);
-  box-shadow: var(--shadow-card);
 }
 
 .theme-toggle:active {
-  transform: translateY(0) scale(0.92);
+  transform: translateY(0) scale(0.94);
 }
 
 .theme-toggle:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
 
 .theme-toggle svg {
-  width: 18px;
-  height: 18px;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.theme-toggle .icon-sun,
-.theme-toggle .icon-moon {
+/* The word holds a fixed measure so cycling the modes cannot jog the footer. */
+.theme-toggle-label {
+  min-width: 2.9rem;
+  text-align: left;
+}
+
+/* Nothing shows until <html> says what the page is wearing and which mode
+   picked it — the no-flash init sets both before first paint. */
+.theme-toggle svg,
+.theme-toggle-label span {
   display: none;
 }
 
-.theme-toggle .icon-system {
+:root[data-theme="light"] .theme-toggle .icon-sun,
+:root[data-theme="dark"] .theme-toggle .icon-moon {
   display: block;
 }
 
-:root[data-theme-mode="light"] .theme-toggle .icon-system,
-:root[data-theme-mode="dark"] .theme-toggle .icon-system {
-  display: none;
+:root[data-theme-mode="system"] .theme-toggle .label-system,
+:root[data-theme-mode="light"] .theme-toggle .label-light,
+:root[data-theme-mode="dark"] .theme-toggle .label-dark {
+  display: inline;
 }
 
-:root[data-theme-mode="light"] .theme-toggle .icon-sun,
-:root[data-theme-mode="dark"] .theme-toggle .icon-moon {
+/* With scripting off the init never runs and the button cannot do anything;
+   it still names the default rather than sitting there as an empty gap. */
+:root:not([data-theme]) .theme-toggle .icon-sun {
   display: block;
 }
 
+:root:not([data-theme-mode]) .theme-toggle .label-system {
+  display: inline;
+}
+
+/* The page edge is directly below, so the tooltip hangs above the button. */
 .theme-toggle::after {
   content: attr(data-tooltip);
   position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  bottom: calc(100% + 10px);
+  left: 50%;
   z-index: 200;
   padding: 7px 10px;
   border-radius: 8px;
@@ -1016,7 +1038,7 @@ svg {
   white-space: nowrap;
   box-shadow: var(--shadow-card);
   opacity: 0;
-  transform: translateY(-4px) scale(0.98);
+  transform: translate(-50%, 4px) scale(0.98);
   pointer-events: none;
   transition: opacity 150ms ease, transform 180ms var(--ease-out);
 }
@@ -1024,7 +1046,7 @@ svg {
 .theme-toggle:hover::after,
 .theme-toggle:focus-visible::after {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translate(-50%, 0) scale(1);
 }
 
 /* ─────────────────────────────────────────────
@@ -1352,6 +1374,8 @@ svg {
   color: var(--color-accent);
 }
 
+/* The links are line-art glyphs in the same quiet hand as the theme control
+   they sit beside: no box, muted until the cursor finds them. */
 .site-footer-icon {
   display: grid;
   place-items: center;
@@ -1378,32 +1402,6 @@ svg {
 .site-footer-icon:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
-}
-
-/* The footer runs at a smaller scale than the nav panel did, and the page edge
-   is directly below, so the tooltip flips to hang above the button. */
-.site-footer .theme-toggle {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-
-.site-footer .theme-toggle svg {
-  width: 16px;
-  height: 16px;
-}
-
-.site-footer .theme-toggle::after {
-  top: auto;
-  right: auto;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translate(-50%, 4px) scale(0.98);
-}
-
-.site-footer .theme-toggle:hover::after,
-.site-footer .theme-toggle:focus-visible::after {
-  transform: translate(-50%, 0) scale(1);
 }
 
 /* ─────────────────────────────────────────────
