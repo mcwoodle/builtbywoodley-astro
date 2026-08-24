@@ -1018,7 +1018,8 @@ svg {
 }
 
 .theme-toggle:hover::after,
-.theme-toggle:focus-visible::after {
+.theme-toggle:focus-visible::after,
+.theme-toggle[data-tooltip-open]::after {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
 }

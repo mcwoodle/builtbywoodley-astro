@@ -2,7 +2,8 @@
 // A button in the site footer that cycles the colour theme between three modes:
 // System (follow the OS/browser preference — the default), Light, and Dark.
 // Each mode has its own glyph — a half-filled disc for automatic, a sun, a moon
-// — and the hover/focus tooltip names it in words.
+// — and a tooltip names it in words: on hover or focus, and for a moment after
+// a press, which is the only one a touch screen can offer.
 //
 // The theme is applied by setting data-theme (colours) and data-theme-mode
 // (glyph) on <html>; the no-flash init in BaseLayout's <head> sets both before
@@ -116,6 +117,19 @@
     document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach(syncButton);
   }
 
+  // A touch screen has no hover, and a tap is not `:focus-visible`, so the
+  // tooltip would never show there. Holding it open for a moment after the
+  // press says which mode the press just landed on — on a pointer device it
+  // does the same, under the tooltip hover already put on screen.
+  const TIP_MS = 1800;
+  let tipTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function flashTooltip(toggle: HTMLButtonElement) {
+    toggle.setAttribute('data-tooltip-open', '');
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => toggle.removeAttribute('data-tooltip-open'), TIP_MS);
+  }
+
   // Event delegation keeps the control live when ClientRouter replaces the footer.
   document.addEventListener('click', (event) => {
     const target = event.target;
@@ -129,6 +143,7 @@
       // Storage unavailable (e.g. private mode); the mode still applies here.
     }
     syncButtons();
+    flashTooltip(toggle);
   });
 
   // The no-flash init dispatches `themechange` when it live-follows an OS/browser
