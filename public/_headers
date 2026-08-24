@@ -35,6 +35,16 @@
   ! X-Frame-Options
   X-Frame-Options: SAMEORIGIN
 
+# ── Long-lived caching for build assets ──
+# Workers static assets are served with a default of
+# `Cache-Control: public, max-age=0, must-revalidate`, so without this rule
+# every asset is revalidated on every visit. Everything Astro emits into
+# /_astro/ has a content hash in its filename, so the bytes at a given URL can
+# never change and it is safe to cache them forever. This rule only ADDS a
+# header, so unlike /viz/* above it needs no `! ` unset.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff

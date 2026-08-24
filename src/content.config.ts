@@ -52,4 +52,29 @@ const software = defineCollection({
   schema: softwareSchema,
 });
 
-export const collections = { projects, mockedProjects, software };
+// Photography is a single manifest entry holding the whole archive, rather than
+// one file per photo. image() resolves each src relative to this file, so the
+// photos live in ./photos/images/ beside the manifest.
+const photos = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/photos' }),
+  // Declared inline (not as an extracted factory) so `image` keeps its real
+  // type instead of being widened to `any`.
+  schema: ({ image }) =>
+    z.object({
+      photos: z
+        .array(
+          z.object({
+            src: image(),
+            title: z.string().max(100, 'Title cannot exceed 100 characters.'),
+            alt: z.string(),
+            date: z.coerce.date(),
+            location: z.string(),
+            // Short editorial line shown in the margin note. Not EXIF.
+            note: z.string().optional(),
+          }),
+        )
+        .min(1),
+    }),
+});
+
+export const collections = { projects, mockedProjects, software, photos };

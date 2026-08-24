@@ -1,0 +1,52 @@
+---
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+
+type Photo = CollectionEntry<"photos">["data"]["photos"][number];
+
+type Props = {
+  photo: Photo;
+  /** 1-based position in the archive, rendered as the editorial index. */
+  index: number;
+  /** Mirror the layout so entries alternate down the page. */
+  flip?: boolean;
+  /** The first entry is the LCP element and must not lazy-load. */
+  eager?: boolean;
+};
+
+const { photo, index, flip = false, eager = false } = Astro.props;
+
+// UTC accessors: z.coerce.date() parses "2015-09-21" as UTC midnight, so local
+// getters would shift the date back a day for anyone west of Greenwich.
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const day = String(photo.date.getUTCDate()).padStart(2, "0");
+const stamp = `${day} ${MONTHS[photo.date.getUTCMonth()]} ${photo.date.getUTCFullYear()}`;
+const ordinal = String(index).padStart(2, "0");
+---
+
+<article class:list={["photo-entry", flip && "photo-entry--flip", "js-project-entry"]}>
+  {/* The first plate is the hero and is already in view on load, so it is
+      exempt from the scroll wipe — otherwise it paints half-clipped. */}
+  <figure class="photo-entry-plate" data-reveal-content={eager ? undefined : true}>
+    <Image
+      src={photo.src}
+      alt={photo.alt}
+      class="photo-entry-image"
+      widths={[480, 760, 1120, 1600]}
+      sizes="(max-width: 760px) 92vw, min(690px, 60vw)"
+      loading={eager ? "eager" : "lazy"}
+      decoding={eager ? "auto" : "async"}
+      fetchpriority={eager ? "high" : undefined}
+    />
+  </figure>
+  <div class="photo-entry-note">
+    <p class="photo-entry-meta">
+      <span class="photo-entry-index">{ordinal}</span>
+      <time datetime={photo.date.toISOString().slice(0, 10)}>{stamp}</time>
+    </p>
+    <h3 class="photo-entry-place">{photo.location}</h3>
+    <hr class="photo-entry-rule" />
+    <p class="photo-entry-title">{photo.title}</p>
+    {photo.note && <p class="photo-entry-text">{photo.note}</p>}
+  </div>
+</article>

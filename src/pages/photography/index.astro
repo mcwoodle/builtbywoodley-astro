@@ -1,0 +1,69 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import HumanWrittenMark from "../../components/HumanWrittenMark.astro";
+import PhotoEntry from "../../components/PhotoEntry.astro";
+
+const [manifest] = await getCollection("photos");
+const photos = [...manifest.data.photos].sort(
+  (a, b) => b.date.getTime() - a.date.getTime(),
+);
+
+// Group into years for the jump links, keeping one continuous index across the
+// whole archive so the editorial numbering does not restart each year.
+let counter = 0;
+const groups = [...new Set(photos.map((photo) => photo.date.getUTCFullYear()))].map(
+  (year) => ({
+    year,
+    entries: photos
+      .filter((photo) => photo.date.getUTCFullYear() === year)
+      .map((photo) => ({ photo, index: ++counter })),
+  }),
+);
+---
+
+<BaseLayout
+  title="Photography | Built by Woodley"
+  description="An archive of places, mostly at odd hours."
+>
+  <main class="page-shell photography-page">
+    <header class="page-intro photography-intro">
+      <div>
+        <h1 class="page-heading">Photography</h1>
+        <p class="page-subtitle">An archive of places, mostly at odd hours.</p>
+      </div>
+
+      <nav class="photo-years" aria-label="Jump to year">
+        {
+          groups.map((group) => (
+            <a class="tag-chip photo-year-link" href={`#y${group.year}`}>
+              {group.year}
+            </a>
+          ))
+        }
+      </nav>
+    </header>
+
+    <div class="photo-log">
+      {
+        groups.map((group) => (
+          <section class="photo-year-group" aria-labelledby={`y${group.year}`}>
+            <h2 class="photo-year" id={`y${group.year}`}>
+              {group.year}
+            </h2>
+            {group.entries.map(({ photo, index }) => (
+              <PhotoEntry
+                photo={photo}
+                index={index}
+                flip={index % 2 === 0}
+                eager={index === 1}
+              />
+            ))}
+          </section>
+        ))
+      }
+    </div>
+
+    <HumanWrittenMark />
+  </main>
+</BaseLayout>

@@ -889,8 +889,27 @@ svg {
 }
 
 @media (max-width: 390px) {
+  /* Three primary links only just fit at this width; tighten the row so the
+     last one is not clipped by the theme toggle on very narrow phones. */
+  .top-nav .nav-panel {
+    padding-inline: 6px;
+    column-gap: 6px;
+  }
+
+  .top-nav .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .top-nav .primary-links {
+    gap: 0;
+    padding: 3px;
+  }
+
   .top-nav .primary-links a {
-    padding-inline: 10px;
+    padding-inline: 7px;
+    font-size: 0.72rem;
+    letter-spacing: 0;
   }
 
   .ai-slop-warning {
@@ -1259,6 +1278,11 @@ svg {
   transform: translate(3px, 3px);
 }
 
+.route-card--photo:hover .route-card-arrow,
+.route-card--photo:focus-visible .route-card-arrow {
+  transform: translate(-3px, -3px);
+}
+
 .landing-footer {
   display: flex;
   align-items: center;
@@ -1459,6 +1483,160 @@ svg {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
   border-radius: var(--radius-lg);
+}
+
+/* ─────────────────────────────────────────────
+   Photography logbook
+   ───────────────────────────────────────────── */
+.photography-intro .page-heading {
+  margin-bottom: 12px;
+}
+
+.photo-years {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.photo-year-link {
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+.photo-year-link:hover,
+.photo-year-link:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.photo-year-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.photo-log {
+  margin-top: clamp(56px, 7vw, 92px);
+}
+
+.photo-year-group + .photo-year-group {
+  margin-top: clamp(72px, 11vw, 148px);
+}
+
+.photo-year {
+  margin-bottom: clamp(32px, 4vw, 52px);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  /* Clear the sticky nav when a year link jumps here. */
+  scroll-margin-top: 96px;
+}
+
+/* One entry per photo. Plate and note swap sides down the page, but only
+   visually — DOM order is always plate then note, so tab order stays linear. */
+.photo-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(240px, 0.62fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+}
+
+.photo-entry + .photo-entry {
+  margin-top: clamp(72px, 11vw, 148px);
+}
+
+.photo-entry--flip .photo-entry-plate {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.photo-entry--flip .photo-entry-note {
+  grid-row: 1;
+  grid-column: 1;
+  text-align: right;
+}
+
+.photo-entry-plate {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt);
+  box-shadow: var(--shadow-card);
+}
+
+.photo-entry-image {
+  display: block;
+  width: 100%;
+  /* No fixed aspect-ratio: each plate takes the photo's own shape, so swapping
+     in higher-resolution masters later cannot break the layout. */
+  height: auto;
+}
+
+.photo-entry-note {
+  min-width: 0;
+}
+
+.photo-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 620;
+  letter-spacing: 0.1em;
+}
+
+.photo-entry--flip .photo-entry-meta {
+  justify-content: flex-end;
+}
+
+.photo-entry-index {
+  color: var(--color-accent);
+}
+
+.photo-entry-place {
+  margin-bottom: 14px;
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.photo-entry-rule {
+  width: 46px;
+  margin: 0 0 14px;
+  border: 0;
+  border-top: 1px solid var(--color-signal);
+}
+
+.photo-entry--flip .photo-entry-rule {
+  margin-left: auto;
+}
+
+.photo-entry-title {
+  margin-bottom: 6px;
+  color: var(--color-text);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.photo-entry-text {
+  max-width: 34ch;
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+}
+
+.photo-entry--flip .photo-entry-text {
+  margin-left: auto;
 }
 
 /* ─────────────────────────────────────────────
@@ -2393,6 +2571,10 @@ svg {
    Responsive
    ───────────────────────────────────────────── */
 @media (max-width: 960px) {
+  .photo-entry {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 0.55fr);
+    gap: 32px;
+  }
   .landing-hero {
     grid-template-columns: 1fr 0.86fr;
     gap: 44px;
@@ -2427,6 +2609,38 @@ svg {
 }
 
 @media (max-width: 760px) {
+  .photo-years {
+    justify-content: flex-start;
+  }
+
+  .photo-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  /* Collapse the mirrored layout: stacked, always left-aligned. */
+  .photo-entry--flip .photo-entry-plate,
+  .photo-entry--flip .photo-entry-note {
+    grid-column: 1;
+  }
+
+  .photo-entry--flip .photo-entry-plate {
+    grid-row: 1;
+  }
+
+  .photo-entry--flip .photo-entry-note {
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .photo-entry--flip .photo-entry-meta {
+    justify-content: flex-start;
+  }
+
+  .photo-entry--flip .photo-entry-rule,
+  .photo-entry--flip .photo-entry-text {
+    margin-left: 0;
+  }
   :root {
     --fs-body: 1.025rem;
   }
@@ -2588,6 +2802,13 @@ svg {
 }
 
 @media (max-width: 520px) {
+  .photo-entry + .photo-entry {
+    margin-top: 56px;
+  }
+
+  .photo-year-group + .photo-year-group {
+    margin-top: 56px;
+  }
   .page-shell,
   .detail-shell,
   .landing-page,
