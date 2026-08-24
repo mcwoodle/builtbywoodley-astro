@@ -24,10 +24,8 @@ const stamp = `${day} ${MONTHS[photo.date.getUTCMonth()]} ${photo.date.getUTCFul
 const ordinal = String(index).padStart(2, "0");
 ---
 
-<article class:list={["photo-entry", flip && "photo-entry--flip", "js-project-entry"]}>
-  {/* The first plate is the hero and is already in view on load, so it is
-      exempt from the scroll wipe — otherwise it paints half-clipped. */}
-  <figure class="photo-entry-plate" data-reveal-content={eager ? undefined : true}>
+<article class:list={["photo-entry", flip && "photo-entry--flip"]}>
+  <figure class="photo-entry-plate">
     <Image
       src={photo.src}
       alt={photo.alt}

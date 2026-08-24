@@ -58,10 +58,8 @@ function setupPage() {
     };
 
     entries.forEach((entry) => {
-      // Journal entries match on class; other sections opt in with the data
-      // attributes so they do not have to borrow journal-specific class names.
-      const title = entry.querySelector<HTMLElement>('[data-reveal-title], .project-title');
-      const content = entry.querySelector<HTMLElement>('[data-reveal-content], .project-content');
+      const title = entry.querySelector<HTMLElement>('.project-title');
+      const content = entry.querySelector<HTMLElement>('.project-content');
       const entryTop = entry.getBoundingClientRect().top;
       const titleRect = title?.getBoundingClientRect();
       const contentRect = content?.getBoundingClientRect();
