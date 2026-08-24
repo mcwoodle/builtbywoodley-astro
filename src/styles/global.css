@@ -419,12 +419,11 @@ svg {
   flex: none;
   width: 40px;
   height: 40px;
-  border: 1px solid var(--color-border-subtle);
+  border: 0;
   border-radius: 11px;
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
-  transition: color 180ms ease, border-color 180ms ease,
-    background-color 180ms ease, transform 220ms var(--ease-out),
+  background: var(--accent-sage);
+  color: var(--bg-primary);
+  transition: background-color 200ms ease, transform 220ms var(--ease-out),
     box-shadow 180ms ease;
 }
 
@@ -441,20 +440,17 @@ svg {
 .top-nav .about-link:hover,
 .top-nav .about-link:focus-visible {
   transform: rotate(4deg) scale(1.04);
-  border-color: var(--color-border-strong);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--color-accent-hover);
 }
 
 .top-nav .about-link:active {
   transform: rotate(0deg) scale(0.96);
 }
 
-/* On the page itself it wears the same copper mark as an active link. */
+/* On the page itself it wears the same copper mark as an active link. With no
+   border to colour, the ring is drawn as a shadow so the tile keeps its fill. */
 .top-nav .about-link.active {
-  border-color: var(--accent-copper);
-  color: var(--color-text);
-  box-shadow: 0 0 18px var(--accent-copper-glow);
+  box-shadow: 0 0 0 1.5px var(--accent-copper), 0 0 18px var(--accent-copper-glow);
 }
 
 .top-nav .breadcrumb {
