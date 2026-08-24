@@ -1559,43 +1559,54 @@ svg {
   gap: 3px;
   padding: 44px 14px 13px;
   /* Sits over the photograph, so it reads white in either theme. Strongest
-     where the type is, gone well before the middle of the frame. */
+     where the type is, gone well before the middle of the frame. The scrim
+     holds steady while the type fades — dimming both together would take the
+     text's ground away with it. */
   background: linear-gradient(
     to top,
-    rgba(8, 11, 13, 0.86),
-    rgba(8, 11, 13, 0.45) 46%,
+    rgba(8, 11, 13, 0.72),
+    rgba(8, 11, 13, 0.38) 46%,
     transparent
   );
-  opacity: 0.82;
-  transition: opacity 240ms var(--ease-out);
-}
-
-.photo-tile-link:hover .photo-tile-label,
-.photo-tile-link:focus-visible .photo-tile-label {
-  opacity: 1;
 }
 
 .photo-tile-title {
-  color: #f4f1ea;
+  color: rgba(244, 241, 234, 0.6);
   font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.25;
+  transition: color 240ms var(--ease-out);
 }
 
 .photo-tile-place {
-  color: rgba(244, 241, 234, 0.72);
+  color: rgba(244, 241, 234, 0.42);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.07em;
   line-height: 1.35;
+  transition: color 240ms var(--ease-out);
+}
+
+.photo-tile-link:hover .photo-tile-title,
+.photo-tile-link:focus-visible .photo-tile-title {
+  color: #f4f1ea;
+}
+
+.photo-tile-link:hover .photo-tile-place,
+.photo-tile-link:focus-visible .photo-tile-place {
+  color: rgba(244, 241, 234, 0.78);
 }
 
 /* Nothing hovers on a touch screen, so there is no held-back state to sit in:
-   the label is simply at full strength. */
+   the type is simply at full strength. */
 @media (hover: none) {
-  .photo-tile-label {
-    opacity: 1;
+  .photo-tile-title {
+    color: #f4f1ea;
+  }
+
+  .photo-tile-place {
+    color: rgba(244, 241, 234, 0.78);
   }
 }
 /* Viewer ─────────────────────────────────────────
