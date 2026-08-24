@@ -448,11 +448,14 @@ svg {
   transform: rotate(0deg) scale(0.96);
 }
 
-/* Each tile marks its own page by drawing its glyph in copper — the same
-   signal the text links use, carried by the line rather than by a ring. */
+/* Each tile marks its own page by turning copper — the same signal the text
+   links use. The fill carries it rather than the line, so the glyph keeps the
+   full contrast it has on sage. Sits after the hover rules on purpose: the
+   mark holds under the cursor, which still has the lean to answer with. */
 .top-nav .about-link.active,
 .top-nav .brand-link[aria-current="page"] .brand-mark {
-  color: var(--accent-copper);
+  background: var(--accent-copper);
+  color: var(--bg-primary);
 }
 
 .top-nav .breadcrumb {
