@@ -2,7 +2,10 @@
 // The site's sign-off. BaseLayout renders it beneath every route, so a new page
 // inherits the footer without asking for it — see `hideFooter` there for the
 // full-bleed exceptions. Email and LinkedIn are glyphs rather than words so the
-// whole line still fits across a phone without wrapping.
+// whole line still fits across a phone without wrapping, and the theme control
+// sits centred between the two ends.
+
+import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
   /** Reserve room above the fixed AI-slop mark so it never lands on the links. */
@@ -14,6 +17,9 @@ const { clearAiMark = false } = Astro.props;
 
 <footer class:list={["site-footer", { "site-footer--clear-mark": clearAiMark }]}>
   <p>Built in Canada.</p>
+
+  <ThemeToggle />
+
   <div>
     <a
       class="site-footer-icon"

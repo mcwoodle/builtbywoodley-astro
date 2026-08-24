@@ -1,5 +1,4 @@
 ---
-import ThemeToggle from './ThemeToggle.astro';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
@@ -68,10 +67,6 @@ const crumb = path.startsWith('/software/')
         aria-current={isAbout ? 'page' : undefined}
         data-direction="down"
       >About</a>
-    </div>
-
-    <div class="nav-actions">
-      <ThemeToggle />
     </div>
   </nav>
 </header>

@@ -351,8 +351,7 @@ svg {
 .top-nav .nav-identity,
 .top-nav .brand-link,
 .top-nav .breadcrumb,
-.top-nav .primary-links,
-.top-nav .nav-actions {
+.top-nav .primary-links {
   display: flex;
   align-items: center;
 }
@@ -464,10 +463,6 @@ svg {
   background: transparent;
   color: var(--text-primary);
   box-shadow: 0 0 18px var(--accent-copper-glow);
-}
-
-.top-nav .nav-actions {
-  justify-content: flex-end;
 }
 
 /* The mocked journal is intentionally conspicuous about its generated copy.
@@ -874,6 +869,13 @@ svg {
     border-radius: 16px;
   }
 
+  /* Nothing occupies the third column since the theme control moved to the
+     footer, so a spacer the width of the brand mark keeps the links centred. */
+  .top-nav .nav-panel::after {
+    content: "";
+    width: 38px;
+  }
+
   .top-nav .breadcrumb {
     display: none;
   }
@@ -899,11 +901,14 @@ svg {
 }
 
 @media (max-width: 390px) {
-  /* Three primary links only just fit at this width; tighten the row so the
-     last one is not clipped by the theme toggle on very narrow phones. */
+  /* Three primary links only just fit at this width, so the row tightens up. */
   .top-nav .nav-panel {
     padding-inline: 6px;
     column-gap: 6px;
+  }
+
+  .top-nav .nav-panel::after {
+    width: 34px;
   }
 
   .top-nav .brand-mark {
@@ -929,7 +934,9 @@ svg {
 }
 
 /* ─────────────────────────────────────────────
-   Navigation theme control
+   Theme control
+   Lives in the site footer; styled globally so the persistent ClientRouter
+   swap cannot load it with a stale component style module.
    ───────────────────────────────────────────── */
 .theme-toggle {
   position: relative;
@@ -1318,6 +1325,13 @@ svg {
   padding-bottom: 86px;
 }
 
+/* Both ends take an equal share of the slack, which leaves the theme control
+   centred on the page rather than on whatever the two ends happen to measure. */
+.site-footer > p,
+.site-footer > div {
+  flex: 1;
+}
+
 .site-footer p {
   margin-bottom: 0;
 }
@@ -1325,6 +1339,7 @@ svg {
 .site-footer div {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 20px;
 }
 
@@ -1363,6 +1378,32 @@ svg {
 .site-footer-icon:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 4px;
+}
+
+/* The footer runs at a smaller scale than the nav panel did, and the page edge
+   is directly below, so the tooltip flips to hang above the button. */
+.site-footer .theme-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.site-footer .theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.site-footer .theme-toggle::after {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, 4px) scale(0.98);
+}
+
+.site-footer .theme-toggle:hover::after,
+.site-footer .theme-toggle:focus-visible::after {
+  transform: translate(-50%, 0) scale(1);
 }
 
 /* ─────────────────────────────────────────────
