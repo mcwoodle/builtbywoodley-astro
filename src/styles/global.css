@@ -1550,15 +1550,23 @@ svg {
   transform: scale(1.035);
 }
 
+/* Every frame names itself. The label holds back a little until the picture is
+   hovered, so the wall stays quiet without ever making you guess. */
 .photo-tile-label {
   display: grid;
   position: absolute;
   inset: auto 0 0;
   gap: 3px;
-  padding: 46px 14px 13px;
-  /* Sits over the photograph, so it reads white in either theme. */
-  background: linear-gradient(to top, rgba(8, 11, 13, 0.78), transparent);
-  opacity: 0;
+  padding: 44px 14px 13px;
+  /* Sits over the photograph, so it reads white in either theme. Strongest
+     where the type is, gone well before the middle of the frame. */
+  background: linear-gradient(
+    to top,
+    rgba(8, 11, 13, 0.86),
+    rgba(8, 11, 13, 0.45) 46%,
+    transparent
+  );
+  opacity: 0.82;
   transition: opacity 240ms var(--ease-out);
 }
 
@@ -1583,11 +1591,11 @@ svg {
   line-height: 1.35;
 }
 
-/* Nothing hovers on a touch screen, and a caption under every picture would
-   turn the wall back into a list — the viewer names each frame instead. */
+/* Nothing hovers on a touch screen, so there is no held-back state to sit in:
+   the label is simply at full strength. */
 @media (hover: none) {
   .photo-tile-label {
-    display: none;
+    opacity: 1;
   }
 }
 /* Viewer ─────────────────────────────────────────

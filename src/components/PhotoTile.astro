@@ -17,16 +17,10 @@ const { photo, anchor, eager = false } = Astro.props;
 
 {/* A real hash link, so the viewer is a place you can navigate to, share and
     back out of. Without JavaScript it simply jumps to the tile. The picture is
-    hung at its own proportions and carries no caption of its own — the label
-    below it is a hover affordance, and the link's own name is what assistive
-    technology reads. */}
+    hung at its own proportions, and the label over its foot names the frame for
+    everyone — which is also what gives the link its accessible name. */}
 <li class="photo-tile" id={anchor}>
-  <a
-    class="photo-tile-link"
-    href={`#${anchor}`}
-    data-photo-open
-    aria-label={`${photo.title} — ${photo.location}`}
-  >
+  <a class="photo-tile-link" href={`#${anchor}`} data-photo-open>
     <Image
       src={photo.src}
       alt=""
@@ -36,7 +30,7 @@ const { photo, anchor, eager = false } = Astro.props;
       loading={eager ? "eager" : "lazy"}
       decoding={eager ? "auto" : "async"}
     />
-    <span class="photo-tile-label" aria-hidden="true">
+    <span class="photo-tile-label">
       <span class="photo-tile-title">{photo.title}</span>
       <span class="photo-tile-place">{photo.location}</span>
     </span>
