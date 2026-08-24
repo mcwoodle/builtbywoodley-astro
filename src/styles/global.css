@@ -936,28 +936,23 @@ svg {
 /* ─────────────────────────────────────────────
    Theme control
    Lives in the site footer and reads as part of that line rather than as a
-   button: the glyph shows what the page is currently wearing, the word beside
-   it says which of the three modes chose it. Styled here in the global visual
-   system so the persistent ClientRouter navigation cannot load it with a stale
+   button: one quiet glyph per mode — a half-filled disc for automatic, a sun,
+   a moon — with the tooltip naming it. Styled here in the global visual system
+   so the persistent ClientRouter navigation cannot load it with a stale
    component style module.
    ───────────────────────────────────────────── */
 .theme-toggle {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   flex: none;
-  gap: 7px;
+  width: 30px;
   height: 30px;
-  padding: 0 4px;
+  padding: 0;
   border: 0;
   border-radius: 7px;
   background: none;
   color: var(--color-text-muted);
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 600;
-  line-height: 1;
   cursor: pointer;
   transition: color 180ms ease, transform 220ms var(--ease-out);
 }
@@ -986,38 +981,17 @@ svg {
   stroke-linejoin: round;
 }
 
-/* The word holds a fixed measure so cycling the modes cannot jog the footer. */
-.theme-toggle-label {
-  min-width: 2.9rem;
-  text-align: left;
-}
-
-/* Nothing shows until <html> says what the page is wearing and which mode
-   picked it — the no-flash init sets both before first paint. */
-.theme-toggle svg,
-.theme-toggle-label span {
+/* No glyph shows until <html> names the mode — the no-flash init sets it
+   before first paint, and with scripting off the automatic mark is the truth. */
+.theme-toggle svg {
   display: none;
 }
 
-:root[data-theme="light"] .theme-toggle .icon-sun,
-:root[data-theme="dark"] .theme-toggle .icon-moon {
+:root[data-theme-mode="system"] .theme-toggle .icon-auto,
+:root[data-theme-mode="light"] .theme-toggle .icon-sun,
+:root[data-theme-mode="dark"] .theme-toggle .icon-moon,
+:root:not([data-theme-mode]) .theme-toggle .icon-auto {
   display: block;
-}
-
-:root[data-theme-mode="system"] .theme-toggle .label-system,
-:root[data-theme-mode="light"] .theme-toggle .label-light,
-:root[data-theme-mode="dark"] .theme-toggle .label-dark {
-  display: inline;
-}
-
-/* With scripting off the init never runs and the button cannot do anything;
-   it still names the default rather than sitting there as an empty gap. */
-:root:not([data-theme]) .theme-toggle .icon-sun {
-  display: block;
-}
-
-:root:not([data-theme-mode]) .theme-toggle .label-system {
-  display: inline;
 }
 
 /* The page edge is directly below, so the tooltip hangs above the button. */

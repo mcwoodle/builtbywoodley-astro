@@ -1,13 +1,12 @@
 ---
 // A button in the site footer that cycles the colour theme between three modes:
 // System (follow the OS/browser preference — the default), Light, and Dark.
+// Each mode has its own glyph — a half-filled disc for automatic, a sun, a moon
+// — and the hover/focus tooltip names it in words.
 //
-// The glyph always shows what the page is *wearing* — a sun or a moon — so in
-// System mode it carries whichever one the device asked for; the word beside it
-// says which mode chose that. Both are driven purely by the attributes on
-// <html>: data-theme (colours, hence the glyph) and data-theme-mode (the word).
-// The no-flash init in BaseLayout's <head> sets both before first paint, so the
-// control never shows the wrong face.
+// The theme is applied by setting data-theme (colours) and data-theme-mode
+// (glyph) on <html>; the no-flash init in BaseLayout's <head> sets both before
+// first paint so the correct theme and glyph show immediately.
 ---
 
 <button
@@ -16,7 +15,21 @@
   aria-label="Theme: System (matches your device). Click to change."
   data-tooltip="System theme · matches your device"
 >
-  <!-- The applied theme: a sun for light, a moon for dark. -->
+  <!-- System mode: a disc with one half filled, the usual "automatic" mark. -->
+  <svg
+    class="icon-auto"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8.6"></circle>
+    <path d="M12 3.4a8.6 8.6 0 0 1 0 17.2z" fill="currentColor" stroke="none"></path>
+  </svg>
+  <!-- Light mode (a sun). -->
   <svg
     class="icon-sun"
     viewBox="0 0 24 24"
@@ -37,6 +50,7 @@
     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
   </svg>
+  <!-- Dark mode (a moon). -->
   <svg
     class="icon-moon"
     viewBox="0 0 24 24"
@@ -49,12 +63,6 @@
   >
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
   </svg>
-
-  <span class="theme-toggle-label">
-    <span class="label-system">System</span>
-    <span class="label-light">Light</span>
-    <span class="label-dark">Dark</span>
-  </span>
 </button>
 
 <script>
