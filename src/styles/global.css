@@ -255,7 +255,6 @@ svg {
   letter-spacing: -0.06em;
   line-height: var(--lh-display);
   text-wrap: balance;
-  view-transition-name: page-title;
 }
 
 .page-subtitle {

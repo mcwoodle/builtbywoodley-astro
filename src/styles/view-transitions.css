@@ -58,19 +58,10 @@ html[data-nav-about-edge] .vt-tagline {
   view-transition-name: tagline;
 }
 
-::view-transition-group(tagline),
-::view-transition-group(page-title) {
+::view-transition-group(tagline) {
   z-index: 50;
   animation-duration: 480ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-::view-transition-old(page-title) {
-  animation: 180ms ease-in both vt-title-out;
-}
-
-::view-transition-new(page-title) {
-  animation: 480ms cubic-bezier(0.22, 1, 0.36, 1) both vt-title-in;
 }
 
 /* Direction still reflects route relationships, expressed as a restrained
@@ -183,13 +174,6 @@ html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > 
 @keyframes vt-fade-in {
   from { opacity: 0; transform: scale(0.994); }
 }
-@keyframes vt-title-out {
-  to { opacity: 0; transform: translateY(-8px); }
-}
-@keyframes vt-title-in {
-  from { opacity: 0; transform: translateY(16px); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
