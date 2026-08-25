@@ -623,14 +623,45 @@ svg {
   animation: ai-slop-drop-in 900ms 620ms var(--ease-out) backwards;
 }
 
-/* Leaning out a little further when you reach for it. */
-.ai-slop-mark:hover,
-.ai-slop-mark:focus-visible {
-  --slop-drop: calc(var(--slop-peek) + 8px);
-}
-
 .ai-slop-mark[aria-expanded="true"] {
   --slop-drop: var(--slop-open);
+}
+
+/* Anything left dangling sways, so it does — from the point where it holds on,
+   behind the panel. Only while it is hiding: once it turns over it has a
+   performance to give, and the head has its own part in that. Reaching for it
+   makes it swing harder, which is the whole of the hover cue — nothing here
+   moves it, so it always hides by exactly as much as it does on arrival. */
+.ai-slop-mark:not([aria-expanded="true"]) .ai-slop-robot-head {
+  transform-origin: 50% 100%;
+  animation: ai-slop-dangle 5.4s ease-in-out infinite;
+}
+
+.ai-slop-mark:not([aria-expanded="true"]):hover .ai-slop-robot-head,
+.ai-slop-mark:not([aria-expanded="true"]):focus-visible .ai-slop-robot-head {
+  animation: ai-slop-dangle-eager 1.5s ease-in-out infinite;
+}
+
+@keyframes ai-slop-dangle {
+  0%,
+  100% {
+    transform: rotate(-3.2deg);
+  }
+
+  50% {
+    transform: rotate(3.2deg);
+  }
+}
+
+@keyframes ai-slop-dangle-eager {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+
+  50% {
+    transform: rotate(7deg);
+  }
 }
 
 /* Hanging by its feet until it is spoken to. The turn waits for the message to
