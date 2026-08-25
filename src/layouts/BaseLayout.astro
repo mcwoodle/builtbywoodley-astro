@@ -2,12 +2,15 @@
 import NavigationTransitionHead from '../components/NavigationTransitionHead.astro';
 import AiSlopMark from '../components/AiSlopMark.astro';
 import TopNav from '../components/TopNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 import '../styles/global.css';
 import '../styles/view-transitions.css';
 
 interface Props {
   /** Hide the sticky TopNav — for full-bleed pages that supply their own navigation UI. */
   hideNav?: boolean;
+  /** Hide the site footer — for full-bleed pages that own the whole window. */
+  hideFooter?: boolean;
   /** Show the fixed AI-generated-content warning at the bottom of the viewport. */
   aiSlop?: boolean;
   title?: string;
@@ -16,6 +19,7 @@ interface Props {
 
 const {
   hideNav = false,
+  hideFooter = false,
   aiSlop = false,
   title = 'Built by Woodley',
   description = "Stuff that I've built",
@@ -112,6 +116,7 @@ const {
     {!hideNav && <TopNav />}
     {aiSlop && <AiSlopMark />}
     <slot />
+    {!hideFooter && <SiteFooter clearAiMark={aiSlop} />}
     <script>
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';

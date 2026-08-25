@@ -1,5 +1,4 @@
 ---
-import ThemeToggle from './ThemeToggle.astro';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
@@ -24,6 +23,7 @@ const crumb = path.startsWith('/software/')
         class="brand-link"
         aria-label={isHome ? 'Built by Woodley — home' : 'Back to home'}
         aria-current={isHome ? 'page' : undefined}
+        data-tooltip={isHome ? "You're home" : undefined}
       >
         <span class="brand-mark" aria-hidden="true">
           <svg
@@ -62,16 +62,61 @@ const crumb = path.startsWith('/software/')
         aria-current={isPhotography ? 'page' : undefined}
         data-direction="left"
       >Photography</a>
-      <a
-        href="/about"
-        class:list={{ active: isAbout }}
-        aria-current={isAbout ? 'page' : undefined}
-        data-direction="down"
-      >About</a>
     </div>
 
     <div class="nav-actions">
-      <ThemeToggle />
+      <a
+        href="/about"
+        class:list={['about-link', { active: isAbout }]}
+        aria-label="About me"
+        aria-current={isAbout ? 'page' : undefined}
+        data-tooltip={isAbout ? "It's me" : 'About me'}
+        data-direction="down"
+      >
+        <!-- Drawn to the same box and weight as the house at the other end,
+             so the two tiles carry the same amount of ink. -->
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="7.8" r="3.7"></circle>
+          <path d="M4.9 20.3a7.1 7.1 0 0 1 14.2 0"></path>
+        </svg>
+      </a>
     </div>
   </nav>
 </header>
+
+<script>
+  // The tile for the page you are already on has nowhere to send you, so it
+  // stays put: it leans, and its label says where you are. Delegated from the
+  // document so the behaviour survives ClientRouter swapping the nav out.
+  const HOLD_MS = 1600;
+  const CURRENT = '.top-nav .brand-link[aria-current="page"], .top-nav .about-link.active';
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let held: Element | undefined;
+
+  function release() {
+    if (!held) return;
+    held.removeAttribute('data-tooltip-open');
+    held.classList.remove('is-nudged');
+    held = undefined;
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const tile = target.closest(CURRENT);
+    if (!tile) return;
+
+    event.preventDefault();
+    clearTimeout(timer);
+    release();
+
+    held = tile;
+    tile.setAttribute('data-tooltip-open', '');
+    tile.classList.remove('is-nudged');
+    // Reading the layout restarts the animation when the tile is clicked again.
+    void (tile as HTMLElement).offsetWidth;
+    tile.classList.add('is-nudged');
+    timer = setTimeout(release, HOLD_MS);
+  });
+</script>

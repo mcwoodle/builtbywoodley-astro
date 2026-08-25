@@ -110,7 +110,10 @@ html {
 }
 
 body {
+  display: flex;
+  flex-direction: column;
   min-width: 320px;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
   color: var(--color-text);
@@ -167,9 +170,14 @@ body {
 }
 
 body > main,
-body > header:not(.top-nav) {
+body > header:not(.top-nav),
+body > footer {
   position: relative;
   z-index: 1;
+}
+
+body > main {
+  flex: 1 0 auto;
 }
 
 body > .top-nav {
@@ -343,8 +351,7 @@ svg {
 .top-nav .nav-identity,
 .top-nav .brand-link,
 .top-nav .breadcrumb,
-.top-nav .primary-links,
-.top-nav .nav-actions {
+.top-nav .primary-links {
   display: flex;
   align-items: center;
 }
@@ -355,6 +362,8 @@ svg {
 }
 
 .top-nav .brand-link {
+  position: relative;
+  z-index: 2;
   min-width: 0;
   gap: 10px;
   color: var(--color-text);
@@ -374,7 +383,8 @@ svg {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  transition: transform 220ms var(--ease-out), background-color 200ms ease;
+  transition: color 180ms ease, transform 220ms var(--ease-out),
+    background-color 200ms ease, box-shadow 180ms ease;
 }
 
 .top-nav .brand-link:hover .brand-mark,
@@ -390,9 +400,102 @@ svg {
 
 .top-nav .brand-link:focus-visible,
 .top-nav .breadcrumb a:focus-visible,
-.top-nav .primary-links a:focus-visible {
+.top-nav .primary-links a:focus-visible,
+.top-nav .about-link:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+/* About holds the right-hand corner as a tile the same size and shape as the
+   house on the left, so the panel reads as balanced with the links centred
+   between them. It stays the quieter of the two: the sage mark is the brand. */
+.top-nav .nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.top-nav .about-link {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--accent-sage);
+  color: var(--bg-primary);
+  transition: color 180ms ease, background-color 200ms ease,
+    transform 220ms var(--ease-out), box-shadow 180ms ease;
+}
+
+.top-nav .about-link svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The house leans one way on hover; this leans the other. */
+.top-nav .about-link:hover,
+.top-nav .about-link:focus-visible {
+  transform: rotate(4deg) scale(1.04);
+  background: var(--color-accent-hover);
+}
+
+.top-nav .about-link:active {
+  transform: rotate(0deg) scale(0.96);
+}
+
+/* The glyph never changes; the page you are on is marked by a copper box drawn
+   around the tile — the same border-and-glow the active text link wears. */
+.top-nav .about-link.active,
+.top-nav .brand-link[aria-current="page"] .brand-mark {
+  box-shadow: 0 0 0 1.5px var(--accent-copper), 0 0 18px var(--accent-copper-glow);
+}
+
+/* Clicking it anyway gets a lean rather than a page load. The two tiles lean
+   away from each other, the way they already do under the cursor. */
+.top-nav .brand-link.is-nudged .brand-mark {
+  animation: nav-tile-nudge 620ms var(--ease-spring);
+}
+
+.top-nav .about-link.is-nudged {
+  animation: nav-tile-nudge-mirror 620ms var(--ease-spring);
+}
+
+@keyframes nav-tile-nudge {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  30% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  58% {
+    transform: rotate(5deg) scale(1.03);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
+}
+
+@keyframes nav-tile-nudge-mirror {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  30% {
+    transform: rotate(8deg) scale(1.1);
+  }
+  58% {
+    transform: rotate(-5deg) scale(1.03);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
 }
 
 .top-nav .breadcrumb {
@@ -456,10 +559,6 @@ svg {
   background: transparent;
   color: var(--text-primary);
   box-shadow: 0 0 18px var(--accent-copper-glow);
-}
-
-.top-nav .nav-actions {
-  justify-content: flex-end;
 }
 
 /* The mocked journal is intentionally conspicuous about its generated copy.
@@ -866,11 +965,13 @@ svg {
     border-radius: 16px;
   }
 
+
   .top-nav .breadcrumb {
     display: none;
   }
 
-  .top-nav .brand-mark {
+  .top-nav .brand-mark,
+  .top-nav .about-link {
     width: 38px;
     height: 38px;
   }
@@ -891,14 +992,14 @@ svg {
 }
 
 @media (max-width: 390px) {
-  /* Three primary links only just fit at this width; tighten the row so the
-     last one is not clipped by the theme toggle on very narrow phones. */
+  /* Two links between two tiles only just fit here, so the row tightens up. */
   .top-nav .nav-panel {
     padding-inline: 6px;
     column-gap: 6px;
   }
 
-  .top-nav .brand-mark {
+  .top-nav .brand-mark,
+  .top-nav .about-link {
     width: 34px;
     height: 34px;
   }
@@ -921,74 +1022,71 @@ svg {
 }
 
 /* ─────────────────────────────────────────────
-   Navigation theme control
+   Theme control
+   Lives in the site footer and reads as part of that line rather than as a
+   button: one quiet glyph per mode — a half-filled disc for automatic, a sun,
+   a moon — with the tooltip naming it. Styled here in the global visual system
+   so the persistent ClientRouter navigation cannot load it with a stale
+   component style module.
    ───────────────────────────────────────────── */
 .theme-toggle {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   flex: none;
-  width: 42px;
-  height: 42px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  background: var(--color-surface-raised);
+  border: 0;
+  border-radius: 7px;
+  background: none;
   color: var(--color-text-muted);
-  box-shadow: none;
   cursor: pointer;
-  transition: color 180ms ease, border-color 180ms ease,
-    background-color 180ms ease, transform 180ms var(--ease-out),
-    box-shadow 180ms ease;
+  transition: color 180ms ease, transform 220ms var(--ease-out);
 }
 
-.theme-toggle:hover {
-  transform: translateY(-2px) rotate(2deg);
-  border-color: var(--color-border-strong);
-  background: var(--color-accent-soft);
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  transform: translateY(-1px);
   color: var(--color-accent);
-  box-shadow: var(--shadow-card);
 }
 
 .theme-toggle:active {
-  transform: translateY(0) scale(0.92);
+  transform: translateY(0) scale(0.94);
 }
 
 .theme-toggle:focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
 
 .theme-toggle svg {
-  width: 18px;
-  height: 18px;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.theme-toggle .icon-sun,
-.theme-toggle .icon-moon {
+/* No glyph shows until <html> names the mode — the no-flash init sets it
+   before first paint, and with scripting off the automatic mark is the truth. */
+.theme-toggle svg {
   display: none;
 }
 
-.theme-toggle .icon-system {
-  display: block;
-}
-
-:root[data-theme-mode="light"] .theme-toggle .icon-system,
-:root[data-theme-mode="dark"] .theme-toggle .icon-system {
-  display: none;
-}
-
+:root[data-theme-mode="system"] .theme-toggle .icon-auto,
 :root[data-theme-mode="light"] .theme-toggle .icon-sun,
-:root[data-theme-mode="dark"] .theme-toggle .icon-moon {
+:root[data-theme-mode="dark"] .theme-toggle .icon-moon,
+:root:not([data-theme-mode]) .theme-toggle .icon-auto {
   display: block;
 }
 
-.theme-toggle::after {
+/* Icon-only controls say what they are in a small label — the theme cycle in
+   the footer, About in the nav. Each one places it; the look is shared. */
+[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
   z-index: 200;
   padding: 7px 10px;
   border-radius: 8px;
@@ -1001,14 +1099,51 @@ svg {
   white-space: nowrap;
   box-shadow: var(--shadow-card);
   opacity: 0;
-  transform: translateY(-4px) scale(0.98);
   pointer-events: none;
   transition: opacity 150ms ease, transform 180ms var(--ease-out);
 }
 
-.theme-toggle:hover::after,
-.theme-toggle:focus-visible::after {
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after,
+[data-tooltip][data-tooltip-open]::after {
   opacity: 1;
+}
+
+/* The page edge is directly below the footer control, so its label hangs
+   above; the nav sits at the top of the window, so its label hangs below. */
+.theme-toggle::after {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, 4px) scale(0.98);
+}
+
+.theme-toggle:hover::after,
+.theme-toggle:focus-visible::after,
+.theme-toggle[data-tooltip-open]::after {
+  transform: translate(-50%, 0) scale(1);
+}
+
+/* 16px, not 10px: the tile's own box ends 8px inside the panel, so a shorter
+   drop would leave the label grazing the panel's edge — and drifting up into
+   it on the way out, which reads as the label sliding under the bar. */
+.top-nav .about-link::after {
+  top: calc(100% + 16px);
+  right: 0;
+  transform: translateY(4px) scale(0.98);
+}
+
+.top-nav .brand-link::after {
+  top: calc(100% + 16px);
+  left: 0;
+  transform: translateY(4px) scale(0.98);
+}
+
+.top-nav .about-link:hover::after,
+.top-nav .about-link:focus-visible::after,
+.top-nav .about-link[data-tooltip-open]::after,
+.top-nav .brand-link:hover::after,
+.top-nav .brand-link:focus-visible::after,
+.top-nav .brand-link[data-tooltip-open]::after {
   transform: translateY(0) scale(1);
 }
 
@@ -1126,9 +1261,8 @@ svg {
   display: flex;
   flex-direction: column;
   width: min(1180px, calc(100% - 40px));
-  min-height: calc(100dvh - 80px);
   margin-inline: auto;
-  padding-block: clamp(64px, 8vw, 110px) 28px;
+  padding-block: clamp(64px, 8vw, 110px) 0;
 }
 
 .landing-hero {
@@ -1286,34 +1420,86 @@ svg {
   transform: translate(4px, 0);
 }
 
-.landing-footer {
+/* ─────────────────────────────────────────────
+   Site footer
+   BaseLayout hangs this under every route, so it carries its own shell width
+   and bottom padding instead of inheriting a page's.
+   ───────────────────────────────────────────── */
+.site-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding-top: 22px;
+  width: min(1180px, calc(100% - 40px));
+  margin-inline: auto;
+  padding-block: 22px 28px;
   border-top: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
   font-size: 0.74rem;
+  white-space: nowrap;
 }
 
-.landing-footer p {
+/* Pages carrying the AI-slop mark park a fixed button at bottom centre; step
+   the sign-off up so the two never share the same patch of screen. */
+.site-footer--clear-mark {
+  padding-bottom: 86px;
+}
+
+/* Both ends take an equal share of the slack, which leaves the theme control
+   centred on the page rather than on whatever the two ends happen to measure. */
+.site-footer > p,
+.site-footer > div {
+  flex: 1;
+}
+
+.site-footer p {
   margin-bottom: 0;
 }
 
-.landing-footer div {
+.site-footer div {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 20px;
 }
 
-.landing-footer a {
+.site-footer a {
   color: var(--color-text-muted);
   font-weight: 600;
 }
 
-.landing-footer a:hover {
+.site-footer a:hover {
   color: var(--color-accent);
+}
+
+/* The links are line-art glyphs in the same quiet hand as the theme control
+   they sit beside: no box, muted until the cursor finds them. */
+.site-footer-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  transition: color 180ms ease, transform 220ms var(--ease-out);
+}
+
+.site-footer-icon svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-footer-icon:hover,
+.site-footer-icon:focus-visible {
+  color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.site-footer-icon:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 /* ─────────────────────────────────────────────
@@ -2730,10 +2916,13 @@ body.is-photo-viewing {
 /* ─────────────────────────────────────────────
    404
    ───────────────────────────────────────────── */
+/* The body flex column already hands this page the space between the nav and
+   the footer, so the card just centres itself in whatever is left. The lighter
+   bottom padding keeps the sign-off on screen: nothing here is worth a scroll. */
 .not-found-page {
   display: grid;
   place-items: center;
-  min-height: calc(100dvh - 96px);
+  padding-bottom: 48px;
 }
 
 .not-found-card {
@@ -2884,7 +3073,8 @@ body.is-photo-viewing {
   .page-shell,
   .detail-shell,
   .landing-page,
-  .journal-featured {
+  .journal-featured,
+  .site-footer {
     width: min(100% - 28px, 1180px);
   }
 
@@ -2906,7 +3096,6 @@ body.is-photo-viewing {
   }
 
   .landing-page {
-    min-height: auto;
     padding-top: 58px;
   }
 
@@ -2918,11 +3107,6 @@ body.is-photo-viewing {
 
   .hero-title {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
-  }
-
-  .landing-footer {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .portfolio-card,
@@ -3049,7 +3233,8 @@ body.is-photo-viewing {
   .page-shell,
   .detail-shell,
   .landing-page,
-  .journal-featured {
+  .journal-featured,
+  .site-footer {
     width: min(100% - 22px, 1180px);
   }
 
@@ -3070,10 +3255,9 @@ body.is-photo-viewing {
     bottom: 18px;
   }
 
-  .landing-footer div {
-    width: 100%;
-    justify-content: space-between;
-    gap: 12px;
+  .site-footer,
+  .site-footer div {
+    gap: 14px;
   }
 
   .portfolio-card-body {
