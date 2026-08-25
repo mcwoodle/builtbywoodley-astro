@@ -10,11 +10,6 @@
   mix-blend-mode: normal;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  background: var(--vt-bg, var(--color-bg));
-}
-
 ::view-transition-group(page-backdrop) {
   z-index: 0;
 }
@@ -29,11 +24,13 @@
 
 ::view-transition-group(root) {
   z-index: 10;
-  background: var(--vt-bg, var(--color-bg));
 }
 
-/* The navigation stays fixed while the destination settles underneath it. */
-.vt-top-nav {
+/* Capture only the visible panel, not the full-width transparent sticky header.
+   That keeps the navigation fixed without cutting a viewport-wide hole out of
+   the moving root snapshot. The fixed page-backdrop remains visible through
+   every transparent part of the root transition. */
+.vt-top-nav .nav-panel {
   view-transition-name: top-nav;
 }
 
