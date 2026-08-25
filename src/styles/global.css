@@ -363,6 +363,7 @@ svg {
 
 .top-nav .brand-link {
   position: relative;
+  z-index: 2;
   min-width: 0;
   gap: 10px;
   color: var(--color-text);
@@ -416,6 +417,7 @@ svg {
 
 .top-nav .about-link {
   position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
   flex: none;
@@ -1121,16 +1123,19 @@ svg {
   transform: translate(-50%, 0) scale(1);
 }
 
+/* 16px, not 10px: the tile's own box ends 8px inside the panel, so a shorter
+   drop would leave the label grazing the panel's edge — and drifting up into
+   it on the way out, which reads as the label sliding under the bar. */
 .top-nav .about-link::after {
-  top: calc(100% + 10px);
+  top: calc(100% + 16px);
   right: 0;
-  transform: translateY(-4px) scale(0.98);
+  transform: translateY(4px) scale(0.98);
 }
 
 .top-nav .brand-link::after {
-  top: calc(100% + 10px);
+  top: calc(100% + 16px);
   left: 0;
-  transform: translateY(-4px) scale(0.98);
+  transform: translateY(4px) scale(0.98);
 }
 
 .top-nav .about-link:hover::after,
