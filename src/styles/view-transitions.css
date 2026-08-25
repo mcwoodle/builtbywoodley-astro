@@ -2,7 +2,7 @@
    navigation feels composed instead of behaving like a full-screen carousel. */
 
 ::view-transition {
-  background: var(--vt-bg, var(--color-bg));
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
 }
 
 ::view-transition-old(*),
@@ -24,6 +24,12 @@
 
 ::view-transition-group(root) {
   z-index: 10;
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
 }
 
 /* Capture only the visible panel, not the full-width transparent sticky header.
@@ -109,7 +115,7 @@ html[data-nav-direction='neutral']::view-transition-new(root) {
 /* ClientRouter fallback mirrors the same visual language with shorter timing. */
 html[data-astro-transition-fallback='old'] body > :not(.top-nav, .vt-page-backdrop, script),
 html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  background: var(--vt-bg, var(--color-bg));
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
   will-change: transform, opacity;
 }
 
@@ -145,31 +151,31 @@ html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > 
 }
 
 @keyframes vt-out-left {
-  to { opacity: 0; transform: translateX(-18px) scale(0.992); }
+  to { transform: translateX(-18px) scale(0.992); }
 }
 @keyframes vt-in-right {
   from { opacity: 0; transform: translateX(28px) scale(0.994); }
 }
 @keyframes vt-out-right {
-  to { opacity: 0; transform: translateX(18px) scale(0.992); }
+  to { transform: translateX(18px) scale(0.992); }
 }
 @keyframes vt-in-left {
   from { opacity: 0; transform: translateX(-28px) scale(0.994); }
 }
 @keyframes vt-out-up {
-  to { opacity: 0; transform: translateY(-16px) scale(0.992); }
+  to { transform: translateY(-16px) scale(0.992); }
 }
 @keyframes vt-in-up {
   from { opacity: 0; transform: translateY(24px) scale(0.994); }
 }
 @keyframes vt-out-down {
-  to { opacity: 0; transform: translateY(16px) scale(0.992); }
+  to { transform: translateY(16px) scale(0.992); }
 }
 @keyframes vt-in-down {
   from { opacity: 0; transform: translateY(-24px) scale(0.994); }
 }
 @keyframes vt-fade-out {
-  to { opacity: 0; transform: scale(0.994); }
+  to { transform: scale(0.994); }
 }
 @keyframes vt-fade-in {
   from { opacity: 0; transform: scale(0.994); }

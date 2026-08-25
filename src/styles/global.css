@@ -28,6 +28,7 @@
   --color-on-accent: #151a1d;
   --color-signal: var(--accent-copper);
   --color-shadow: #080b0d;
+  --page-canvas: radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
 
   --shadow-nav: 0 18px 50px rgba(5, 8, 10, 0.24);
   --shadow-card: 0 14px 38px rgba(5, 8, 10, 0.2);
@@ -84,6 +85,7 @@
   --shadow-nav: 0 16px 44px rgba(47, 39, 34, 0.1);
   --shadow-card: 0 12px 32px rgba(47, 39, 34, 0.08);
   --shadow-lift: 0 22px 54px rgba(47, 39, 34, 0.14);
+  --page-canvas: radial-gradient(circle at 50% 20%, #f7f3eb 0%, #e6e1d9 100%);
   color-scheme: light;
 }
 
@@ -106,7 +108,7 @@ body {
 html {
   scrollbar-gutter: stable;
   scrollbar-color: var(--color-border-strong) var(--vt-bg, var(--color-bg));
-  background: var(--vt-bg, var(--color-bg));
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
 }
 
 body {
@@ -114,8 +116,7 @@ body {
   flex-direction: column;
   min-width: 320px;
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--fs-body);
@@ -150,7 +151,7 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 20%, #222b30 0%, #151a1d 100%);
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
   view-transition-name: page-backdrop;
 }
 
@@ -162,11 +163,6 @@ body {
   background-size: 180px 180px;
   mix-blend-mode: soft-light;
   opacity: 0.03;
-}
-
-:root[data-theme="light"] body,
-:root[data-theme="light"] .vt-page-backdrop {
-  background: radial-gradient(circle at 50% 20%, #f7f3eb 0%, #e6e1d9 100%);
 }
 
 body > main,
@@ -340,10 +336,8 @@ svg {
   padding: 8px 10px 8px 12px;
   border: 1px solid rgba(184, 132, 99, 0.2);
   border-radius: 18px;
-  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 78%, var(--color-bg));
   box-shadow: var(--shadow-nav);
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
   pointer-events: auto;
 }
 
