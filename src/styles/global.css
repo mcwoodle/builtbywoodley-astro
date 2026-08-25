@@ -383,7 +383,7 @@ svg {
   font-weight: 700;
   letter-spacing: -0.02em;
   transition: color 180ms ease, transform 220ms var(--ease-out),
-    background-color 200ms ease;
+    background-color 200ms ease, box-shadow 180ms ease;
 }
 
 .top-nav .brand-link:hover .brand-mark,
@@ -426,7 +426,7 @@ svg {
   background: var(--accent-sage);
   color: var(--bg-primary);
   transition: color 180ms ease, background-color 200ms ease,
-    transform 220ms var(--ease-out);
+    transform 220ms var(--ease-out), box-shadow 180ms ease;
 }
 
 .top-nav .about-link svg {
@@ -449,20 +449,11 @@ svg {
   transform: rotate(0deg) scale(0.96);
 }
 
-/* On its own page a tile has nowhere to point, so it stops drawing a way in:
-   the glyph gives way to a copper dot — a marker rather than a door. */
-.top-nav .about-link.active svg,
-.top-nav .brand-link[aria-current="page"] .brand-mark svg {
-  display: none;
-}
-
-.top-nav .about-link.active::before,
-.top-nav .brand-link[aria-current="page"] .brand-mark::before {
-  content: "";
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--accent-copper);
+/* The glyph never changes; the page you are on is marked by a copper box drawn
+   around the tile — the same border-and-glow the active text link wears. */
+.top-nav .about-link.active,
+.top-nav .brand-link[aria-current="page"] .brand-mark {
+  box-shadow: 0 0 0 1.5px var(--accent-copper), 0 0 18px var(--accent-copper-glow);
 }
 
 /* Clicking it anyway gets a lean rather than a page load. The two tiles lean
