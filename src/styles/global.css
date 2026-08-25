@@ -563,15 +563,44 @@ svg {
 
 /* The mocked journal is intentionally conspicuous about its generated copy.
    A fixed robot spits the warning's own letters into their final positions. */
+/* The hanger is the nail in the wall: it sits under the middle of the nav
+   panel and rides up with it when the nav hides on scroll. Under the panel in
+   the stacking order too — that is what the robot hides behind. */
+.ai-slop-hanger {
+  --slop-nav-bottom: 80px;
+
+  position: fixed;
+  top: var(--slop-nav-bottom);
+  left: 50%;
+  z-index: 90;
+  display: block;
+  transform: translate(-50%, var(--nav-scroll-offset, 0px));
+}
+
+/* No nav on this route, so nothing to hang from: it sits at the foot of the
+   window the way it always did, the right way up. */
+.ai-slop-hanger--floating {
+  top: auto;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 120;
+  transform: translateX(-50%);
+}
+
 .ai-slop-mark {
   --slop-color: #d8a557;
   --slop-glow: rgba(216, 165, 87, 0.22);
   --slop-surface: rgba(24, 30, 33, 0.94);
   --slop-surface-shadow: rgba(5, 8, 10, 0.24);
-  position: fixed;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  left: 50%;
-  z-index: 120;
+
+  /* Where it rests: tucked right away, hanging out far enough to grab, and
+     clear of the panel once it has turned itself the right way up. */
+  --slop-hidden: -48px;
+  --slop-peek: -17px;
+  --slop-open: 10px;
+  --slop-drop: var(--slop-peek);
+  --slop-flip: 520ms;
+
+  position: relative;
   display: flex;
   align-items: center;
   width: fit-content;
@@ -586,7 +615,90 @@ svg {
   cursor: pointer;
   font-family: var(--font-display);
   isolation: isolate;
-  transform: translateX(-50%);
+  transform: translateY(var(--slop-drop));
+  transition: transform 520ms var(--ease-spring);
+  /* It arrives a beat after the page does, dropping out from behind the panel.
+     `backwards` keeps it tucked away through the delay and then hands the
+     transform back to the transitions above. */
+  animation: ai-slop-drop-in 900ms 620ms var(--ease-out) backwards;
+}
+
+.ai-slop-mark[aria-expanded="true"] {
+  --slop-drop: var(--slop-open);
+}
+
+/* Anything left dangling sways, so it does — from the point where it holds on,
+   behind the panel. Only while it is hiding: once it turns over it has a
+   performance to give, and the head has its own part in that. Reaching for it
+   makes it swing harder, which is the whole of the hover cue — nothing here
+   moves it, so it always hides by exactly as much as it does on arrival. */
+.ai-slop-mark:not([aria-expanded="true"]) .ai-slop-robot-head {
+  transform-origin: 50% 100%;
+  animation: ai-slop-dangle 5.4s ease-in-out infinite;
+}
+
+.ai-slop-mark:not([aria-expanded="true"]):hover .ai-slop-robot-head,
+.ai-slop-mark:not([aria-expanded="true"]):focus-visible .ai-slop-robot-head {
+  animation: ai-slop-dangle-eager 1.5s ease-in-out infinite;
+}
+
+@keyframes ai-slop-dangle {
+  0%,
+  100% {
+    transform: rotate(-3.2deg);
+  }
+
+  50% {
+    transform: rotate(3.2deg);
+  }
+}
+
+@keyframes ai-slop-dangle-eager {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+/* Hanging by its feet until it is spoken to. The turn waits for the message to
+   clear on the way back, so the two never happen at once. */
+.ai-slop-robot {
+  transform: rotate(180deg);
+  transform-origin: 50% 50%;
+  transition: transform var(--slop-flip) var(--ease-spring) 240ms;
+}
+
+.ai-slop-mark[aria-expanded="true"] .ai-slop-robot {
+  transform: rotate(0deg);
+  transition-delay: 0ms;
+}
+
+/* Nothing to hide behind and nothing to hang from: no drop, no turn. */
+.ai-slop-hanger--floating .ai-slop-mark {
+  --slop-drop: 0px;
+  animation: none;
+}
+
+.ai-slop-hanger--floating .ai-slop-robot {
+  transform: none;
+}
+
+@keyframes ai-slop-drop-in {
+  0% {
+    transform: translateY(var(--slop-hidden));
+  }
+
+  68% {
+    transform: translateY(calc(var(--slop-peek) + 9px));
+  }
+
+  100% {
+    transform: translateY(var(--slop-peek));
+  }
 }
 
 :root[data-theme="light"] .ai-slop-mark {
@@ -612,14 +724,10 @@ svg {
     transform 0.34s var(--ease-out);
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-)::before {
+.ai-slop-mark[aria-expanded="true"]::before {
   opacity: 1;
   transform: none;
-  transition-delay: 0.28s, 0.08s;
+  transition-delay: calc(var(--slop-flip) + 0.28s), calc(var(--slop-flip) + 0.08s);
 }
 
 .ai-slop-mark:focus-visible {
@@ -707,15 +815,12 @@ svg {
     transform 0.32s var(--ease-out);
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-copy {
+.ai-slop-mark[aria-expanded="true"] .ai-slop-copy {
   max-width: min(18rem, calc(100vw - 62px));
   opacity: 1;
   visibility: visible;
   transform: translateX(0);
+  transition-delay: var(--slop-flip);
 }
 
 .ai-slop-warning {
@@ -750,68 +855,36 @@ svg {
   transform: translate(-50%, -50%) scale(0.45);
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-robot-head {
-  animation: ai-slop-head-turn 0.42s 0.06s var(--ease-out) forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-robot-head {
+  animation: ai-slop-head-turn 0.42s calc(var(--slop-flip) + 0.06s) var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-robot-pupil {
-  animation: ai-slop-look-right 0.22s 0.15s var(--ease-out) forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-robot-pupil {
+  animation: ai-slop-look-right 0.22s calc(var(--slop-flip) + 0.15s) var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-mouth-closed {
-  animation: ai-slop-mouth-close 0.12s 0.06s ease forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-closed {
+  animation: ai-slop-mouth-close 0.12s calc(var(--slop-flip) + 0.06s) ease forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-mouth-open {
-  animation: ai-slop-mouth-open 0.26s 0.08s var(--ease-spring) forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-open {
+  animation: ai-slop-mouth-open 0.26s calc(var(--slop-flip) + 0.08s) var(--ease-spring) forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-mouth-teeth {
-  animation: ai-slop-teeth-in 0.14s 0.16s ease forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-teeth {
+  animation: ai-slop-teeth-in 0.14s calc(var(--slop-flip) + 0.16s) ease forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-puke-stream {
-  animation: ai-slop-puke-stream 1s 0.12s var(--ease-out) forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-puke-stream {
+  animation: ai-slop-puke-stream 1s calc(var(--slop-flip) + 0.12s) var(--ease-out) forwards;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-warning-char::before {
-  animation: ai-slop-bit-face 2s calc(0.1s + var(--i) * 0.022s) linear both;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-warning-char::before {
+  animation: ai-slop-bit-face 2s calc(var(--slop-flip) + 0.1s + var(--i) * 0.022s) linear both;
 }
 
-.ai-slop-mark:is(
-  [aria-expanded="true"],
-  :hover:not([data-force-compact]),
-  :focus-visible:not([data-force-compact])
-) .ai-slop-warning-char {
-  animation: ai-slop-bit-travel 2s calc(0.1s + var(--i) * 0.022s) linear forwards;
+.ai-slop-mark[aria-expanded="true"] .ai-slop-warning-char {
+  animation: ai-slop-bit-travel 2s calc(var(--slop-flip) + 0.1s + var(--i) * 0.022s) linear forwards;
 }
 
 @keyframes ai-slop-head-turn {
@@ -954,6 +1027,10 @@ svg {
 }
 
 @media (max-width: 720px) {
+  .ai-slop-hanger {
+    --slop-nav-bottom: 68px;
+  }
+
   .top-nav {
     padding: 10px 10px 0;
   }
@@ -3344,32 +3421,16 @@ body.is-photo-viewing {
     animation: none !important;
   }
 
-  .ai-slop-mark:is(
-    [aria-expanded="true"],
-    :hover:not([data-force-compact]),
-    :focus-visible:not([data-force-compact])
-  ) .ai-slop-robot-head {
+  .ai-slop-mark[aria-expanded="true"] .ai-slop-robot-head {
     transform: translateX(2px) rotate(7deg) scaleX(0.9);
   }
 
-  .ai-slop-mark:is(
-    [aria-expanded="true"],
-    :hover:not([data-force-compact]),
-    :focus-visible:not([data-force-compact])
-  ) .ai-slop-mouth-closed {
+  .ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-closed {
     opacity: 0;
   }
 
-  .ai-slop-mark:is(
-    [aria-expanded="true"],
-    :hover:not([data-force-compact]),
-    :focus-visible:not([data-force-compact])
-  ) .ai-slop-mouth-open,
-  .ai-slop-mark:is(
-    [aria-expanded="true"],
-    :hover:not([data-force-compact]),
-    :focus-visible:not([data-force-compact])
-  ) .ai-slop-mouth-teeth {
+  .ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-open,
+  .ai-slop-mark[aria-expanded="true"] .ai-slop-mouth-teeth {
     opacity: 1;
     transform: none;
   }

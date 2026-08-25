@@ -7,6 +7,9 @@ const currentNav = () => document.querySelector<HTMLElement>('.top-nav');
 function setNavOffset(nav: HTMLElement, offset: number) {
   navOffset = offset;
   nav.style.setProperty('--nav-scroll-offset', `${offset}px`);
+  // Also on the root, so anything perched on the nav — the AI-slop robot hangs
+  // from its underside — can ride up and down with it.
+  document.documentElement.style.setProperty('--nav-scroll-offset', `${offset}px`);
 }
 
 function resetNav() {
