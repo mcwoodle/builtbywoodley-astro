@@ -116,7 +116,7 @@ const {
     {!hideNav && <TopNav />}
     {aiSlop && <AiSlopMark floating={hideNav} />}
     <slot />
-    {!hideFooter && <SiteFooter clearAiMark={aiSlop} />}
+    {!hideFooter && <SiteFooter clearAiMark={aiSlop && hideNav} />}
     <script>
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';
