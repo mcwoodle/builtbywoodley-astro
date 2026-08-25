@@ -1,6 +1,11 @@
 let lastScrollY = Math.max(window.scrollY, 0);
+let lastWidth = window.innerWidth;
 let navOffset = 0;
 let animationFrame = 0;
+// A phone's address bar sliding in or out resizes the window and shifts the
+// page under the reader. That is the browser moving, not the reader scrolling,
+// so the jump it reports is dropped rather than driving the nav.
+let ignoreNextDelta = false;
 
 const currentNav = () => document.querySelector<HTMLElement>('.top-nav');
 
@@ -20,6 +25,12 @@ function resetNav() {
   if (nav) setNavOffset(nav, 0);
 }
 
+/** Take the page where it now is as the new baseline, leaving the nav be. */
+function rebaseline() {
+  lastScrollY = Math.max(window.scrollY, 0);
+  ignoreNextDelta = true;
+}
+
 function updateNavVisibility() {
   animationFrame = 0;
 
@@ -29,6 +40,11 @@ function updateNavVisibility() {
   lastScrollY = scrollY;
 
   if (!nav) return;
+
+  if (ignoreNextDelta) {
+    ignoreNextDelta = false;
+    return;
+  }
 
   if (scrollY <= 0) {
     setNavOffset(nav, 0);
@@ -45,7 +61,27 @@ function scheduleVisibilityUpdate() {
 }
 
 window.addEventListener('scroll', scheduleVisibilityUpdate, { passive: true });
-window.addEventListener('resize', resetNav);
+
+window.addEventListener('resize', () => {
+  // A real layout change — a rotation, a window dragged to a new size — is
+  // worth starting over for.
+  if (window.innerWidth !== lastWidth) {
+    lastWidth = window.innerWidth;
+    resetNav();
+    return;
+  }
+
+  // Height alone changed, which on a phone means the browser's own chrome
+  // moved. Resetting here is what made the nav pop into view mid-scroll.
+  rebaseline();
+});
+
+// The precise signal for that chrome, where the browser offers it.
+window.visualViewport?.addEventListener('resize', () => {
+  if (window.innerWidth !== lastWidth) return;
+  rebaseline();
+});
+
 document.addEventListener('astro:page-load', resetNav);
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Tab') return;
