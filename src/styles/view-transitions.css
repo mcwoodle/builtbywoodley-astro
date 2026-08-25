@@ -70,8 +70,9 @@ html[data-nav-about-edge] .vt-tagline {
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Direction still reflects route relationships, expressed as a restrained
-   offset and fade rather than a full-width slide. */
+/* Direction still reflects route relationships through a restrained offset.
+   Both page snapshots remain opaque so they never create a double-exposed
+   flash while the destination settles into place. */
 html[data-nav-direction='right']::view-transition-old(root) {
   animation: 300ms ease-in both vt-out-left;
 }
@@ -105,11 +106,11 @@ html[data-nav-direction='up']::view-transition-new(root) {
 }
 
 html[data-nav-direction='neutral']::view-transition-old(root) {
-  animation: 180ms ease-in both vt-fade-out;
+  animation: 180ms ease-in both vt-scale-out;
 }
 
 html[data-nav-direction='neutral']::view-transition-new(root) {
-  animation: 360ms ease-out both vt-fade-in;
+  animation: 360ms ease-out both vt-scale-in;
 }
 
 /* ClientRouter fallback mirrors the same visual language with shorter timing. */
@@ -144,41 +145,41 @@ html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(
   animation: 220ms ease-out both vt-in-down;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 120ms ease-in both vt-fade-out;
+  animation: 120ms ease-in both vt-scale-out;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 180ms ease-out both vt-fade-in;
+  animation: 180ms ease-out both vt-scale-in;
 }
 
 @keyframes vt-out-left {
   to { transform: translateX(-18px) scale(0.992); }
 }
 @keyframes vt-in-right {
-  from { opacity: 0; transform: translateX(28px) scale(0.994); }
+  from { transform: translateX(28px) scale(0.994); }
 }
 @keyframes vt-out-right {
   to { transform: translateX(18px) scale(0.992); }
 }
 @keyframes vt-in-left {
-  from { opacity: 0; transform: translateX(-28px) scale(0.994); }
+  from { transform: translateX(-28px) scale(0.994); }
 }
 @keyframes vt-out-up {
   to { transform: translateY(-16px) scale(0.992); }
 }
 @keyframes vt-in-up {
-  from { opacity: 0; transform: translateY(24px) scale(0.994); }
+  from { transform: translateY(24px) scale(0.994); }
 }
 @keyframes vt-out-down {
   to { transform: translateY(16px) scale(0.992); }
 }
 @keyframes vt-in-down {
-  from { opacity: 0; transform: translateY(-24px) scale(0.994); }
+  from { transform: translateY(-24px) scale(0.994); }
 }
-@keyframes vt-fade-out {
+@keyframes vt-scale-out {
   to { transform: scale(0.994); }
 }
-@keyframes vt-fade-in {
-  from { opacity: 0; transform: scale(0.994); }
+@keyframes vt-scale-in {
+  from { transform: scale(0.994); }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
