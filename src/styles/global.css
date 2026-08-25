@@ -362,6 +362,7 @@ svg {
 }
 
 .top-nav .brand-link {
+  position: relative;
   min-width: 0;
   gap: 10px;
   color: var(--color-text);
@@ -448,14 +449,60 @@ svg {
   transform: rotate(0deg) scale(0.96);
 }
 
-/* Each tile marks its own page by turning copper — the same signal the text
-   links use. The fill carries it rather than the line, so the glyph keeps the
-   full contrast it has on sage. Sits after the hover rules on purpose: the
-   mark holds under the cursor, which still has the lean to answer with. */
-.top-nav .about-link.active,
-.top-nav .brand-link[aria-current="page"] .brand-mark {
+/* On its own page a tile has nowhere to point, so it stops drawing a way in:
+   the glyph gives way to a copper dot — a marker rather than a door. */
+.top-nav .about-link.active svg,
+.top-nav .brand-link[aria-current="page"] .brand-mark svg {
+  display: none;
+}
+
+.top-nav .about-link.active::before,
+.top-nav .brand-link[aria-current="page"] .brand-mark::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
   background: var(--accent-copper);
-  color: var(--bg-primary);
+}
+
+/* Clicking it anyway gets a lean rather than a page load. The two tiles lean
+   away from each other, the way they already do under the cursor. */
+.top-nav .brand-link.is-nudged .brand-mark {
+  animation: nav-tile-nudge 620ms var(--ease-spring);
+}
+
+.top-nav .about-link.is-nudged {
+  animation: nav-tile-nudge-mirror 620ms var(--ease-spring);
+}
+
+@keyframes nav-tile-nudge {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  30% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  58% {
+    transform: rotate(5deg) scale(1.03);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
+}
+
+@keyframes nav-tile-nudge-mirror {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  30% {
+    transform: rotate(8deg) scale(1.1);
+  }
+  58% {
+    transform: rotate(-5deg) scale(1.03);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
 }
 
 .top-nav .breadcrumb {
@@ -1089,8 +1136,18 @@ svg {
   transform: translateY(-4px) scale(0.98);
 }
 
+.top-nav .brand-link::after {
+  top: calc(100% + 10px);
+  left: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
 .top-nav .about-link:hover::after,
-.top-nav .about-link:focus-visible::after {
+.top-nav .about-link:focus-visible::after,
+.top-nav .about-link[data-tooltip-open]::after,
+.top-nav .brand-link:hover::after,
+.top-nav .brand-link:focus-visible::after,
+.top-nav .brand-link[data-tooltip-open]::after {
   transform: translateY(0) scale(1);
 }
 
