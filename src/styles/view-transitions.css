@@ -26,32 +26,11 @@
   z-index: 10;
 }
 
-/* Capture only the visible panel, not the full-width transparent sticky header.
-   That keeps the navigation fixed without cutting a viewport-wide hole out of
-   the moving root snapshot. The fixed page-backdrop remains visible through
-   every transparent part of the root transition. */
-.vt-top-nav .nav-panel {
-  view-transition-name: top-nav;
-}
-
-::view-transition-group(top-nav) {
-  animation: none;
-  z-index: 100;
-}
-
-/* Only the destination's navigation is visible. Keep the old snapshot in the
-   transition tree so Chrome retains a continuous compositor surface; removing
-   it with `display: none` can intermittently expose the browser's white canvas
-   across the viewport. Making it transparent still avoids double-painting the
-   translucent panel and the original white band around the navigation. */
-::view-transition-old(top-nav) {
-  animation: none;
-  opacity: 0;
-}
-
-::view-transition-new(top-nav) {
-  animation: none;
-  opacity: 1;
+/* Keep the backdrop-filter navigation in the root snapshot. Giving it a named
+   layer makes Chrome intermittently composite its transparent pixels over a
+   white backing; keeping one root surface avoids both the band and page flash. */
+.vt-top-nav {
+  view-transition-name: none;
 }
 
 html[data-nav-about-edge] .vt-tagline {
