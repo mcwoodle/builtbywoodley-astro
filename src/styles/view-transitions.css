@@ -42,13 +42,14 @@
   z-index: 100;
 }
 
-/* Only the destination's navigation is drawn. Keeping both snapshots stacked
-   made Chrome composite the pair over an opaque white base, which flashed a
-   white band from the top of the window down past the nav's shadow for the
-   length of the transition. It also double-painted the panel, so the nav went
-   briefly more solid than it sits at rest. */
+/* Only the destination's navigation is visible. Keep the old snapshot in the
+   transition tree so Chrome retains a continuous compositor surface; removing
+   it with `display: none` can intermittently expose the browser's white canvas
+   across the viewport. Making it transparent still avoids double-painting the
+   translucent panel and the original white band around the navigation. */
 ::view-transition-old(top-nav) {
-  display: none;
+  animation: none;
+  opacity: 0;
 }
 
 ::view-transition-new(top-nav) {
