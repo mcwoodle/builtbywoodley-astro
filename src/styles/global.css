@@ -1682,7 +1682,17 @@ svg {
    than the picture it belongs to.
    ───────────────────────────────────────────── */
 .photography-page {
-  padding-bottom: clamp(88px, 10vw, 132px);
+  padding-block: clamp(80px, 9vw, 132px) clamp(88px, 10vw, 132px);
+}
+
+/* The wall still leads; the title and its line sit above it at the same
+   measure and give it a little room rather than a whole opening spread. */
+.photo-title {
+  margin-bottom: 14px;
+}
+
+.photo-subtitle {
+  margin-bottom: clamp(30px, 3.4vw, 48px);
 }
 
 .photo-shell {
