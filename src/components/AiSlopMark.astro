@@ -1,4 +1,18 @@
 ---
+// The robot hangs upside down from the underside of the top nav, peeking out
+// far enough to grab. Clicking it turns it the right way up and it says its
+// piece; clicking again turns it back and it tucks itself away.
+//
+// A route without a nav has nothing to hang from, so it falls back to sitting
+// at the bottom of the window, the right way up, as it always did.
+
+interface Props {
+  /** No nav on this route — sit at the bottom of the window instead. */
+  floating?: boolean;
+}
+
+const { floating = false } = Astro.props;
+
 const message = "I'm sorry, this page is AI slop!";
 const binaryPattern = Array.from('0110100110010110');
 const bitX = ['-9px', '7px', '-4px', '10px', '-7px', '5px'];
@@ -19,46 +33,59 @@ const resolvedCharacters = Array.from(message).map((char, index) => ({
 }));
 ---
 
-<button
-  type="button"
-  class="ai-slop-mark"
-  aria-expanded="false"
-  aria-label={message}
-  data-ai-slop-mark
->
-  <svg class="ai-slop-robot" viewBox="0 0 46 42" aria-hidden="true" focusable="false">
-    <g class="ai-slop-robot-head">
-      <path d="M6 15H3v10h3M38 15h3v10h-3" />
-      <rect class="ai-slop-robot-shell" x="6" y="7" width="32" height="29" rx="7" />
-      <path d="M22 7V3.5M19.5 3.5h5" />
-      <circle class="ai-slop-robot-eye" cx="15" cy="18" r="3.2" />
-      <circle class="ai-slop-robot-eye" cx="29" cy="18" r="3.2" />
-      <path class="ai-slop-robot-pupil" d="M15 18h.01M29 18h.01" />
-      <path class="ai-slop-mouth-closed" d="M16 28h12" />
-      <rect class="ai-slop-mouth-open" x="15" y="24" width="14" height="9" rx="3" />
-      <path class="ai-slop-mouth-teeth" d="M19 24v3M25 24v3" />
-    </g>
-    <path class="ai-slop-puke-stream" d="M28 29c4.2-.2 5.5 2.2 8.2 1.6 2.1-.45 3.2.3 6.3 1.4" />
-  </svg>
+<span class:list={["ai-slop-hanger", { "ai-slop-hanger--floating": floating }]}>
+  <button
+    type="button"
+    class="ai-slop-mark"
+    aria-expanded="false"
+    aria-label={message}
+    data-ai-slop-mark
+  >
+    <svg class="ai-slop-robot" viewBox="0 0 46 42" aria-hidden="true" focusable="false">
+      <g class="ai-slop-robot-head">
+        <path d="M6 15H3v10h3M38 15h3v10h-3" />
+        <rect class="ai-slop-robot-shell" x="6" y="7" width="32" height="29" rx="7" />
+        <path d="M22 7V3.5M19.5 3.5h5" />
+        <circle class="ai-slop-robot-eye" cx="15" cy="18" r="3.2" />
+        <circle class="ai-slop-robot-eye" cx="29" cy="18" r="3.2" />
+        <path class="ai-slop-robot-pupil" d="M15 18h.01M29 18h.01" />
+        <path class="ai-slop-mouth-closed" d="M16 28h12" />
+        <rect class="ai-slop-mouth-open" x="15" y="24" width="14" height="9" rx="3" />
+        <path class="ai-slop-mouth-teeth" d="M19 24v3M25 24v3" />
+      </g>
+      <path class="ai-slop-puke-stream" d="M28 29c4.2-.2 5.5 2.2 8.2 1.6 2.1-.45 3.2.3 6.3 1.4" />
+    </svg>
 
-  <span class="ai-slop-copy" aria-hidden="true">
-    <span class="ai-slop-warning">
-      {resolvedCharacters.map(({ bit, char, midRotate, midX, midY, rotate, x, y }, index) => (
-        <span
-          class="ai-slop-warning-char"
-          data-bit={bit}
-          style={`--i: ${index}; --bit-x: ${x}; --bit-y: ${y}; --bit-rotate: ${rotate}; --bit-mid-x: ${midX}; --bit-mid-y: ${midY}; --bit-mid-rotate: ${midRotate};`}
-        >
-          {char === ' ' ? '\u00a0' : char}
-        </span>
-      ))}
+    <span class="ai-slop-copy" aria-hidden="true">
+      <span class="ai-slop-warning">
+        {resolvedCharacters.map(({ bit, char, midRotate, midX, midY, rotate, x, y }, index) => (
+          <span
+            class="ai-slop-warning-char"
+            data-bit={bit}
+            style={`--i: ${index}; --bit-x: ${x}; --bit-y: ${y}; --bit-rotate: ${rotate}; --bit-mid-x: ${midX}; --bit-mid-y: ${midY}; --bit-mid-rotate: ${midRotate};`}
+          >
+            {char === ' ' ? '\u00a0' : char}
+          </span>
+        ))}
+      </span>
     </span>
-  </span>
-</button>
+  </button>
+</span>
 
 <script>
   const slopMarkSelector = '[data-ai-slop-mark]';
 
+  // How long the robot takes to turn over, read from the stylesheet so the two
+  // cannot drift apart: the bits only start flying once it is the right way up.
+  const flipDuration = (mark: HTMLElement) => {
+    const raw = getComputedStyle(mark).getPropertyValue('--slop-flip').trim();
+    const value = Number.parseFloat(raw);
+    if (!Number.isFinite(value)) return 520;
+    return raw.endsWith('ms') ? value : value * 1000;
+  };
+
+  // The bits fly from the robot's mouth, so each character is told how far it
+  // has to travel. Measured with the robot upright, which is when they leave.
   const positionSlopBits = (mark: HTMLButtonElement) => {
     const robot = mark.querySelector<SVGElement>('.ai-slop-robot');
     if (!robot) return;
@@ -77,35 +104,38 @@ const resolvedCharacters = Array.from(message).map((char, index) => ({
     });
   };
 
+  const timers = new WeakMap<HTMLButtonElement, ReturnType<typeof setTimeout>>();
+
+  const close = (mark: HTMLButtonElement) => {
+    mark.setAttribute('aria-expanded', 'false');
+    clearTimeout(timers.get(mark));
+  };
+
+  const open = (mark: HTMLButtonElement) => {
+    mark.setAttribute('aria-expanded', 'true');
+    clearTimeout(timers.get(mark));
+    timers.set(mark, setTimeout(() => positionSlopBits(mark), flipDuration(mark)));
+  };
+
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element
       ? event.target.closest<HTMLButtonElement>(slopMarkSelector)
       : null;
 
     document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
-      if (mark !== target) mark.setAttribute('aria-expanded', 'false');
+      if (mark !== target) close(mark);
     });
 
-    if (target) {
-      const isExpanded = target.getAttribute('aria-expanded') === 'true';
-      target.setAttribute('aria-expanded', String(!isExpanded));
-      target.toggleAttribute('data-force-compact', isExpanded);
-    }
-  });
-
-  document.querySelectorAll<HTMLButtonElement>(slopMarkSelector).forEach((mark) => {
-    requestAnimationFrame(() => positionSlopBits(mark));
-    mark.addEventListener('pointerenter', () => positionSlopBits(mark));
-    mark.addEventListener('focus', () => positionSlopBits(mark));
-    mark.addEventListener('pointerleave', () => mark.removeAttribute('data-force-compact'));
+    if (!target) return;
+    if (target.getAttribute('aria-expanded') === 'true') close(target);
+    else open(target);
   });
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
 
     document.querySelectorAll<HTMLButtonElement>(`${slopMarkSelector}[aria-expanded="true"]`).forEach((mark) => {
-      mark.setAttribute('aria-expanded', 'false');
-      mark.setAttribute('data-force-compact', '');
+      close(mark);
       mark.focus();
     });
   });
