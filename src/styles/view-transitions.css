@@ -42,7 +42,15 @@
   z-index: 100;
 }
 
-::view-transition-old(top-nav),
+/* Only the destination's navigation is drawn. Keeping both snapshots stacked
+   made Chrome composite the pair over an opaque white base, which flashed a
+   white band from the top of the window down past the nav's shadow for the
+   length of the transition. It also double-painted the panel, so the nav went
+   briefly more solid than it sits at rest. */
+::view-transition-old(top-nav) {
+  display: none;
+}
+
 ::view-transition-new(top-nav) {
   animation: none;
   opacity: 1;
