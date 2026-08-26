@@ -11,7 +11,8 @@
 }
 
 ::view-transition-group(page-backdrop) {
-  z-index: 0;
+  animation: none;
+  z-index: 15;
 }
 
 ::view-transition-old(page-backdrop),
@@ -22,8 +23,36 @@
   opacity: 1;
 }
 
+::view-transition-group(viewport-edge) {
+  animation: none;
+  z-index: 90;
+}
+
+::view-transition-old(viewport-edge),
+::view-transition-new(viewport-edge) {
+  animation: none;
+  opacity: 1;
+}
+
 ::view-transition-group(root) {
+  animation: none;
   z-index: 10;
+}
+
+/* The viewport canvas never moves. Directional motion belongs to the page
+   content snapshot so translated pixels cannot expose a root edge. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  opacity: 1;
+}
+
+body > main {
+  view-transition-name: page-content;
+}
+
+::view-transition-group(page-content) {
+  z-index: 20;
 }
 
 /* Capture only the visible panel, not the full-width transparent sticky header.
@@ -65,115 +94,114 @@ html[data-nav-about-edge] .vt-tagline {
 }
 
 /* Direction still reflects route relationships through a restrained offset.
-   Both page snapshots remain opaque so they never create a double-exposed
-   flash while the destination settles into place. */
-html[data-nav-direction='right']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-left;
+   Fade the outgoing content first so the two page snapshots do not double-paint
+   while the destination settles over the stationary canvas. */
+html[data-nav-direction='right']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-left;
 }
 
-html[data-nav-direction='right']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+html[data-nav-direction='right']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-html[data-nav-direction='left']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-right;
+html[data-nav-direction='left']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-right;
 }
 
-html[data-nav-direction='left']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+html[data-nav-direction='left']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
 }
 
-html[data-nav-direction='down']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-up;
+html[data-nav-direction='down']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-up;
 }
 
-html[data-nav-direction='down']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+html[data-nav-direction='down']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
 }
 
-html[data-nav-direction='up']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-down;
+html[data-nav-direction='up']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-down;
 }
 
-html[data-nav-direction='up']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
+html[data-nav-direction='up']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
 }
 
-html[data-nav-direction='neutral']::view-transition-old(root) {
+html[data-nav-direction='neutral']::view-transition-old(page-content) {
   animation: none;
 }
 
-html[data-nav-direction='neutral']::view-transition-new(root) {
+html[data-nav-direction='neutral']::view-transition-new(page-content) {
   animation: none;
 }
 
 /* ClientRouter fallback mirrors the same visual language with shorter timing. */
-html[data-astro-transition-fallback='old'] body > :not(.top-nav, .vt-page-backdrop, script),
-html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
+html[data-astro-transition-fallback='old'] body > main,
+html[data-astro-transition-fallback='new'] body > main {
   will-change: transform, opacity;
 }
 
-html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > main {
   animation: 140ms ease-in both vt-out-left;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > main {
   animation: 220ms ease-out both vt-in-right;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > main {
   animation: 140ms ease-in both vt-out-right;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > main {
   animation: 220ms ease-out both vt-in-left;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > main {
   animation: 140ms ease-in both vt-out-up;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > main {
   animation: 220ms ease-out both vt-in-up;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > main {
   animation: 140ms ease-in both vt-out-down;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > main {
   animation: 220ms ease-out both vt-in-down;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > main {
   animation: none;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > main {
   animation: none;
 }
 
 @keyframes vt-out-left {
-  to { transform: translateX(-18px); }
+  to { transform: translateX(-18px); opacity: 0; }
 }
 @keyframes vt-in-right {
-  from { transform: translateX(28px); }
+  from { transform: translateX(28px); opacity: 0; }
 }
 @keyframes vt-out-right {
-  to { transform: translateX(18px); }
+  to { transform: translateX(18px); opacity: 0; }
 }
 @keyframes vt-in-left {
-  from { transform: translateX(-28px); }
+  from { transform: translateX(-28px); opacity: 0; }
 }
 @keyframes vt-out-up {
-  to { transform: translateY(-16px); }
+  to { transform: translateY(-16px); opacity: 0; }
 }
 @keyframes vt-in-up {
-  from { transform: translateY(24px); }
+  from { transform: translateY(24px); opacity: 0; }
 }
 @keyframes vt-out-down {
-  to { transform: translateY(16px); }
+  to { transform: translateY(16px); opacity: 0; }
 }
 @keyframes vt-in-down {
-  from { transform: translateY(-24px); }
+  from { transform: translateY(-24px); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*),
-  html[data-astro-transition-fallback] body > :not(.top-nav, .vt-page-backdrop, script) {
+  html[data-astro-transition-fallback] body > main {
     animation: none !important;
   }
 }

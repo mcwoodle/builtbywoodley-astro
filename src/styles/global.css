@@ -126,14 +126,6 @@ body {
   transition: background-color 260ms ease, color 260ms ease;
 }
 
-/* The named backdrop owns the canvas while root snapshots move. Keeping the
-   document backgrounds transparent during that window prevents a translated
-   copy of the gradient from creating a lighter seam at the viewport edge. */
-html[data-nav-direction],
-html[data-nav-direction] body {
-  background: transparent;
-}
-
 ::selection {
   background: color-mix(in srgb, var(--color-accent) 28%, transparent);
 }
@@ -171,6 +163,26 @@ html[data-nav-direction] body {
   background-size: 180px 180px;
   mix-blend-mode: soft-light;
   opacity: 0.03;
+}
+
+/* Keep the compositor's outermost pixels on the canvas even while a page
+   snapshot is translated. The mask leaves only a two-pixel viewport ring. */
+.vt-viewport-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 2px;
+  pointer-events: none;
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
+  view-transition-name: viewport-edge;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
 body > main,
