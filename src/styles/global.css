@@ -126,6 +126,14 @@ body {
   transition: background-color 260ms ease, color 260ms ease;
 }
 
+/* The named backdrop owns the canvas while root snapshots move. Keeping the
+   document backgrounds transparent during that window prevents a translated
+   copy of the gradient from creating a lighter seam at the viewport edge. */
+html[data-nav-direction],
+html[data-nav-direction] body {
+  background: transparent;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-accent) 28%, transparent);
 }

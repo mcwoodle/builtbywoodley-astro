@@ -24,12 +24,6 @@
 
 ::view-transition-group(root) {
   z-index: 10;
-  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
 }
 
 /* Capture only the visible panel, not the full-width transparent sticky header.
@@ -106,11 +100,11 @@ html[data-nav-direction='up']::view-transition-new(root) {
 }
 
 html[data-nav-direction='neutral']::view-transition-old(root) {
-  animation: 180ms ease-in both vt-scale-out;
+  animation: none;
 }
 
 html[data-nav-direction='neutral']::view-transition-new(root) {
-  animation: 360ms ease-out both vt-scale-in;
+  animation: none;
 }
 
 /* ClientRouter fallback mirrors the same visual language with shorter timing. */
@@ -145,41 +139,35 @@ html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(
   animation: 220ms ease-out both vt-in-down;
 }
 html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 120ms ease-in both vt-scale-out;
+  animation: none;
 }
 html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 180ms ease-out both vt-scale-in;
+  animation: none;
 }
 
 @keyframes vt-out-left {
-  to { transform: translateX(-18px) scale(0.992); }
+  to { transform: translateX(-18px); }
 }
 @keyframes vt-in-right {
-  from { transform: translateX(28px) scale(0.994); }
+  from { transform: translateX(28px); }
 }
 @keyframes vt-out-right {
-  to { transform: translateX(18px) scale(0.992); }
+  to { transform: translateX(18px); }
 }
 @keyframes vt-in-left {
-  from { transform: translateX(-28px) scale(0.994); }
+  from { transform: translateX(-28px); }
 }
 @keyframes vt-out-up {
-  to { transform: translateY(-16px) scale(0.992); }
+  to { transform: translateY(-16px); }
 }
 @keyframes vt-in-up {
-  from { transform: translateY(24px) scale(0.994); }
+  from { transform: translateY(24px); }
 }
 @keyframes vt-out-down {
-  to { transform: translateY(16px) scale(0.992); }
+  to { transform: translateY(16px); }
 }
 @keyframes vt-in-down {
-  from { transform: translateY(-24px) scale(0.994); }
-}
-@keyframes vt-scale-out {
-  to { transform: scale(0.994); }
-}
-@keyframes vt-scale-in {
-  from { transform: scale(0.994); }
+  from { transform: translateY(-24px); }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
