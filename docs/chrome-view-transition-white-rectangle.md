@@ -48,7 +48,7 @@ than a white element being inserted into the document.
 
 Windows 11 Chrome did not reproduce the artifact. That is consistent with the
 diagnosis because Windows uses a different ANGLE and display-compositor path.
-The mainline production workaround in commit `093d23e` bypasses Chrome's
+The mainline production workaround in commit `0378d9b` bypasses Chrome's
 native View Transition API so Astro takes its DOM/CSS fallback. The workaround
 is intentionally independent of any page-content timing or CSS snapshot
 adjustment.
