@@ -1638,7 +1638,8 @@ html[data-motion-armed] [data-hero-tail] {
   list-style: none;
 }
 
-.craft-row {
+.craft-row,
+.history-row {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
@@ -1648,6 +1649,12 @@ html[data-motion-armed] [data-hero-tail] {
   padding: clamp(38px, 5vw, 62px) 22px;
   border-radius: var(--radius-lg);
   isolation: isolate;
+}
+
+/* The history runs tighter than the three about rows above it: there are more
+   of them, and each carries less to read. */
+.history-row {
+  padding-block: clamp(26px, 3.4vw, 42px);
 }
 
 .craft-rule {
@@ -1727,6 +1734,118 @@ html[data-motion-armed] [data-hero-tail] {
   .craft-row:hover .craft-glow {
     opacity: 1;
   }
+}
+
+/* ── Work history ──
+   Picks up the ruled rhythm of the about rows directly above it, so the run
+   from "At work" into the roles themselves reads as one movement. */
+.history {
+  margin-top: clamp(52px, 7vw, 96px);
+}
+
+.history-head {
+  margin-bottom: clamp(18px, 2.6vw, 32px);
+}
+
+.history-heading {
+  margin-bottom: 0;
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+  font-weight: 630;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+}
+
+.history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-dates {
+  margin-bottom: clamp(10px, 1.4vw, 16px);
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.history-role {
+  margin-bottom: 0;
+  font-size: clamp(1.45rem, 2.9vw, 2.25rem);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.history-company {
+  margin-bottom: 10px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.3vw, 1.05rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.history-note {
+  max-width: 54ch;
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-size: clamp(0.95rem, 1.35vw, 1.05rem);
+  line-height: 1.68;
+}
+
+/* The bundled internships: one line each, so a run of early jobs is on the
+   record without any of them costing a screen. */
+.history-bundle {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-bundle-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.history-bundle-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.history-bundle-role {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.history-bundle-span {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.history-bundle-company {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.history-link {
+  margin-top: clamp(28px, 4vw, 44px);
 }
 
 /* ── 5 · Selected work ── */
@@ -3426,7 +3545,8 @@ body.is-photo-viewing {
     font-size: clamp(4.2rem, 13vw, 8rem);
   }
 
-  .craft-row {
+  .craft-row,
+  .history-row {
     gap: clamp(18px, 3.5vw, 48px);
   }
 
@@ -3528,6 +3648,7 @@ body.is-photo-viewing {
   /* One column each: the title needs the whole width before the copy gets a
      turn, and two work cards stop being readable side by side. */
   .craft-row,
+  .history-row,
   .chapter-head--split,
   .hero-foot,
   .work-grid {
@@ -3671,9 +3792,19 @@ body.is-photo-viewing {
   /* At this width the page gutter is narrower than the row's bleed, and the
      overhang was pushing 3px of horizontal scroll onto the document. Nothing
      is lost by dropping it: the wash it makes room for is hover-only. */
-  .craft-row {
+  .craft-row,
+  .history-row {
     margin-inline: 0;
     padding-inline: 0;
+  }
+
+  .history-bundle-item {
+    grid-template-columns: 1fr;
+  }
+
+  .history-bundle-span {
+    grid-row: auto;
+    grid-column: 1;
   }
 
   .craft-rule {

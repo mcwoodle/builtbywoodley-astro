@@ -208,8 +208,7 @@ function setupPage() {
     }
 
     // 4 · Section headings rise out of their masks.
-    q('.chapter-title .reveal-line > span, .contact-title .reveal-line > span').forEach(
-      (line) => {
+    q('[data-mask-title] .reveal-line > span').forEach((line) => {
         gsap.fromTo(
           line,
           { yPercent: 115 },
@@ -225,14 +224,14 @@ function setupPage() {
             },
           },
         );
-      },
-    );
+    });
 
-    // 5 · Each craft row draws its own rule, then lifts its index and title.
-    q('.craft-row').forEach((row) => {
-      const rule = row.querySelector<HTMLElement>('.craft-rule');
-      const title = row.querySelector<HTMLElement>('.craft-title .reveal-line > span');
-      const index = row.querySelector<HTMLElement>('.craft-index');
+    // 5 · Each ruled row — the about rows and the history beneath them — draws
+    //     its own rule, then lifts its meta line and title.
+    q('[data-row]').forEach((row) => {
+      const rule = row.querySelector<HTMLElement>('[data-row-rule]');
+      const title = row.querySelector<HTMLElement>('[data-row-title] .reveal-line > span');
+      const index = row.querySelector<HTMLElement>('[data-row-meta]');
 
       const timeline = gsap.timeline({
         scrollTrigger: {
@@ -252,7 +251,7 @@ function setupPage() {
     // ...and its copy arrives a line at a time. autoSplit re-cuts the lines
     // when the font lands or the column changes width, and rebuilds the
     // animation with them.
-    q('.craft-copy').forEach((copy) => {
+    q('[data-split-copy]').forEach((copy) => {
       splits.push(
         SplitText.create(copy, {
           type: 'lines',

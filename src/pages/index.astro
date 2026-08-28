@@ -19,11 +19,34 @@ const photos = [...photoManifest.data.photos].sort(
 // The newest frame anchors the fold; the rest ride the horizontal strip.
 const [showcase, ...strip] = photos;
 
+const [workManifest] = await getCollection("work");
+const roles = [...(workManifest?.data.roles ?? [])].sort((a, b) =>
+  b.start.localeCompare(a.start),
+);
+// Internships come out of the main run and into one bundled row beneath it.
+const positions = roles.filter((role) => !role.internship);
+const internships = roles.filter((role) => role.internship);
+
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 // UTC accessors: the manifest's dates parse as UTC midnight, so local getters
 // would shift them back a day for anyone west of Greenwich.
 const stampFor = (date: Date) =>
   `${String(date.getUTCDate()).padStart(2, "0")} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+
+// "2019-06" reads as "Jun 2019"; a bare year stays a bare year.
+const monthYear = (value: string) => {
+  if (value.length === 4) return value;
+  const month = MONTHS[Number(value.slice(5, 7)) - 1];
+  return month ? `${month[0]}${month.slice(1).toLowerCase()} ${value.slice(0, 4)}` : value;
+};
+const span = (role: { start: string; end?: string }) =>
+  `${monthYear(role.start)} — ${role.end ? monthYear(role.end) : "Present"}`;
+// The bundle's range runs from the earliest internship to the latest.
+const bundleSpan = internships.length
+  ? `${monthYear(internships[internships.length - 1].start)} — ${
+      internships[0].end ? monthYear(internships[0].end) : "Present"
+    }`
+  : "";
 ---
 
 <BaseLayout>
@@ -111,73 +134,146 @@ const stampFor = (date: Date) =>
         <header class="chapter-head chapter-head--split">
           <div>
             <p class="chapter-eyebrow" data-reveal>About me</p>
-            <h2 id="about-title" class="chapter-title">
+            <h2 id="about-title" class="chapter-title" data-mask-title>
               <span class="reveal-line"><span>A bit about myself.</span></span>
             </h2>
           </div>
           <p class="chapter-lead" data-reveal>
-            Three things, in roughly the order they matter.
+            Three things, in roughly the order they matter — and then where the
+            third one has taken me.
           </p>
         </header>
 
         <ol class="craft-list">
-          <li class="craft-row">
-            <span class="craft-rule" aria-hidden="true"></span>
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
             <span class="craft-glow" aria-hidden="true"></span>
             <div class="craft-lead">
-              <p class="craft-index">
+              <p class="craft-index" data-row-meta>
                 <span class="craft-index-num">01</span>
+                <span class="craft-index-label">What matters</span>
+              </p>
+              <h3 class="craft-title" data-row-title>
+                <span class="reveal-line"><span>Family</span></span>
+              </h3>
+            </div>
+            <p class="craft-copy" data-split-copy>
+              Above all else, my two kids, my partner, and our dog come first.
+              I’ve photographed the world, but my favourite place to be now is home
+              with my family.
+            </p>
+          </li>
+
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+            <span class="craft-glow" aria-hidden="true"></span>
+            <div class="craft-lead">
+              <p class="craft-index" data-row-meta>
+                <span class="craft-index-num">02</span>
+                <span class="craft-index-label">Elsewhere</span>
+              </p>
+              <h3 class="craft-title" data-row-title>
+                <span class="reveal-line"><span>Commitment to Craft</span></span>
+              </h3>
+            </div>
+            <p class="craft-copy" data-split-copy>
+              Outside of my career, I love to build stuff with my hands, from home
+              renovations to "fine" wood working, and am always looking for the next skill to hone.
+            </p>
+          </li>
+
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+            <span class="craft-glow" aria-hidden="true"></span>
+            <div class="craft-lead">
+              <p class="craft-index" data-row-meta>
+                <span class="craft-index-num">03</span>
                 <span class="craft-index-label">At work</span>
               </p>
-              <h3 class="craft-title">
+              <h3 class="craft-title" data-row-title>
                 <span class="reveal-line"><span>Leadership by example</span></span>
               </h3>
             </div>
-            <p class="craft-copy">
+            <p class="craft-copy" data-split-copy>
               I’ve excelled at the organizational IC leadership level in Big Tech,
               and thrive when inventing, designing, implementing, and mentoring.
               I am passionate about technical quality, but also about clarity: helping a
               group understand what matters, why it matters, and how to build it.
             </p>
           </li>
-
-          <li class="craft-row">
-            <span class="craft-rule" aria-hidden="true"></span>
-            <span class="craft-glow" aria-hidden="true"></span>
-            <div class="craft-lead">
-              <p class="craft-index">
-                <span class="craft-index-num">02</span>
-                <span class="craft-index-label">Elsewhere</span>
-              </p>
-              <h3 class="craft-title">
-                <span class="reveal-line"><span>Commitment to Craft</span></span>
-              </h3>
-            </div>
-            <p class="craft-copy">
-              Outside of my career, I love to build stuff with my hands, from home
-              renovations to "fine" wood working, and am always looking for the next skill to hone.
-            </p>
-          </li>
-
-          <li class="craft-row">
-            <span class="craft-rule" aria-hidden="true"></span>
-            <span class="craft-glow" aria-hidden="true"></span>
-            <div class="craft-lead">
-              <p class="craft-index">
-                <span class="craft-index-num">03</span>
-                <span class="craft-index-label">What matters</span>
-              </p>
-              <h3 class="craft-title">
-                <span class="reveal-line"><span>Family</span></span>
-              </h3>
-            </div>
-            <p class="craft-copy">
-              Above all else, my two kids, my partner, and our dog come first.
-              I’ve photographed the world, but my favourite place to be now is home
-              with my family.
-            </p>
-          </li>
         </ol>
+
+        {(positions.length > 0 || internships.length > 0) && (
+          <div class="history" id="history">
+            <header class="history-head">
+              <p class="chapter-eyebrow" data-reveal>Work history</p>
+              <h3 class="history-heading" data-mask-title>
+                <span class="reveal-line"><span>Where that's taken me.</span></span>
+              </h3>
+            </header>
+
+            <ol class="history-list">
+              {positions.map((role) => (
+                <li class="history-row" data-row>
+                  <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+                  <div class="craft-lead">
+                    <p class="history-dates" data-row-meta>{span(role)}</p>
+                    <h4 class="history-role" data-row-title>
+                      <span class="reveal-line"><span>{role.title}</span></span>
+                    </h4>
+                  </div>
+                  <div class="history-body">
+                    <p class="history-company">
+                      {role.company}{role.location ? ` \u00b7 ${role.location}` : ""}
+                    </p>
+                    {role.note && (
+                      <p class="history-note" data-split-copy>{role.note}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+
+              {/* Every internship folded into one row, so early jobs are on the
+                  record without costing a screen each. */}
+              {internships.length > 0 && (
+                <li class="history-row history-row--bundle" data-row>
+                  <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+                  <div class="craft-lead">
+                    <p class="history-dates" data-row-meta>{bundleSpan}</p>
+                    <h4 class="history-role" data-row-title>
+                      <span class="reveal-line"><span>Internships</span></span>
+                    </h4>
+                  </div>
+                  <ul class="history-bundle">
+                    {internships.map((role) => (
+                      <li class="history-bundle-item">
+                        <span class="history-bundle-role">{role.title}</span>
+                        <span class="history-bundle-company">{role.company}</span>
+                        <span class="history-bundle-span">{span(role)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+            </ol>
+
+            <a
+              class="chapter-link history-link"
+              href="https://www.linkedin.com/in/mattwoodley"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-reveal
+              data-magnetic
+            >
+              Full profile on LinkedIn
+              <span class="chapter-link-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M5 19 19 5M9 5h10v10"></path>
+                </svg>
+              </span>
+            </a>
+          </div>
+        )}
       </div>
     </section>
 
@@ -187,7 +283,7 @@ const stampFor = (date: Date) =>
         <header class="chapter-head chapter-head--split">
           <div>
             <p class="chapter-eyebrow" data-reveal>Selected work</p>
-            <h2 id="work-title" class="chapter-title">
+            <h2 id="work-title" class="chapter-title" data-mask-title>
               <span class="reveal-line"><span>Things I've built.</span></span>
             </h2>
           </div>
@@ -232,7 +328,7 @@ const stampFor = (date: Date) =>
         <header class="chapter-head chapter-head--split">
           <div>
             <p class="chapter-eyebrow" data-reveal>Photography</p>
-            <h2 id="archive-title" class="chapter-title">
+            <h2 id="archive-title" class="chapter-title" data-mask-title>
               <span class="reveal-line"><span>An archive of places.</span></span>
             </h2>
           </div>
@@ -276,7 +372,7 @@ const stampFor = (date: Date) =>
     <section class="chapter chapter--contact" aria-labelledby="contact-title">
       <div class="chapter-shell">
         <p class="chapter-eyebrow" data-reveal>Elsewhere</p>
-        <h2 id="contact-title" class="contact-title">
+        <h2 id="contact-title" class="contact-title" data-mask-title>
           <span class="reveal-line"><span>Say hello.</span></span>
         </h2>
 

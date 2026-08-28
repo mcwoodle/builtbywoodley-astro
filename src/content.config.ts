@@ -77,4 +77,27 @@ const photos = defineCollection({
     }),
 });
 
-export const collections = { projects, mockedProjects, software, photos };
+// Work history is a single manifest holding the whole list, the same shape the
+// photo archive uses. `end` omitted means the role is current; `internship`
+// pulls an entry out of the main list and into the bundled row beneath it.
+const work = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/work' }),
+  schema: z.object({
+    roles: z
+      .array(
+        z.object({
+          title: z.string(),
+          company: z.string(),
+          location: z.string().optional(),
+          // YYYY or YYYY-MM, so entries sort as plain strings.
+          start: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY or YYYY-MM.'),
+          end: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY or YYYY-MM.').optional(),
+          note: z.string().optional(),
+          internship: z.boolean().default(false),
+        }),
+      )
+      .default([]),
+  }),
+});
+
+export const collections = { projects, mockedProjects, software, photos, work };
