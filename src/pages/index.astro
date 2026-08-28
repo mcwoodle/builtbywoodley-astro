@@ -283,18 +283,10 @@ const bundleSpan = internships.length
                   <span class="craft-rule" aria-hidden="true" data-row-rule></span>
 
                   <div class="craft-lead">
-                    {/* The far year climbs to meet the near one as the tenure
-                        scrolls past, so a long run visibly takes a long time.
-                        Rendered as the finished range, so it still reads
-                        correctly with no script and under reduced motion. */}
                     <p class="history-year" data-row-meta>
                       <span>{tenure.startYear}</span>
                       <span class="history-year-dash" aria-hidden="true"></span>
-                      <span
-                        class="history-year-far"
-                        data-count-from={tenure.startYear}
-                        data-count-to={tenure.endYear}
-                      >{tenure.endYear}</span>
+                      <span>{tenure.endYear}</span>
                     </p>
                     <h4 class="history-role" data-row-title>
                       <span class="reveal-line"><span>{tenure.company}</span></span>
@@ -310,19 +302,25 @@ const bundleSpan = internships.length
                     {tenure.roles.map((role) => (
                       <li class="history-stint" data-stint>
                         <span class="history-node" aria-hidden="true"></span>
-                        <div class="history-stint-inner" data-stint-reveal>
+                        <div class="history-stint-inner">
                           <p class="history-stint-title" data-stint-title>{role.title}</p>
-                          {role.meta && <p class="history-stint-meta">{role.meta}</p>}
-                          {!tenure.single && (
-                            <span class="history-bar" aria-hidden="true">
-                              <span
-                                class="history-bar-fill"
-                                data-bar
-                                style={`width:${role.bar}%`}
-                              ></span>
-                            </span>
-                          )}
-                          {role.note && <p class="history-stint-note">{role.note}</p>}
+                          {/* Clipped, so the detail can be drawn downwards out
+                              from under the title once the title has landed. */}
+                          <div class="history-stint-detail" data-stint-detail>
+                            <div class="history-stint-detail-inner" data-stint-detail-inner>
+                              {role.meta && <p class="history-stint-meta">{role.meta}</p>}
+                              {!tenure.single && (
+                                <span class="history-bar" aria-hidden="true">
+                                  <span
+                                    class="history-bar-fill"
+                                    data-bar
+                                    style={`width:${role.bar}%`}
+                                  ></span>
+                                </span>
+                              )}
+                              {role.note && <p class="history-stint-note">{role.note}</p>}
+                            </div>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -339,7 +337,7 @@ const bundleSpan = internships.length
                     <p class="history-year" data-row-meta>
                       <span>{internships[internships.length - 1].start.slice(0, 4)}</span>
                       <span class="history-year-dash" aria-hidden="true"></span>
-                      <span class="history-year-far">
+                      <span>
                         {(internships[0].end ?? internships[0].start).slice(0, 4)}
                       </span>
                     </p>
@@ -353,8 +351,8 @@ const bundleSpan = internships.length
 
                   <ul class="history-bundle" data-row-body>
                     {internships.map((role) => (
-                      <li class="history-bundle-item" data-stint>
-                        <div class="history-stint-inner" data-stint-reveal>
+                      <li class="history-bundle-item" data-bundle-card>
+                        <div class="history-stint-inner">
                           <p class="history-bundle-company">{role.company}</p>
                           <p class="history-bundle-role">{role.title}</p>
                           <p class="history-bundle-span">{span(role)}</p>

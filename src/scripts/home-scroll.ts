@@ -249,34 +249,9 @@ function setupPage() {
 
     });
 
-    // 5b · The work history gets its own set of moves. The far year of a
-    //      tenure climbs to meet the near one as you scroll it, the spine
-    //      fills behind its roles, each role's node pops and its duration bar
-    //      draws to a width that is comparable across the whole page.
-    q('[data-count-from]').forEach((counter) => {
-      const from = Number(counter.dataset.countFrom);
-      const to = Number(counter.dataset.countTo);
-      const tenure = counter.closest<HTMLElement>('[data-tenure]');
-      if (!tenure || !Number.isFinite(from) || !Number.isFinite(to)) return;
-
-      const value = { year: from };
-      gsap.to(value, {
-        year: to,
-        ease: 'none',
-        snap: { year: 1 },
-        onUpdate: () => {
-          counter.textContent = String(Math.round(value.year));
-        },
-        scrollTrigger: {
-          trigger: tenure,
-          start: 'top 72%',
-          end: 'bottom 62%',
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
-    });
-
+    // 5b · The work history gets its own set of moves. The spine fills behind
+    //      a tenure's roles, each role's node pops as its title lands, and
+    //      then the detail is drawn downwards out from under that title.
     q('[data-spine-fill]').forEach((fill) => {
       const list = fill.closest<HTMLElement>('[data-row-body]');
       if (!list) return;
@@ -297,33 +272,82 @@ function setupPage() {
       );
     });
 
+    // Beat one: the node lands with the title.
     q('[data-stint]').forEach((stint) => {
       const node = stint.querySelector<HTMLElement>('.history-node');
-      const bar = stint.querySelector<HTMLElement>('[data-bar]');
-      const rest = stint.querySelectorAll<HTMLElement>(
-        '[data-stint-reveal] > *:not([data-stint-title])',
+      if (!node) return;
+      gsap.fromTo(
+        node,
+        { scale: 0 },
+        {
+          scale: 1,
+          ease: 'back.out(2.4)',
+          scrollTrigger: {
+            trigger: stint,
+            start: 'top 96%',
+            end: 'top 82%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
       );
+    });
+
+    // Beat two, once the title has settled: the clip opens downwards while the
+    // detail slides down inside it, so the dates and the note read as though
+    // they are being pulled out from behind the title rather than fading in
+    // beside it. The bar draws last, after there is a track to draw it on.
+    q('[data-stint-detail]').forEach((detail) => {
+      const inner = detail.querySelector<HTMLElement>('[data-stint-detail-inner]');
+      const bar = detail.querySelector<HTMLElement>('[data-bar]');
+      const stint = detail.closest<HTMLElement>('[data-stint]') ?? detail;
 
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: stint,
-          start: 'top 94%',
-          end: 'top 64%',
+          start: 'top 76%',
+          end: 'top 46%',
           scrub: true,
           invalidateOnRefresh: true,
         },
       });
 
-      if (node) timeline.fromTo(node, { scale: 0 }, { scale: 1, ease: 'back.out(2.4)', duration: 0.7 }, 0);
-      if (rest.length) {
+      timeline.fromTo(
+        detail,
+        { clipPath: 'inset(0% 0% 100% 0%)' },
+        { clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.out', duration: 1 },
+        0,
+      );
+      if (inner) {
         timeline.fromTo(
-          rest,
-          { opacity: 0, y: 16 },
-          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8, stagger: 0.05 },
-          0.08,
+          inner,
+          { yPercent: -58 },
+          { yPercent: 0, ease: 'power2.out', duration: 1 },
+          0,
         );
       }
-      if (bar) timeline.fromTo(bar, { scaleX: 0 }, { scaleX: 1, ease: 'power2.out', duration: 0.9 }, 0.2);
+      if (bar) {
+        timeline.fromTo(bar, { scaleX: 0 }, { scaleX: 1, ease: 'power2.out', duration: 0.6 }, 0.55);
+      }
+    });
+
+    q('[data-bundle-card]').forEach((card) => {
+      gsap.fromTo(
+        card,
+        { opacity: 0, y: 22 },
+        {
+          opacity: 1,
+          y: 0,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 94%',
+            end: 'top 72%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
     });
 
     // Role titles come in a word at a time, the same way the hero's lead does.
@@ -341,8 +365,8 @@ function setupPage() {
               ease: 'power3.out',
               scrollTrigger: {
                 trigger: title,
-                start: 'top 94%',
-                end: 'top 68%',
+                start: 'top 96%',
+                end: 'top 78%',
                 scrub: true,
                 invalidateOnRefresh: true,
               },

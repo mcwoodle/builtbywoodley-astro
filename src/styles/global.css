@@ -1799,10 +1799,6 @@ html[data-motion-armed] [data-hero-tail] {
   opacity: 0.5;
 }
 
-.history-year-far {
-  opacity: 0.62;
-}
-
 .history-role {
   margin-bottom: 8px;
   font-size: clamp(1.7rem, 3.4vw, 2.7rem);
@@ -1865,6 +1861,13 @@ html[data-motion-armed] [data-hero-tail] {
   border: 1px solid var(--accent-copper);
   border-radius: 50%;
   background: var(--color-bg);
+}
+
+/* The detail is clipped so it can be drawn downwards out from under the
+   title. The closed state is set by the script rather than here: these lines
+   carry real content, and a bundle that failed to load must not hide it. */
+.history-stint-detail-inner {
+  will-change: transform;
 }
 
 .history-stint-title {
