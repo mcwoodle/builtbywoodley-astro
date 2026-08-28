@@ -3668,13 +3668,16 @@ body.is-photo-viewing {
     font-size: 1.02rem;
   }
 
+  /* At this width the page gutter is narrower than the row's bleed, and the
+     overhang was pushing 3px of horizontal scroll onto the document. Nothing
+     is lost by dropping it: the wash it makes room for is hover-only. */
   .craft-row {
-    margin-inline: -14px;
-    padding-inline: 14px;
+    margin-inline: 0;
+    padding-inline: 0;
   }
 
   .craft-rule {
-    inset-inline: 14px;
+    inset-inline: 0;
   }
 
   .site-footer,
