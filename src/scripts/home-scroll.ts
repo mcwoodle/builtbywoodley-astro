@@ -247,16 +247,108 @@ function setupPage() {
       if (index) timeline.fromTo(index, { opacity: 0, y: 16 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8 }, 0.1);
       if (title) timeline.fromTo(title, { yPercent: 115 }, { yPercent: 0, ease: 'power3.out', duration: 0.95 }, 0.15);
 
-      // A tenure's roles arrive under its heading rather than all at once.
-      const body = row.querySelectorAll<HTMLElement>('[data-row-body] > *');
-      if (body.length) {
+    });
+
+    // 5b · The work history gets its own set of moves. The far year of a
+    //      tenure climbs to meet the near one as you scroll it, the spine
+    //      fills behind its roles, each role's node pops and its duration bar
+    //      draws to a width that is comparable across the whole page.
+    q('[data-count-from]').forEach((counter) => {
+      const from = Number(counter.dataset.countFrom);
+      const to = Number(counter.dataset.countTo);
+      const tenure = counter.closest<HTMLElement>('[data-tenure]');
+      if (!tenure || !Number.isFinite(from) || !Number.isFinite(to)) return;
+
+      const value = { year: from };
+      gsap.to(value, {
+        year: to,
+        ease: 'none',
+        snap: { year: 1 },
+        onUpdate: () => {
+          counter.textContent = String(Math.round(value.year));
+        },
+        scrollTrigger: {
+          trigger: tenure,
+          start: 'top 72%',
+          end: 'bottom 62%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+    });
+
+    q('[data-spine-fill]').forEach((fill) => {
+      const list = fill.closest<HTMLElement>('[data-row-body]');
+      if (!list) return;
+      gsap.fromTo(
+        fill,
+        { scaleY: 0 },
+        {
+          scaleY: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: list,
+            start: 'top 78%',
+            end: 'bottom 72%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+    });
+
+    q('[data-stint]').forEach((stint) => {
+      const node = stint.querySelector<HTMLElement>('.history-node');
+      const bar = stint.querySelector<HTMLElement>('[data-bar]');
+      const rest = stint.querySelectorAll<HTMLElement>(
+        '[data-stint-reveal] > *:not([data-stint-title])',
+      );
+
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: stint,
+          start: 'top 94%',
+          end: 'top 64%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      if (node) timeline.fromTo(node, { scale: 0 }, { scale: 1, ease: 'back.out(2.4)', duration: 0.7 }, 0);
+      if (rest.length) {
         timeline.fromTo(
-          body,
-          { opacity: 0, y: 22 },
-          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8, stagger: 0.06 },
-          0.25,
+          rest,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8, stagger: 0.05 },
+          0.08,
         );
       }
+      if (bar) timeline.fromTo(bar, { scaleX: 0 }, { scaleX: 1, ease: 'power2.out', duration: 0.9 }, 0.2);
+    });
+
+    // Role titles come in a word at a time, the same way the hero's lead does.
+    q('[data-stint-title]').forEach((title) => {
+      splits.push(
+        SplitText.create(title, {
+          type: 'lines,words',
+          mask: 'lines',
+          autoSplit: true,
+          onSplit: (self) =>
+            gsap.from(self.words, {
+              yPercent: 112,
+              duration: 0.9,
+              stagger: 0.02,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: title,
+                start: 'top 94%',
+                end: 'top 68%',
+                scrub: true,
+                invalidateOnRefresh: true,
+              },
+            }),
+        }),
+      );
     });
 
     // ...and its copy arrives a line at a time. autoSplit re-cuts the lines
@@ -399,6 +491,36 @@ function setupPage() {
           row.style.setProperty('--glow-y', `${event.clientY - bounds.top}px`);
         },
         { passive: true, signal },
+      );
+    });
+
+    q('[data-row-body]').forEach((list) => {
+      const stints = list.querySelectorAll<HTMLElement>('[data-stint]');
+      if (stints.length < 2) return;
+
+      stints.forEach((stint) => {
+        stint.addEventListener(
+          'pointerenter',
+          () => {
+            stints.forEach((other) => {
+              gsap.to(other, {
+                opacity: other === stint ? 1 : 0.34,
+                duration: 0.42,
+                ease: 'power2.out',
+                overwrite: 'auto',
+              });
+            });
+          },
+          { signal },
+        );
+      });
+
+      list.addEventListener(
+        'pointerleave',
+        () => {
+          gsap.to(stints, { opacity: 1, duration: 0.42, ease: 'power2.out', overwrite: 'auto' });
+        },
+        { signal },
       );
     });
 
