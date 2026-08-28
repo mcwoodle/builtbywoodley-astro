@@ -4,7 +4,6 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
 const isSoftware = path === '/software' || path.startsWith('/software/');
 const isPhotography = path === '/photography' || path.startsWith('/photography/');
-const isAbout = path === '/about';
 
 const crumb = path.startsWith('/software/')
   ? { label: 'Software Projects', href: '/software' }
@@ -65,13 +64,13 @@ const crumb = path.startsWith('/software/')
     </div>
 
     <div class="nav-actions">
+      <!-- About lives on the landing page now, so this is a scroll when you
+           are already home and a navigation plus scroll when you are not. -->
       <a
-        href="/about"
-        class:list={['about-link', { active: isAbout }]}
+        href="/#about"
+        class="about-link"
         aria-label="About me"
-        aria-current={isAbout ? 'page' : undefined}
-        data-tooltip={isAbout ? "It's me" : 'About me'}
-        data-direction="down"
+        data-tooltip="About me"
       >
         <!-- Drawn to the same box and weight as the house at the other end,
              so the two tiles carry the same amount of ink. -->

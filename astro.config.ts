@@ -10,6 +10,12 @@ import rehypeLeadIn from './src/plugins/rehype-lead-in';
 export default defineConfig({
   integrations: [mdx()],
 
+  // /about was folded into the landing page. Anything still pointing at the
+  // old route lands on the chapter it became.
+  redirects: {
+    '/about': '/#about',
+  },
+
   markdown: {
     // Tags each entry's opening clause for the editorial lead-in styling.
     // MDX inherits the processor's pipeline, so this covers all content.

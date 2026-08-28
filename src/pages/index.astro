@@ -1,28 +1,138 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 ---
 
 <BaseLayout>
   <main class="landing-page">
-    <section class="landing-hero" aria-labelledby="landing-title">
+    <!-- Chapter one is the name and nothing else. Holding it at full height
+         makes the title the whole first screen, so everything after it is
+         something the reader chooses to scroll to. -->
+    <section class="chapter chapter--hero" aria-labelledby="landing-title">
       <div class="hero-copy">
         <h1 id="landing-title" class="page-heading hero-title">
-          Matt<br /><span class="hero-title-name">Woodley</span>
+          <span class="reveal-line hero-reveal"><span>Matt</span></span>
+          <span class="reveal-line hero-reveal"
+            ><span class="hero-title-name">Woodley</span></span
+          >
         </h1>
-        <p class="hero-summary">
-          Principal Software Engineer.
-        </p>
-        <div class="role-line vt-tagline" aria-label="Builder, mentor, father">
+        <p class="hero-summary" data-hero-tail>Principal Software Engineer.</p>
+        <div
+          class="role-line vt-tagline"
+          data-hero-tail
+          aria-label="Leader, builder, father"
+        >
           <span>Leader</span>
           <span>Builder</span>
           <span>Father</span>
         </div>
       </div>
 
+      <a class="scroll-cue" href="#about">
+        <span class="scroll-cue-inner" data-hero-tail>
+          <span class="scroll-cue-label">Scroll</span>
+          <span class="scroll-cue-rail" aria-hidden="true">
+            <span class="scroll-cue-dot"></span>
+          </span>
+        </span>
+      </a>
+    </section>
+
+    <!-- Chapter two used to be /about. It reads better as the next screen
+         down than as a page you had to decide to visit. -->
+    <section class="chapter chapter--about" id="about" aria-labelledby="about-title">
+      <header class="chapter-head">
+        <p class="chapter-eyebrow" data-reveal>About me</p>
+        <h2 id="about-title" class="chapter-title">
+          <span class="reveal-line"><span>A bit about myself.</span></span>
+        </h2>
+      </header>
+
+      <ol class="craft-list">
+        <li class="craft-row">
+          <span class="craft-rule" aria-hidden="true"></span>
+          <span class="craft-glow" aria-hidden="true"></span>
+          <div class="craft-lead">
+            <p class="craft-index">
+              <span class="craft-index-num">01</span>
+              <span class="craft-index-label">At work</span>
+            </p>
+            <h3 class="craft-title">
+              <span class="reveal-line"><span>Leadership by example</span></span>
+            </h3>
+          </div>
+          <p class="craft-copy">
+            I’ve excelled at the organizational IC leadership level in Big Tech,
+            and thrive when inventing, designing, implementing, and mentoring.
+            I am passionate about technical quality, but also about clarity: helping a
+            group understand what matters, why it matters, and how to build it.
+          </p>
+        </li>
+
+        <li class="craft-row">
+          <span class="craft-rule" aria-hidden="true"></span>
+          <span class="craft-glow" aria-hidden="true"></span>
+          <div class="craft-lead">
+            <p class="craft-index">
+              <span class="craft-index-num">02</span>
+              <span class="craft-index-label">Elsewhere</span>
+            </p>
+            <h3 class="craft-title">
+              <span class="reveal-line"><span>Commitment to Craft</span></span>
+            </h3>
+          </div>
+          <p class="craft-copy">
+            Outside of my career, I love to build stuff with my hands, from home
+            renovations to "fine" wood working, and am always looking for the next skill to hone.
+          </p>
+        </li>
+
+        <li class="craft-row">
+          <span class="craft-rule" aria-hidden="true"></span>
+          <span class="craft-glow" aria-hidden="true"></span>
+          <div class="craft-lead">
+            <p class="craft-index">
+              <span class="craft-index-num">03</span>
+              <span class="craft-index-label">What matters</span>
+            </p>
+            <h3 class="craft-title">
+              <span class="reveal-line"><span>Family</span></span>
+            </h3>
+          </div>
+          <p class="craft-copy">
+            Above all else, my two kids, my partner, and our dog come first.
+            I’ve photographed the world, but my favourite place to be now is home
+            with my family.
+          </p>
+        </li>
+      </ol>
+
+      <nav class="about-actions" aria-label="Elsewhere" data-reveal>
+        <a
+          href="https://www.linkedin.com/in/mattwoodley"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="button button--primary"
+        >LinkedIn <span aria-hidden="true">↗</span></a>
+        <a href="mailto:matt@builtbywoodley.ca" class="button">
+          Email me <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
+    </section>
+
+    <!-- Chapter three is the two routes that are still their own pages. -->
+    <section class="chapter chapter--explore" id="explore" aria-labelledby="explore-title">
+      <header class="chapter-head">
+        <p class="chapter-eyebrow" data-reveal>Elsewhere on the site</p>
+        <h2 id="explore-title" class="chapter-title">
+          <span class="reveal-line"><span>Have a look around.</span></span>
+        </h2>
+      </header>
+
       <nav class="route-grid" aria-label="Featured pages">
-        <a class="route-card route-card--work" href="/software" data-direction="right">
+        <a class="route-card route-card--work" href="/software" data-direction="right" data-reveal>
           <div class="route-card-copy">
-            <h2>Software</h2>
+            <h3>Software</h3>
             <p>Some side projects that I've built for fun in 2026.</p>
           </div>
           <span class="route-card-arrow" aria-hidden="true">
@@ -32,9 +142,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           </span>
         </a>
 
-        <a class="route-card route-card--photo" href="/photography" data-direction="left">
+        <a class="route-card route-card--photo" href="/photography" data-direction="left" data-reveal>
           <div class="route-card-copy">
-            <h2>Photography</h2>
+            <h3>Photography</h3>
             <p>An archive of places, mostly at odd hours.</p>
           </div>
           <span class="route-card-arrow" aria-hidden="true">
@@ -43,19 +153,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             </svg>
           </span>
         </a>
-
-        <a class="route-card route-card--about" href="/about" data-direction="down">
-          <div class="route-card-copy">
-            <h2>About me</h2>
-            <p>High level details of who I am.</p>
-          </div>
-          <span class="route-card-arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-              <path d="m5 5 14 14M19 9v10H9"></path>
-            </svg>
-          </span>
-        </a>
       </nav>
+
+      <HumanWrittenMark />
     </section>
   </main>
 </BaseLayout>

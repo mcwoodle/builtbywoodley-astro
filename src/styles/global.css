@@ -1333,30 +1333,45 @@ svg {
 
 /* ─────────────────────────────────────────────
    Landing page
+   One continuous scroll: a full-height title, the about chapter that used to
+   be its own route, then the pages that are still their own. Every reveal is
+   scrubbed against scroll position in src/scripts/home-scroll.ts, so scrolling
+   back up unplays the same motion instead of stranding a half-drawn screen.
    ───────────────────────────────────────────── */
 .landing-page {
   display: flex;
   flex-direction: column;
   width: min(1180px, calc(100% - 40px));
   margin-inline: auto;
-  padding-block: clamp(64px, 8vw, 110px) 0;
 }
 
-.landing-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.76fr);
-  align-items: center;
-  flex: 1;
-  gap: clamp(48px, 8vw, 110px);
-  padding-bottom: 72px;
+.chapter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(92px, 13vh, 168px);
+}
+
+/* The sticky nav sits above the page in flow, so the first screen is the
+   viewport minus its height. home-scroll.ts measures it; 80px is the value
+   the nav's own min-height works out to before that lands. */
+.chapter--hero {
+  justify-content: center;
+  min-height: calc(100svh - var(--top-nav-height, 80px));
+  padding-block: clamp(40px, 7vh, 90px) clamp(28px, 5vh, 56px);
+}
+
+.hero-copy {
+  flex: 0 0 auto;
 }
 
 .hero-title {
-  margin-bottom: 34px;
-  font-size: clamp(4.6rem, 10vw, 8.6rem);
+  max-width: none;
+  margin-bottom: clamp(26px, 3.5vw, 40px);
+  font-size: clamp(4.4rem, 15vw, 11.5rem);
   font-weight: 650;
   letter-spacing: -0.085em;
-  line-height: 0.78;
+  line-height: 0.84;
 }
 
 .hero-title-name {
@@ -1365,21 +1380,266 @@ svg {
 
 .hero-summary {
   max-width: 620px;
-  margin-bottom: 30px;
+  margin-bottom: 26px;
   color: var(--color-text-muted);
   font-size: clamp(1.08rem, 1.8vw, 1.3rem);
   line-height: 1.55;
   text-wrap: pretty;
 }
 
+/* ── Masked line reveal ──
+   A line of type sits in its own clipped box and slides up out of it. The
+   padding keeps descenders off the clip edge; the negative margin takes the
+   room back so the line spacing is unchanged. */
+.reveal-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+
+.reveal-line > span {
+  display: block;
+  will-change: transform;
+}
+
+/* The hero runs a 0.84 line-height, which crowds ascenders and descenders
+   against the clip edge. Widen its mask and take the space straight back. */
+.hero-title .reveal-line {
+  padding-block: 0.08em 0.22em;
+  margin-block: -0.08em -0.22em;
+}
+
+/* Hold the hero down until the script can play it in. Gated on the attribute
+   the theme script sets, so a page rendered without JS is never left blank —
+   and home-scroll.ts clears the attribute as soon as it takes over. */
+html[data-motion-armed] .hero-reveal > span {
+  transform: translateY(118%);
+}
+
+html[data-motion-armed] [data-hero-tail] {
+  opacity: 0;
+}
+
+/* ── Scroll cue ──
+   The anchor carries the scroll-linked fade and the inner element carries the
+   intro reveal, so the two never write to the same opacity. */
+.scroll-cue {
+  align-self: center;
+  margin-top: auto;
+  padding-top: clamp(36px, 6vh, 72px);
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 220ms ease;
+}
+
+.scroll-cue-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.scroll-cue:hover,
+.scroll-cue:focus-visible {
+  color: var(--color-text);
+}
+
+.scroll-cue:focus-visible {
+  outline: 2px solid var(--accent-copper);
+  outline-offset: 8px;
+  border-radius: 6px;
+}
+
+.scroll-cue-rail {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 46px;
+  overflow: hidden;
+  background: linear-gradient(
+    to bottom,
+    var(--color-border-strong),
+    transparent
+  );
+}
+
+.scroll-cue-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: var(--accent-copper);
+  animation: scroll-cue-travel 2.2s var(--ease-out) infinite;
+}
+
+@keyframes scroll-cue-travel {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(290%);
+    opacity: 0;
+  }
+}
+
+/* ── Chapter headings ── */
+.chapter-head {
+  margin-bottom: clamp(36px, 5vw, 64px);
+}
+
+.chapter-eyebrow {
+  margin-bottom: 16px;
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.chapter-title {
+  max-width: 22ch;
+  margin-bottom: 0;
+  font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+  font-weight: 640;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+/* ── About chapter ──
+   The rows borrow their shape from Cuberto's services list: a hairline that
+   draws itself in, an index, an oversized title lifting out of its mask, and
+   the copy sitting alongside. */
+.craft-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.craft-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  align-items: start;
+  gap: clamp(20px, 5vw, 84px);
+  margin-inline: -22px;
+  padding: clamp(38px, 5vw, 62px) 22px;
+  border-radius: var(--radius-lg);
+  isolation: isolate;
+}
+
+.craft-rule {
+  position: absolute;
+  top: 0;
+  inset-inline: 22px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--color-border-strong),
+    var(--color-border-subtle)
+  );
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* Cuberto's rows track the pointer with a piece of media. There is none to
+   show here, so the row answers with a wash of the copper accent instead. */
+.craft-glow {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    260px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    color-mix(in srgb, var(--accent-copper) 16%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 380ms ease;
+}
+
+.craft-index {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: clamp(14px, 2vw, 22px);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.craft-index-num {
+  color: var(--color-signal);
+}
+
+.craft-title {
+  margin-bottom: 0;
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+  font-weight: 620;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+}
+
+.craft-copy {
+  max-width: 54ch;
+  margin-bottom: 0;
+  padding-top: clamp(4px, 1.4vw, 18px);
+  color: var(--color-text-muted);
+  font-size: clamp(1.02rem, 1.5vw, 1.13rem);
+  line-height: 1.72;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .craft-lead {
+    transition: transform 460ms var(--ease-out);
+  }
+
+  .craft-row:hover .craft-lead {
+    transform: translateX(10px);
+  }
+
+  .craft-row:hover .craft-glow {
+    opacity: 1;
+  }
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: clamp(38px, 5vw, 58px);
+}
+
+/* ── Explore chapter ── */
 .route-grid {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .route-card {
   position: relative;
   display: grid;
+  min-height: clamp(180px, 23vh, 244px);
   padding: 28px;
   overflow: hidden;
   border: 1px solid var(--accent-copper-glow);
@@ -1391,10 +1651,6 @@ svg {
   transition: color 220ms ease, background-color 220ms ease,
     border-color 220ms ease, transform 260ms var(--ease-out),
     box-shadow 260ms ease;
-}
-
-.route-card::before {
-  content: none;
 }
 
 .route-card:hover,
@@ -1415,34 +1671,12 @@ svg {
   outline-offset: 4px;
 }
 
-.route-card--work {
-  border-color: var(--accent-copper-glow);
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-.route-card--work h2,
-.route-card--work p {
-  color: inherit;
-}
-
-.route-card--work::before {
-  content: none;
-}
-
-.route-card--work:hover,
-.route-card--work:focus-visible {
-  border-color: color-mix(in srgb, var(--accent-copper) 62%, transparent);
-  background: color-mix(in srgb, var(--bg-card) 95%, var(--accent-copper));
-  color: var(--text-primary);
-}
-
 .route-card-copy {
   align-self: end;
   padding-right: 54px;
 }
 
-.route-card h2 {
+.route-card h3 {
   margin-bottom: 9px;
   font-size: clamp(1.55rem, 2.5vw, 2.15rem);
   font-weight: 620;
@@ -1486,15 +1720,34 @@ svg {
   opacity: 1;
 }
 
-.route-card--about:hover .route-card-arrow,
-.route-card--about:focus-visible .route-card-arrow {
-  transform: translate(3px, 3px);
-}
-
 /* This one points straight ahead, so it nudges the way it is pointing. */
 .route-card--photo:hover .route-card-arrow,
 .route-card--photo:focus-visible .route-card-arrow {
   transform: translate(4px, 0);
+}
+
+/* Nothing on this page should move for a reader who asked for stillness. The
+   script skips its timelines; these undo the resting states they start from. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-motion-armed] .hero-reveal > span {
+    transform: none;
+  }
+
+  html[data-motion-armed] [data-hero-tail] {
+    opacity: 1;
+  }
+
+  .craft-rule {
+    transform: none;
+  }
+
+  .scroll-cue-dot {
+    animation: none;
+  }
+
+  .craft-row:hover .craft-lead {
+    transform: none;
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -2136,92 +2389,6 @@ body.is-photo-viewing {
   height: 5px;
   border-radius: 50%;
   background: var(--accent-copper);
-}
-
-/* ─────────────────────────────────────────────
-   About page
-   ───────────────────────────────────────────── */
-.about-page {
-  padding-top: clamp(72px, 8vw, 118px);
-}
-
-.about-layout {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.about-intro {
-  grid-column: span 5;
-  align-self: start;
-  position: sticky;
-  top: 112px;
-  padding: 8px clamp(12px, 3vw, 34px) 0 0;
-}
-
-.about-intro .page-heading {
-  font-size: clamp(3.2rem, 6vw, 5.6rem);
-}
-
-.about-intro .page-subtitle {
-  margin-bottom: 30px;
-}
-
-.about-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 34px;
-}
-
-.about-story {
-  grid-column: 7 / -1;
-  padding-left: clamp(8px, 3vw, 36px);
-  border-left: 1px solid var(--color-border-subtle);
-}
-
-.story-block {
-  padding: 34px 0 48px;
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.story-block:first-child {
-  border-top: 0;
-  padding-top: 8px;
-}
-
-.story-index {
-  margin-bottom: 20px;
-  color: var(--color-accent);
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.story-block h2 {
-  margin-bottom: 18px;
-  font-size: clamp(1.8rem, 3.5vw, 3rem);
-  font-weight: 610;
-  letter-spacing: -0.05em;
-  line-height: 1.03;
-}
-
-.story-block > p:last-child {
-  max-width: 62ch;
-  margin-bottom: 0;
-  color: var(--color-text-muted);
-  font-size: clamp(1.02rem, 1.5vw, 1.13rem);
-  line-height: 1.72;
-}
-
-.story-block--quiet {
-  margin-top: 12px;
-  padding: 30px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  box-shadow: var(--shadow-card);
 }
 
 /* ─────────────────────────────────────────────
@@ -3078,13 +3245,12 @@ body.is-photo-viewing {
     columns: 2;
   }
 
-  .landing-hero {
-    grid-template-columns: 1fr 0.86fr;
-    gap: 44px;
+  .hero-title {
+    font-size: clamp(4.2rem, 13vw, 8rem);
   }
 
-  .hero-title {
-    font-size: clamp(4.2rem, 11vw, 7rem);
+  .craft-row {
+    gap: clamp(18px, 3.5vw, 48px);
   }
 
   .portfolio-card:first-child,
@@ -3095,14 +3261,6 @@ body.is-photo-viewing {
   .portfolio-card-footer {
     align-items: start;
     flex-direction: column;
-  }
-
-  .about-intro {
-    grid-column: span 6;
-  }
-
-  .about-story {
-    grid-column: 7 / -1;
   }
 
   .detail-content-grid {
@@ -3182,18 +3340,27 @@ body.is-photo-viewing {
     font-size: clamp(2.8rem, 13vw, 4.5rem);
   }
 
-  .landing-page {
-    padding-top: 58px;
-  }
-
-  .landing-hero {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    padding-bottom: 54px;
+  .chapter {
+    padding-block: clamp(76px, 10vh, 118px);
   }
 
   .hero-title {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
+  }
+
+  /* One column each: the title needs the whole width before the copy gets a
+     turn, and the two route cards stop being readable side by side. */
+  .craft-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .route-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .route-card {
+    min-height: 0;
   }
 
   .portfolio-card,
@@ -3205,25 +3372,6 @@ body.is-photo-viewing {
   .portfolio-card-footer {
     align-items: end;
     flex-direction: row;
-  }
-
-  .about-layout {
-    display: block;
-  }
-
-  .about-intro {
-    position: static;
-    padding: 0 0 54px;
-  }
-
-  .about-story {
-    padding-left: 0;
-    border-left: 0;
-  }
-
-  .story-block:first-child {
-    border-top: 1px solid var(--color-border-subtle);
-    padding-top: 34px;
   }
 
   .journal-page > .page-shell {
@@ -3342,6 +3490,15 @@ body.is-photo-viewing {
     bottom: 18px;
   }
 
+  .craft-row {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .craft-rule {
+    inset-inline: 14px;
+  }
+
   .site-footer,
   .site-footer div {
     gap: 14px;
@@ -3354,10 +3511,6 @@ body.is-photo-viewing {
   .portfolio-card-footer {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .story-block--quiet {
-    padding: 24px;
   }
 
   .section-header > p {
