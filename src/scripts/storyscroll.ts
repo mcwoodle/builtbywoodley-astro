@@ -1,9 +1,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis from '@studio-freight/lenis';
 import { navigate } from 'astro:transitions/client';
-
-gsap.registerPlugin(ScrollTrigger);
+import { prefersReducedMotion, smoothScroll } from './smooth-scroll';
 
 const STORY_STATE_KEY = 'bbwStoryScroll';
 let cleanupActivePage = () => {};
@@ -19,21 +17,9 @@ function setupPage() {
   }
 
   const controller = new AbortController();
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion = prefersReducedMotion();
   const animations: Array<gsap.core.Animation & { scrollTrigger?: ScrollTrigger }> = [];
-  const lenis = new Lenis({
-    smoothWheel: !reduceMotion,
-    syncTouch: false,
-    duration: reduceMotion ? 0 : 1.1,
-  });
-  let frame = 0;
-
-  const raf = (time: number) => {
-    lenis.raf(time);
-    frame = requestAnimationFrame(raf);
-  };
-  frame = requestAnimationFrame(raf);
-  lenis.on('scroll', ScrollTrigger.update);
+  const lenis = smoothScroll();
 
   if (carousel) {
     animations.push(
@@ -161,12 +147,10 @@ function setupPage() {
 
   cleanupActivePage = () => {
     controller.abort();
-    cancelAnimationFrame(frame);
     animations.forEach((animation) => {
       animation.scrollTrigger?.kill();
       animation.kill();
     });
-    lenis.destroy();
     cleanupActivePage = () => {};
   };
 }

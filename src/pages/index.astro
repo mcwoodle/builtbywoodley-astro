@@ -1,61 +1,510 @@
 ---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import HumanWrittenMark from "../components/HumanWrittenMark.astro";
+
+const softwareEntries = (await getCollection("software")).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+// The ticker is the union of every stack the case studies declare, so it stays
+// true to the work without a second list to maintain.
+const stack = [...new Set(softwareEntries.flatMap((entry) => entry.data.stack))];
+
+const [photoManifest] = await getCollection("photos");
+const photos = [...photoManifest.data.photos].sort(
+  (a, b) => b.date.getTime() - a.date.getTime(),
+);
+// The newest frame anchors the fold; the rest ride the horizontal strip.
+const [showcase, ...strip] = photos;
+
+const [workManifest] = await getCollection("work");
+const roles = [...(workManifest?.data.roles ?? [])].sort((a, b) =>
+  b.start.localeCompare(a.start),
+);
+// Internships come out of the main run and into one bundled row beneath it.
+const positions = roles.filter((role) => !role.internship);
+const internships = roles.filter((role) => role.internship);
+
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+// UTC accessors: the manifest's dates parse as UTC midnight, so local getters
+// would shift them back a day for anyone west of Greenwich.
+const stampFor = (date: Date) =>
+  `${String(date.getUTCDate()).padStart(2, "0")} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+
+// "2019-06" reads as "Jun 2019"; a bare year stays a bare year.
+const monthYear = (value: string) => {
+  if (value.length === 4) return value;
+  const month = MONTHS[Number(value.slice(5, 7)) - 1];
+  return month ? `${month[0]}${month.slice(1).toLowerCase()} ${value.slice(0, 4)}` : value;
+};
+const span = (role: { start: string; end?: string }) =>
+  `${monthYear(role.start)} — ${role.end ? monthYear(role.end) : "Present"}`;
+
+// Inclusive month counting — counting both the first and last month is what
+// reproduces the figures LinkedIn shows against the same dates.
+const monthsBetween = (start: string, end?: string) => {
+  const startYear = Number(start.slice(0, 4));
+  const startMonth = Number(start.slice(5, 7) || 1);
+  const now = new Date();
+  const endYear = end ? Number(end.slice(0, 4)) : now.getUTCFullYear();
+  const endMonth = end ? Number(end.slice(5, 7) || 1) : now.getUTCMonth() + 1;
+  return Math.max(1, (endYear - startYear) * 12 + (endMonth - startMonth) + 1);
+};
+
+const lengthOf = (total: number) => {
+  const years = Math.floor(total / 12);
+  const rest = total % 12;
+  const parts: string[] = [];
+  if (years) parts.push(`${years} yr${years === 1 ? "" : "s"}`);
+  if (rest) parts.push(`${rest} mo${rest === 1 ? "" : "s"}`);
+  return parts.join(" ") || "1 mo";
+};
+
+// Consecutive roles at one employer are one tenure. Six separate Amazon rows
+// would repeat the name six times and cost six screens; this is how the
+// profile they came from groups them too.
+type Role = (typeof positions)[number];
+const grouped: { company: string; roles: Role[] }[] = [];
+for (const role of positions) {
+  const current = grouped[grouped.length - 1];
+  if (current && current.company === role.company) current.roles.push(role);
+  else grouped.push({ company: role.company, roles: [role] });
+}
+
+// The longest single role sets the scale every duration bar is drawn against,
+// so the bars are comparable to each other rather than to nothing.
+const longestRole = Math.max(
+  1,
+  ...positions.map((role) => monthsBetween(role.start, role.end)),
+);
+
+const tenures = grouped.map((group) => {
+  const newest = group.roles[0];
+  const oldest = group.roles[group.roles.length - 1];
+  return {
+    company: group.company,
+    startYear: oldest.start.slice(0, 4),
+    endYear: newest.end ? newest.end.slice(0, 4) : String(new Date().getUTCFullYear()),
+    summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
+      group.roles.length
+    } ${group.roles.length === 1 ? "role" : "roles"}`,
+    single: group.roles.length === 1,
+    // A lone role's dates are already the tenure's, in the column to the left,
+    // so it carries only what that heading does not already say.
+    roles: group.roles.map((role) => ({
+      title: role.title,
+      meta: (group.roles.length === 1
+        ? [role.location]
+        : [span(role), lengthOf(monthsBetween(role.start, role.end)), role.location]
+      )
+        .filter(Boolean)
+        .join(" · "),
+      bar: Math.round((monthsBetween(role.start, role.end) / longestRole) * 100),
+      note: role.note,
+    })),
+  };
+});
+// The bundle's range runs from the earliest internship to the latest.
+const bundleSpan = internships.length
+  ? `${monthYear(internships[internships.length - 1].start)} — ${
+      internships[0].end ? monthYear(internships[0].end) : "Present"
+    }`
+  : "";
 ---
 
 <BaseLayout>
   <main class="landing-page">
-    <section class="landing-hero" aria-labelledby="landing-title">
-      <div class="hero-copy">
+    <!-- ── 1 · Title ──
+         Deliberately shorter than the viewport: the photograph below breaks
+         the fold, which is what asks you to keep going. No scroll arrow. -->
+    <section class="chapter chapter--hero" aria-labelledby="landing-title">
+      <div class="chapter-shell hero-shell">
+        <p class="hero-eyebrow" data-hero-tail>Principal Software Engineer</p>
+
         <h1 id="landing-title" class="page-heading hero-title">
-          Matt<br /><span class="hero-title-name">Woodley</span>
+          <span class="reveal-line hero-reveal"><span>Matt</span></span>
+          <span class="reveal-line hero-reveal"
+            ><span class="hero-title-name">Woodley</span></span
+          >
         </h1>
-        <p class="hero-summary">
-          Principal Software Engineer.
-        </p>
-        <div class="role-line vt-tagline" aria-label="Builder, mentor, father">
-          <span>Leader</span>
-          <span>Builder</span>
-          <span>Father</span>
+
+        <div class="hero-foot">
+          <p class="hero-lead" data-hero-tail data-split-lead>
+            I invent, design, implement and mentor at the organizational IC
+            leadership level in Big Tech — and build things with my hands the
+            rest of the time.
+          </p>
+          <div
+            class="role-line vt-tagline"
+            data-hero-tail
+            aria-label="Leader, builder, father"
+          >
+            <span>Leader</span>
+            <span>Builder</span>
+            <span>Father</span>
+          </div>
         </div>
       </div>
+    </section>
 
-      <nav class="route-grid" aria-label="Featured pages">
-        <a class="route-card route-card--work" href="/software" data-direction="right">
-          <div class="route-card-copy">
-            <h2>Software</h2>
-            <p>Some side projects that I've built for fun in 2026.</p>
-          </div>
-          <span class="route-card-arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-              <path d="M5 19 19 5M9 5h10v10"></path>
-            </svg>
+    <!-- ── 2 · The photograph ──
+         Opens from a narrow rounded window to full bleed as it is scrolled
+         through, with the frame drifting against the crop. -->
+    <section class="showcase" aria-labelledby="showcase-caption-title">
+      <figure class="showcase-frame">
+        <div class="showcase-media">
+          <Image
+            class="showcase-image"
+            src={showcase.src}
+            alt={showcase.alt}
+            widths={[900, 1400, 1845]}
+            sizes="100vw"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+        <figcaption class="showcase-caption">
+          <span id="showcase-caption-title" class="showcase-caption-title">
+            {showcase.title}
           </span>
-        </a>
+          <span class="showcase-caption-meta">
+            {showcase.location} · {stampFor(showcase.date)}
+          </span>
+        </figcaption>
+      </figure>
+    </section>
 
-        <a class="route-card route-card--photo" href="/photography" data-direction="left">
-          <div class="route-card-copy">
-            <h2>Photography</h2>
-            <p>An archive of places, mostly at odd hours.</p>
+    <!-- ── 3 · Ticker ──
+         Runs on its own, then leans into whichever way the page is moving. -->
+    <div class="marquee" data-marquee aria-hidden="true">
+      <div class="marquee-track" data-marquee-track>
+        {[0, 1].map(() => (
+          <div class="marquee-run">
+            {stack.map((item) => (
+              <span class="marquee-item">
+                {item}
+                <span class="marquee-sep"></span>
+              </span>
+            ))}
           </div>
-          <span class="route-card-arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-              <path d="M4 12h15M13 6l6 6-6 6"></path>
-            </svg>
-          </span>
-        </a>
+        ))}
+      </div>
+    </div>
 
-        <a class="route-card route-card--about" href="/about" data-direction="down">
-          <div class="route-card-copy">
-            <h2>About me</h2>
-            <p>High level details of who I am.</p>
+    <!-- ── 4 · What I do ── -->
+    <section class="chapter chapter--about" id="about" aria-labelledby="about-title">
+      <div class="chapter-shell">
+        <header class="chapter-head chapter-head--split">
+          <div>
+            <p class="chapter-eyebrow" data-reveal>About me</p>
+            <h2 id="about-title" class="chapter-title" data-mask-title>
+              <span class="reveal-line"><span>A bit about myself.</span></span>
+            </h2>
           </div>
-          <span class="route-card-arrow" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-              <path d="m5 5 14 14M19 9v10H9"></path>
-            </svg>
-          </span>
-        </a>
-      </nav>
+          <p class="chapter-lead" data-reveal>
+            Three things, in roughly the order they matter — and then where the
+            third one has taken me.
+          </p>
+        </header>
+
+        <ol class="craft-list">
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+            <span class="craft-glow" aria-hidden="true"></span>
+            <div class="craft-lead">
+              <p class="craft-index" data-row-meta>
+                <span class="craft-index-num">01</span>
+                <span class="craft-index-label">What matters</span>
+              </p>
+              <h3 class="craft-title" data-row-title>
+                <span class="reveal-line"><span>Family</span></span>
+              </h3>
+            </div>
+            <p class="craft-copy" data-split-copy>
+              Above all else, my two kids, my partner, and our dog come first.
+              I’ve photographed the world, but my favourite place to be now is home
+              with my family.
+            </p>
+          </li>
+
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+            <span class="craft-glow" aria-hidden="true"></span>
+            <div class="craft-lead">
+              <p class="craft-index" data-row-meta>
+                <span class="craft-index-num">02</span>
+                <span class="craft-index-label">Elsewhere</span>
+              </p>
+              <h3 class="craft-title" data-row-title>
+                <span class="reveal-line"><span>Commitment to Craft</span></span>
+              </h3>
+            </div>
+            <p class="craft-copy" data-split-copy>
+              Outside of my career, I love to build stuff with my hands, from home
+              renovations to "fine" wood working, and am always looking for the next skill to hone.
+            </p>
+          </li>
+
+          <li class="craft-row" data-row>
+            <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+            <span class="craft-glow" aria-hidden="true"></span>
+            <div class="craft-lead">
+              <p class="craft-index" data-row-meta>
+                <span class="craft-index-num">03</span>
+                <span class="craft-index-label">At work</span>
+              </p>
+              <h3 class="craft-title" data-row-title>
+                <span class="reveal-line"><span>Leadership by example</span></span>
+              </h3>
+            </div>
+            <p class="craft-copy" data-split-copy>
+              I’ve excelled at the organizational IC leadership level in Big Tech,
+              and thrive when inventing, designing, implementing, and mentoring.
+              I am passionate about technical quality, but also about clarity: helping a
+              group understand what matters, why it matters, and how to build it.
+            </p>
+          </li>
+        </ol>
+
+        {(positions.length > 0 || internships.length > 0) && (
+          <div class="history" id="history">
+            <header class="history-head">
+              <p class="chapter-eyebrow" data-reveal>Work history</p>
+              <h3 class="history-heading" data-mask-title>
+                <span class="reveal-line"><span>Where that's taken me.</span></span>
+              </h3>
+            </header>
+
+            <ol class="history-list">
+              {tenures.map((tenure) => (
+                <li class="history-row" data-row data-tenure>
+                  <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+
+                  <div class="craft-lead">
+                    <p class="history-year" data-row-meta>
+                      <span>{tenure.startYear}</span>
+                      <span class="history-year-dash" aria-hidden="true"></span>
+                      <span>{tenure.endYear}</span>
+                    </p>
+                    <h4 class="history-role" data-row-title>
+                      <span class="reveal-line"><span>{tenure.company}</span></span>
+                    </h4>
+                    <p class="history-summary">{tenure.summary}</p>
+                  </div>
+
+                  <ol class="history-stints" data-row-body>
+                    <span class="history-spine" aria-hidden="true">
+                      <span class="history-spine-fill" data-spine-fill></span>
+                    </span>
+
+                    {tenure.roles.map((role) => (
+                      <li class="history-stint" data-stint>
+                        <span class="history-node" aria-hidden="true"></span>
+                        <div class="history-stint-inner">
+                          <p class="history-stint-title" data-stint-title>{role.title}</p>
+                          {/* Clipped, so the detail can be drawn downwards out
+                              from under the title once the title has landed. */}
+                          <div class="history-stint-detail" data-stint-detail>
+                            <div class="history-stint-detail-inner" data-stint-detail-inner>
+                              {role.meta && <p class="history-stint-meta">{role.meta}</p>}
+                              {!tenure.single && (
+                                <span class="history-bar" aria-hidden="true">
+                                  <span
+                                    class="history-bar-fill"
+                                    data-bar
+                                    style={`width:${role.bar}%`}
+                                  ></span>
+                                </span>
+                              )}
+                              {role.note && <p class="history-stint-note">{role.note}</p>}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              ))}
+
+              {/* Every co-op folded into one row: a two-up grid of small
+                  cards costs a fraction of what four full rows would. */}
+              {internships.length > 0 && (
+                <li class="history-row history-row--bundle" data-row>
+                  <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+                  <div class="craft-lead">
+                    <p class="history-year" data-row-meta>
+                      <span>{internships[internships.length - 1].start.slice(0, 4)}</span>
+                      <span class="history-year-dash" aria-hidden="true"></span>
+                      <span>
+                        {(internships[0].end ?? internships[0].start).slice(0, 4)}
+                      </span>
+                    </p>
+                    <h4 class="history-role" data-row-title>
+                      <span class="reveal-line"><span>Internships</span></span>
+                    </h4>
+                    <p class="history-summary">
+                      {internships.length} co-op terms
+                    </p>
+                  </div>
+
+                  <ul class="history-bundle" data-row-body>
+                    {internships.map((role) => (
+                      <li class="history-bundle-item" data-bundle-card>
+                        <div class="history-stint-inner">
+                          <p class="history-bundle-company">{role.company}</p>
+                          <p class="history-bundle-role">{role.title}</p>
+                          <p class="history-bundle-span">{span(role)}</p>
+                          {role.note && (
+                            <p class="history-bundle-note">{role.note}</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )}
+            </ol>
+
+            <a
+              class="chapter-link history-link"
+              href="https://www.linkedin.com/in/mattwoodley"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-reveal
+              data-magnetic
+            >
+              Full profile on LinkedIn
+              <span class="chapter-link-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M5 19 19 5M9 5h10v10"></path>
+                </svg>
+              </span>
+            </a>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ── 5 · Selected work ── -->
+    <section class="chapter chapter--work" id="work" aria-labelledby="work-title">
+      <div class="chapter-shell">
+        <header class="chapter-head chapter-head--split">
+          <div>
+            <p class="chapter-eyebrow" data-reveal>Selected work</p>
+            <h2 id="work-title" class="chapter-title" data-mask-title>
+              <span class="reveal-line"><span>Things I've built.</span></span>
+            </h2>
+          </div>
+          <a class="chapter-link" href="/software" data-reveal data-magnetic>
+            All projects
+            <span class="chapter-link-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <path d="M4 12h15M13 6l6 6-6 6"></path>
+              </svg>
+            </span>
+          </a>
+        </header>
+
+        <div class="work-grid">
+          {softwareEntries.map((entry, index) => (
+            <a class="work-card" href={entry.data.cardUrl ?? `/software/${entry.id}`}>
+              <div class="work-card-media">
+                <Image
+                  src={entry.data.coverImage}
+                  alt=""
+                  width={720}
+                  height={450}
+                  loading="lazy"
+                />
+              </div>
+              <div class="work-card-body">
+                <p class="work-card-index">{String(index + 1).padStart(2, "0")}</p>
+                <h3 class="work-card-title">{entry.data.title}</h3>
+                <p class="work-card-summary">{entry.data.summary}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6 · Photography ──
+         The strip is a real horizontal scroller; on a wide pointer screen the
+         page pins and drives it, and everywhere else you swipe it yourself. -->
+    <section class="chapter chapter--archive" id="archive" aria-labelledby="archive-title">
+      {/* The heading and the strip are pinned together, so the title holds
+          with its pictures instead of scrolling off above them. */}
+      <div class="archive-stage" data-archive-stage>
+        <div class="chapter-shell">
+          <header class="chapter-head chapter-head--split">
+            <div>
+              <p class="chapter-eyebrow" data-reveal>Photography</p>
+              <h2 id="archive-title" class="chapter-title" data-mask-title>
+                <span class="reveal-line"><span>An archive of places.</span></span>
+              </h2>
+            </div>
+            <a class="chapter-link" href="/photography" data-reveal data-magnetic>
+              View the archive
+              <span class="chapter-link-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M4 12h15M13 6l6 6-6 6"></path>
+                </svg>
+              </span>
+            </a>
+          </header>
+        </div>
+
+        <div class="gallery" data-gallery>
+          <div class="gallery-track" data-gallery-track>
+            {strip.map((photo) => (
+              <figure class="gallery-item">
+                <div class="gallery-media">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    widths={[420, 720]}
+                    sizes="(max-width: 760px) 74vw, 34vw"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption class="gallery-caption">
+                  <span class="gallery-caption-title">{photo.title}</span>
+                  <span class="gallery-caption-meta">
+                    {photo.location} · {stampFor(photo.date)}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 7 · Close ── -->
+    <section class="chapter chapter--contact" aria-labelledby="contact-title">
+      <div class="chapter-shell">
+        <p class="chapter-eyebrow" data-reveal>Elsewhere</p>
+        <h2 id="contact-title" class="contact-title" data-mask-title>
+          <span class="reveal-line"><span>Say hello.</span></span>
+        </h2>
+
+        <nav class="about-actions" aria-label="Contact" data-reveal>
+          <a
+            href="https://www.linkedin.com/in/mattwoodley"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="button button--primary"
+            data-magnetic
+          >LinkedIn <span aria-hidden="true">↗</span></a>
+          <a href="mailto:matt@builtbywoodley.ca" class="button" data-magnetic>
+            Email me <span aria-hidden="true">↗</span>
+          </a>
+        </nav>
+
+        <HumanWrittenMark />
+      </div>
     </section>
   </main>
 </BaseLayout>

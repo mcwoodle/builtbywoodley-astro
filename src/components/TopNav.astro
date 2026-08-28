@@ -4,7 +4,6 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isHome = path === '/';
 const isSoftware = path === '/software' || path.startsWith('/software/');
 const isPhotography = path === '/photography' || path.startsWith('/photography/');
-const isAbout = path === '/about';
 
 const crumb = path.startsWith('/software/')
   ? { label: 'Software Projects', href: '/software' }
@@ -24,6 +23,7 @@ const crumb = path.startsWith('/software/')
         aria-label={isHome ? 'Built by Woodley — home' : 'Back to home'}
         aria-current={isHome ? 'page' : undefined}
         data-tooltip={isHome ? "You're home" : undefined}
+        data-scroll-top={isHome ? '' : undefined}
       >
         <span class="brand-mark" aria-hidden="true">
           <svg
@@ -65,13 +65,13 @@ const crumb = path.startsWith('/software/')
     </div>
 
     <div class="nav-actions">
+      <!-- About lives on the landing page now, so this is a scroll when you
+           are already home and a navigation plus scroll when you are not. -->
       <a
-        href="/about"
-        class:list={['about-link', { active: isAbout }]}
+        href="/#about"
+        class="about-link"
         aria-label="About me"
-        aria-current={isAbout ? 'page' : undefined}
-        data-tooltip={isAbout ? "It's me" : 'About me'}
-        data-direction="down"
+        data-tooltip="About me"
       >
         <!-- Drawn to the same box and weight as the house at the other end,
              so the two tiles carry the same amount of ink. -->
@@ -88,8 +88,11 @@ const crumb = path.startsWith('/software/')
   // The tile for the page you are already on has nowhere to send you, so it
   // stays put: it leans, and its label says where you are. Delegated from the
   // document so the behaviour survives ClientRouter swapping the nav out.
-  const HOLD_MS = 1600;
-  const CURRENT = '.top-nav .brand-link[aria-current="page"], .top-nav .about-link.active';
+  // Long enough to read a two-word label, and it always lets go on its own —
+  // a phone has no hover to dismiss it with. Matches the theme toggle.
+  const HOLD_MS = 1800;
+  // The landing page marks whichever tile you are already at.
+  const CURRENT = '.top-nav [data-here]';
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   let held: Element | undefined;
@@ -102,6 +105,13 @@ const crumb = path.startsWith('/software/')
   }
 
   document.addEventListener('click', (event) => {
+    // The landing page claims this click when the tile has somewhere to send
+    // you — the top of a long scroll — and says so on the event. Only when it
+    // has not does the tile lean and say where you already are. Reading
+    // defaultPrevented here would not work: the router sets that first, for
+    // its own reasons, on every same-origin link.
+    if ((event as Event & { pageHandled?: boolean }).pageHandled) return;
+
     const target = event.target;
     if (!(target instanceof Element)) return;
     const tile = target.closest(CURRENT);

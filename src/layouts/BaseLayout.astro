@@ -96,6 +96,19 @@ const {
         } catch (error) {}
       })();
     </script>
+    <!-- The landing page holds its title back so the reveal has somewhere to
+         start from. Arming it here means it is set before first paint; the
+         timeout releases it if the page script never arrives, so a hero can
+         never be left invisible by a script that failed to load. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        root.setAttribute('data-motion-armed', '');
+        setTimeout(function () {
+          root.removeAttribute('data-motion-armed');
+        }, 2000);
+      })();
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
@@ -120,6 +133,7 @@ const {
     <script>
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';
+      import '../scripts/home-scroll';
     </script>
   </body>
 </html>
