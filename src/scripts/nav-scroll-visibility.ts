@@ -6,6 +6,12 @@ let animationFrame = 0;
 // page under the reader. That is the browser moving, not the reader scrolling,
 // so the jump it reports is dropped rather than driving the nav.
 let ignoreNextDelta = false;
+// A scroll the reader started by clicking a nav tile is the nav's own doing,
+// so it does not slide away for it: it holds still for the whole animation and
+// is still there when the page settles. The next scroll the reader makes
+// themselves hands control back.
+let pinned = false;
+let holdTimer: ReturnType<typeof setTimeout> | undefined;
 
 const currentNav = () => document.querySelector<HTMLElement>('.top-nav');
 
@@ -20,6 +26,8 @@ function setNavOffset(nav: HTMLElement, offset: number) {
 function resetNav() {
   if (animationFrame) cancelAnimationFrame(animationFrame);
   animationFrame = 0;
+  pinned = false;
+  clearTimeout(holdTimer);
   lastScrollY = Math.max(window.scrollY, 0);
   const nav = currentNav();
   if (nav) setNavOffset(nav, 0);
@@ -41,6 +49,11 @@ function updateNavVisibility() {
 
   if (!nav) return;
 
+  if (pinned) {
+    setNavOffset(nav, 0);
+    return;
+  }
+
   if (ignoreNextDelta) {
     ignoreNextDelta = false;
     return;
@@ -53,6 +66,35 @@ function updateNavVisibility() {
 
   const hiddenOffset = -(nav.offsetHeight + 10);
   setNavOffset(nav, Math.min(0, Math.max(hiddenOffset, navOffset - delta)));
+}
+
+/** Hold the nav in view for a scroll the reader asked for by clicking. */
+export function pinNav(maxHold = 2600) {
+  pinned = true;
+  clearTimeout(holdTimer);
+  // Nothing should be able to strand the nav pinned — not an animation that
+  // never reports finishing, not a target that vanishes mid-flight.
+  holdTimer = setTimeout(releaseNav, maxHold);
+  const nav = currentNav();
+  if (nav) setNavOffset(nav, 0);
+}
+
+/** Hand control back, leaving the nav where the reader can see it. */
+export function releaseNav() {
+  clearTimeout(holdTimer);
+  if (!pinned) return;
+  pinned = false;
+  const nav = currentNav();
+  if (nav) setNavOffset(nav, 0);
+  // The jump that got us here was not a scroll the reader made, so it is not
+  // read as one: the landing position becomes the new baseline.
+  rebaseline();
+}
+
+// Any real gesture ends the hold immediately, so an interrupted animation
+// never leaves the nav stuck open.
+for (const type of ['wheel', 'touchstart', 'keydown'] as const) {
+  window.addEventListener(type, () => { if (pinned) releaseNav(); }, { passive: true });
 }
 
 function scheduleVisibilityUpdate() {

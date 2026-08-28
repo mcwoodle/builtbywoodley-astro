@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import { prefersReducedMotion, smoothScroll } from './smooth-scroll';
+import { pinNav, releaseNav } from './nav-scroll-visibility';
 
 gsap.registerPlugin(SplitText);
 
@@ -572,10 +573,22 @@ function setupPage() {
   // same-origin links in the bubble phase; marking the event handled first is
   // what stops the nav's /#about tile from being treated as a navigation back
   // to the page we are already on.
+  // A scroll the reader asked for by clicking the nav should not make the nav
+  // disappear on the way, so it is held in view for the whole trip and handed
+  // back only once the page has settled.
+  const scrollTo = (to: HTMLElement | number, immediate: boolean) => {
+    pinNav();
+    lenis.scrollTo(to, {
+      offset: typeof to === 'number' ? 0 : -24,
+      immediate: immediate || reduceMotion,
+      onComplete: releaseNav,
+    });
+  };
+
   const scrollToTarget = (hash: string, immediate: boolean) => {
     const target = hash.length > 1 ? document.getElementById(hash.slice(1)) : null;
     if (!target) return false;
-    lenis.scrollTo(target, { offset: -24, immediate: immediate || reduceMotion });
+    scrollTo(target, immediate);
     return true;
   };
 
@@ -594,6 +607,21 @@ function setupPage() {
 
       const target = event.target;
       if (!(target instanceof Element)) return;
+
+      // The house tile has somewhere to send you on this page: back up to the
+      // top. Left alone at the top, where it genuinely has nowhere to go, the
+      // nav's own handler still leans it and says so.
+      const home = target.closest<HTMLElement>('[data-scroll-top]');
+      if (home) {
+        // Either way this is not a navigation to the page we are already on,
+        // so the router does not get to treat it as one.
+        event.preventDefault();
+        if (window.scrollY <= 4) return;
+        (event as MouseEvent & { pageHandled?: boolean }).pageHandled = true;
+        scrollTo(0, false);
+        return;
+      }
+
       const link = target.closest<HTMLAnchorElement>('a[href]');
       if (!link || (link.target && link.target !== '_self')) return;
 
@@ -606,6 +634,16 @@ function setupPage() {
     },
     { capture: true, signal },
   );
+
+  // The tile's label follows what it will actually do.
+  const brand = document.querySelector<HTMLElement>('.top-nav [data-scroll-top]');
+  if (brand) {
+    const syncBrandLabel = () => {
+      brand.dataset.tooltip = window.scrollY > 4 ? 'Back to top' : "You're home";
+    };
+    syncBrandLabel();
+    window.addEventListener('scroll', syncBrandLabel, { passive: true, signal });
+  }
 
   ScrollTrigger.refresh();
   // Arriving from another page with /#about in the URL should land on the

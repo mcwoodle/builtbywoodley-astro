@@ -23,6 +23,7 @@ const crumb = path.startsWith('/software/')
         aria-label={isHome ? 'Built by Woodley — home' : 'Back to home'}
         aria-current={isHome ? 'page' : undefined}
         data-tooltip={isHome ? "You're home" : undefined}
+        data-scroll-top={isHome ? '' : undefined}
       >
         <span class="brand-mark" aria-hidden="true">
           <svg
@@ -101,6 +102,13 @@ const crumb = path.startsWith('/software/')
   }
 
   document.addEventListener('click', (event) => {
+    // The landing page claims this click when the tile has somewhere to send
+    // you — the top of a long scroll — and says so on the event. Only when it
+    // has not does the tile lean and say where you already are. Reading
+    // defaultPrevented here would not work: the router sets that first, for
+    // its own reasons, on every same-origin link.
+    if ((event as Event & { pageHandled?: boolean }).pageHandled) return;
+
     const target = event.target;
     if (!(target instanceof Element)) return;
     const tile = target.closest(CURRENT);
