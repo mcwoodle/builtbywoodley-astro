@@ -474,11 +474,12 @@ function setupPage() {
   // it and drives the track from vertical scroll instead, which is only worth
   // taking a swipe away for on a screen with room for it.
   media.add(
-    '(min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
+    '(min-width: 761px) and (min-height: 720px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
     () => {
+      const stage = page.querySelector<HTMLElement>('[data-archive-stage]');
       const gallery = page.querySelector<HTMLElement>('[data-gallery]');
       const track = page.querySelector<HTMLElement>('[data-gallery-track]');
-      if (!gallery || !track) return;
+      if (!stage || !gallery || !track) return;
 
       gallery.classList.add('is-pinned');
       const travel = () => Math.max(0, track.scrollWidth - gallery.clientWidth);
@@ -487,12 +488,16 @@ function setupPage() {
         x: () => -travel(),
         ease: 'none',
         scrollTrigger: {
-          trigger: gallery,
+          // The whole stage holds still, heading included.
+          trigger: stage,
           start: 'center center',
-          end: () => `+=${travel() + window.innerHeight * 0.35}`,
-          pin: true,
-          anticipatePin: 1,
-          scrub: 0.6,
+          // Exactly as long as there is strip left to move: any more and the
+          // section sits there pinned with nothing happening.
+          end: () => `+=${travel()}`,
+          pin: stage,
+          // No lag. With one, the strip was still sliding sideways after the
+          // pin had let go and the section was scrolling away underneath it.
+          scrub: true,
           invalidateOnRefresh: true,
         },
       });

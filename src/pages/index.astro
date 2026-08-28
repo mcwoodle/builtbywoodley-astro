@@ -434,46 +434,50 @@ const bundleSpan = internships.length
          The strip is a real horizontal scroller; on a wide pointer screen the
          page pins and drives it, and everywhere else you swipe it yourself. -->
     <section class="chapter chapter--archive" id="archive" aria-labelledby="archive-title">
-      <div class="chapter-shell">
-        <header class="chapter-head chapter-head--split">
-          <div>
-            <p class="chapter-eyebrow" data-reveal>Photography</p>
-            <h2 id="archive-title" class="chapter-title" data-mask-title>
-              <span class="reveal-line"><span>An archive of places.</span></span>
-            </h2>
-          </div>
-          <a class="chapter-link" href="/photography" data-reveal data-magnetic>
-            View the archive
-            <span class="chapter-link-arrow" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                <path d="M4 12h15M13 6l6 6-6 6"></path>
-              </svg>
-            </span>
-          </a>
-        </header>
-      </div>
+      {/* The heading and the strip are pinned together, so the title holds
+          with its pictures instead of scrolling off above them. */}
+      <div class="archive-stage" data-archive-stage>
+        <div class="chapter-shell">
+          <header class="chapter-head chapter-head--split">
+            <div>
+              <p class="chapter-eyebrow" data-reveal>Photography</p>
+              <h2 id="archive-title" class="chapter-title" data-mask-title>
+                <span class="reveal-line"><span>An archive of places.</span></span>
+              </h2>
+            </div>
+            <a class="chapter-link" href="/photography" data-reveal data-magnetic>
+              View the archive
+              <span class="chapter-link-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                  <path d="M4 12h15M13 6l6 6-6 6"></path>
+                </svg>
+              </span>
+            </a>
+          </header>
+        </div>
 
-      <div class="gallery" data-gallery>
-        <div class="gallery-track" data-gallery-track>
-          {strip.map((photo) => (
-            <figure class="gallery-item">
-              <div class="gallery-media">
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  widths={[420, 720]}
-                  sizes="(max-width: 760px) 74vw, 34vw"
-                  loading="lazy"
-                />
-              </div>
-              <figcaption class="gallery-caption">
-                <span class="gallery-caption-title">{photo.title}</span>
-                <span class="gallery-caption-meta">
-                  {photo.location} · {stampFor(photo.date)}
-                </span>
-              </figcaption>
-            </figure>
-          ))}
+        <div class="gallery" data-gallery>
+          <div class="gallery-track" data-gallery-track>
+            {strip.map((photo) => (
+              <figure class="gallery-item">
+                <div class="gallery-media">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    widths={[420, 720]}
+                    sizes="(max-width: 760px) 74vw, 34vw"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption class="gallery-caption">
+                  <span class="gallery-caption-title">{photo.title}</span>
+                  <span class="gallery-caption-meta">
+                    {photo.location} · {stampFor(photo.date)}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
         </div>
       </div>
     </section>
