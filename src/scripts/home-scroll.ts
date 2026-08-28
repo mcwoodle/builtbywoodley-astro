@@ -307,7 +307,12 @@ function setupPage() {
         scrollTrigger: {
           trigger: stint,
           start: 'top 76%',
-          end: 'top 46%',
+          // A pointer screen reads faster than it scrolls, so the detail is
+          // done a third of the way sooner there: twenty points of travel
+          // rather than thirty, off the same start. Evaluated on refresh, so
+          // dragging a window across the breakpoint re-measures.
+          end: () =>
+            window.matchMedia('(min-width: 761px)').matches ? 'top 56%' : 'top 46%',
           scrub: true,
           invalidateOnRefresh: true,
         },
