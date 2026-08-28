@@ -1,23 +1,31 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { SplitText } from 'gsap/SplitText';
 import { prefersReducedMotion, smoothScroll } from './smooth-scroll';
 
-// The landing page is one continuous scroll: a full-height title, the about
-// chapter, then the routes that are still their own pages. Every reveal below
-// is scrubbed against the scroll position rather than fired once on entry, so
-// scrolling back up plays the same motion in reverse instead of leaving a
-// half-finished screen behind.
+gsap.registerPlugin(SplitText);
 
-type ScrollAnimation = gsap.core.Animation & { scrollTrigger?: ScrollTrigger };
+// The landing page is one continuous scroll arranged the way cuberto.com
+// arranges one, and it leans on GSAP for all of it: a masked title reveal, a
+// photograph that opens from a window to full bleed, a ticker that leans into
+// the scroll, line-by-line copy, a pinned horizontal archive, and magnetic
+// links.
+//
+// Everything scroll-linked is scrubbed rather than fired once on entry, so
+// scrolling back up unplays the same motion instead of stranding a
+// half-finished screen. Behaviour that only makes sense on a wide pointer
+// screen — the pin, the pointer effects — lives in its own matchMedia context
+// so GSAP tears it back out when the viewport stops qualifying.
 
 let cleanupActivePage = () => {};
 
-/** The sticky nav overlaps the top of the page; chapters size around it. */
+/** The sticky nav sits above the page in flow; the hero sizes around it. */
 function measureNav() {
   const nav = document.querySelector<HTMLElement>('.top-nav');
-  const height = nav ? nav.offsetHeight : 80;
-  document.documentElement.style.setProperty('--top-nav-height', `${height}px`);
-  return height;
+  document.documentElement.style.setProperty(
+    '--top-nav-height',
+    `${nav ? nav.offsetHeight : 80}px`,
+  );
 }
 
 function setupPage() {
@@ -31,17 +39,18 @@ function setupPage() {
 
   const controller = new AbortController();
   const { signal } = controller;
-  const reduceMotion = prefersReducedMotion();
   const lenis = smoothScroll();
-  const animations: ScrollAnimation[] = [];
+  const reduceMotion = prefersReducedMotion();
+  const media = gsap.matchMedia();
+  const q = gsap.utils.selector(page);
 
   measureNav();
   window.addEventListener('resize', measureNav, { passive: true, signal });
+  // Images settle after first paint and change every trigger's geometry.
+  window.addEventListener('load', () => ScrollTrigger.refresh(), { once: true, signal });
 
-  const heroSection = page.querySelector<HTMLElement>('.chapter--hero');
-  const heroCopy = page.querySelector<HTMLElement>('.hero-copy');
-  const heroLines = gsap.utils.toArray<HTMLElement>('.hero-reveal > span', page);
-  const heroTail = gsap.utils.toArray<HTMLElement>('[data-hero-tail]', page);
+  const heroLines = q('.hero-reveal > span');
+  const heroTail = q('[data-hero-tail]');
 
   // Whatever happens next, the hero is visible: the pre-paint hidden state in
   // CSS only exists so the reveal has somewhere to start from. Disarm before
@@ -51,90 +60,179 @@ function setupPage() {
   gsap.set(heroLines, { yPercent: 0, y: 0, opacity: 1 });
   gsap.set(heroTail, { y: 0, opacity: 1 });
 
-  if (!reduceMotion) {
-    const intro = gsap.timeline({ defaults: { ease: 'expo.out' } });
-    intro
-      .fromTo(
-        heroLines,
-        { yPercent: 118, y: 0 },
-        { yPercent: 0, y: 0, duration: 1.25, stagger: 0.085 },
-        0,
-      )
-      .fromTo(
-        heroTail,
-        { y: 22, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.95, stagger: 0.09 },
-        0.42,
-      );
-    animations.push(intro);
+  // ── Motion, for readers who have not asked for stillness ──
+  media.add('(prefers-reduced-motion: no-preference)', () => {
+    const splits: SplitText[] = [];
 
-    // The title drifts up and dims as the about chapter arrives underneath it.
-    if (heroSection && heroCopy) {
-      animations.push(
-        gsap.to(heroCopy, {
-          yPercent: -14,
-          opacity: 0.06,
+    // 1 · The title arrives line by line, its lead a beat behind it.
+    const lead = page.querySelector<HTMLElement>('[data-split-lead]');
+    const intro = gsap.timeline({ defaults: { ease: 'expo.out' } });
+
+    intro.fromTo(
+      heroLines,
+      { yPercent: 118, y: 0 },
+      { yPercent: 0, y: 0, duration: 1.25, stagger: 0.085 },
+      0,
+    );
+    intro.fromTo(
+      q('[data-hero-tail]:not([data-split-lead])'),
+      { y: 22, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.9, stagger: 0.09 },
+      0.34,
+    );
+
+    if (lead) {
+      const leadSplit = SplitText.create(lead, { type: 'lines,words', mask: 'lines' });
+      splits.push(leadSplit);
+      intro.from(
+        leadSplit.words,
+        { yPercent: 115, duration: 0.85, stagger: 0.012, ease: 'power3.out' },
+        0.46,
+      );
+    }
+
+    // The title gives way as the photograph comes up underneath it.
+    const heroShell = page.querySelector<HTMLElement>('.hero-shell');
+    const heroSection = page.querySelector<HTMLElement>('.chapter--hero');
+    if (heroShell && heroSection) {
+      gsap.to(heroShell, {
+        yPercent: -12,
+        opacity: 0.08,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: heroSection,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+    }
+
+    // 2 · The photograph opens from a rounded window to full bleed, with the
+    //     frame drifting against its own crop the whole way past.
+    const frame = page.querySelector<HTMLElement>('.showcase-frame');
+    const showcaseMedia = page.querySelector<HTMLElement>('.showcase-media');
+    const showcaseImage = page.querySelector<HTMLElement>('.showcase-image');
+    const showcaseCaption = page.querySelector<HTMLElement>('.showcase-caption');
+
+    if (frame && showcaseMedia) {
+      gsap.fromTo(
+        showcaseMedia,
+        { clipPath: 'inset(0% 18% 0% 18% round 26px)' },
+        {
+          clipPath: 'inset(0% 0% 0% 0% round 0px)',
           ease: 'none',
           scrollTrigger: {
-            trigger: heroSection,
-            start: 'top top',
+            trigger: frame,
+            start: 'top 84%',
+            end: 'top 10%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+    }
+
+    if (frame && showcaseImage) {
+      gsap.fromTo(
+        showcaseImage,
+        { yPercent: -7, scale: 1.18 },
+        {
+          yPercent: 7,
+          scale: 1.02,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: frame,
+            start: 'top bottom',
             end: 'bottom top',
             scrub: true,
             invalidateOnRefresh: true,
           },
-        }),
+        },
       );
     }
 
-    // The intro fades .scroll-cue-inner in; this fade takes the outer anchor.
-    // Sharing one element would have the scrub record the intro's starting
-    // opacity as the value to return to at the top of the page.
-    const cue = page.querySelector<HTMLElement>('.scroll-cue');
-    if (cue && heroSection) {
-      animations.push(
-        gsap.to(cue, {
-          opacity: 0,
-          ease: 'none',
+    if (frame && showcaseCaption) {
+      gsap.fromTo(
+        showcaseCaption,
+        { opacity: 0, y: 16 },
+        {
+          opacity: 1,
+          y: 0,
+          ease: 'power2.out',
           scrollTrigger: {
-            trigger: heroSection,
-            start: 'top top',
-            end: '+=30%',
+            trigger: frame,
+            start: 'top 46%',
+            end: 'top 14%',
             scrub: true,
             invalidateOnRefresh: true,
           },
-        }),
+        },
       );
     }
 
-    // Chapter headings rise out of their mask as the heading reaches the fold.
-    gsap.utils
-      .toArray<HTMLElement>('.chapter-title .reveal-line > span', page)
-      .forEach((line) => {
-        animations.push(
-          gsap.fromTo(
-            line,
-            { yPercent: 115 },
-            {
-              yPercent: 0,
-              ease: 'power3.out',
-              scrollTrigger: {
-                trigger: line,
-                start: 'top bottom',
-                end: 'top 68%',
-                scrub: true,
-                invalidateOnRefresh: true,
-              },
-            },
-          ),
-        );
+    // 3 · The ticker drifts on its own, then takes the page's speed and
+    //     direction from it — faster the harder you scroll, backwards when
+    //     you scroll back up, easing to a drift when you stop.
+    const marqueeTrack = page.querySelector<HTMLElement>('[data-marquee-track]');
+    let removeTick: (() => void) | undefined;
+
+    if (marqueeTrack) {
+      const loop = gsap.to(marqueeTrack, {
+        xPercent: -50,
+        ease: 'none',
+        duration: 26,
+        repeat: -1,
       });
 
-    // Each craft row draws its own rule, then lifts its title and copy.
-    gsap.utils.toArray<HTMLElement>('.craft-row', page).forEach((row) => {
+      let direction = 1;
+      let speed = 1;
+      const tick = () => {
+        speed += (direction - speed) * 0.05;
+        loop.timeScale(speed);
+      };
+      gsap.ticker.add(tick);
+      removeTick = () => gsap.ticker.remove(tick);
+
+      ScrollTrigger.create({
+        trigger: page,
+        start: 'top top',
+        end: 'bottom bottom',
+        onUpdate: (self) => {
+          const velocity = self.getVelocity();
+          direction = velocity < 0 ? -1 : 1;
+          speed = direction * gsap.utils.clamp(1, 6, 1 + Math.abs(velocity) / 900);
+        },
+      });
+    }
+
+    // 4 · Section headings rise out of their masks.
+    q('.chapter-title .reveal-line > span, .contact-title .reveal-line > span').forEach(
+      (line) => {
+        gsap.fromTo(
+          line,
+          { yPercent: 115 },
+          {
+            yPercent: 0,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: line,
+              start: 'top bottom',
+              end: 'top 68%',
+              scrub: true,
+              invalidateOnRefresh: true,
+            },
+          },
+        );
+      },
+    );
+
+    // 5 · Each craft row draws its own rule, then lifts its index and title.
+    q('.craft-row').forEach((row) => {
       const rule = row.querySelector<HTMLElement>('.craft-rule');
       const title = row.querySelector<HTMLElement>('.craft-title .reveal-line > span');
       const index = row.querySelector<HTMLElement>('.craft-index');
-      const copy = row.querySelector<HTMLElement>('.craft-copy');
 
       const timeline = gsap.timeline({
         scrollTrigger: {
@@ -149,37 +247,140 @@ function setupPage() {
       if (rule) timeline.fromTo(rule, { scaleX: 0 }, { scaleX: 1, ease: 'power2.inOut', duration: 1 }, 0);
       if (index) timeline.fromTo(index, { opacity: 0, y: 16 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8 }, 0.1);
       if (title) timeline.fromTo(title, { yPercent: 115 }, { yPercent: 0, ease: 'power3.out', duration: 0.95 }, 0.15);
-      if (copy) timeline.fromTo(copy, { opacity: 0, y: 26 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.85 }, 0.3);
-
-      animations.push(timeline);
     });
 
-    gsap.utils.toArray<HTMLElement>('[data-reveal]', page).forEach((element) => {
-      animations.push(
-        gsap.fromTo(
-          element,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1,
-            y: 0,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: element,
-              start: 'top bottom',
-              end: 'top 72%',
-              scrub: true,
-              invalidateOnRefresh: true,
-            },
-          },
-        ),
+    // ...and its copy arrives a line at a time. autoSplit re-cuts the lines
+    // when the font lands or the column changes width, and rebuilds the
+    // animation with them.
+    q('.craft-copy').forEach((copy) => {
+      splits.push(
+        SplitText.create(copy, {
+          type: 'lines',
+          mask: 'lines',
+          autoSplit: true,
+          onSplit: (self) =>
+            gsap.from(self.lines, {
+              yPercent: 108,
+              duration: 1,
+              stagger: 0.08,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: copy,
+                start: 'top 94%',
+                end: 'top 58%',
+                scrub: true,
+                invalidateOnRefresh: true,
+              },
+            }),
+        }),
       );
     });
-  }
 
-  // Cuberto's rows track the pointer with a piece of media; these carry a soft
-  // wash of the copper accent instead, which is all the colour scheme wants.
-  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    gsap.utils.toArray<HTMLElement>('.craft-row', page).forEach((row) => {
+    // 6 · Work cards rise, and their covers uncrop as they come.
+    q('.work-card').forEach((card) => {
+      gsap.fromTo(
+        card,
+        { opacity: 0, y: 48 },
+        {
+          opacity: 1,
+          y: 0,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top bottom',
+            end: 'top 68%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+
+      const cover = card.querySelector<HTMLElement>('.work-card-media img');
+      if (!cover) return;
+      gsap.fromTo(
+        cover,
+        { clipPath: 'inset(12% 6% 12% 6%)', scale: 1.16 },
+        {
+          clipPath: 'inset(0% 0% 0% 0%)',
+          scale: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top bottom',
+            end: 'top 55%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+    });
+
+    // 7 · Everything else that just needs to arrive.
+    q('[data-reveal]').forEach((element) => {
+      gsap.fromTo(
+        element,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: element,
+            start: 'top bottom',
+            end: 'top 72%',
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+    });
+
+    return () => {
+      removeTick?.();
+      splits.forEach((split) => split.revert());
+    };
+  });
+
+  // ── Wide pointer screens only ──
+  //
+  // The archive is a real horizontal scroller everywhere; here the page pins
+  // it and drives the track from vertical scroll instead, which is only worth
+  // taking a swipe away for on a screen with room for it.
+  media.add(
+    '(min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)',
+    () => {
+      const gallery = page.querySelector<HTMLElement>('[data-gallery]');
+      const track = page.querySelector<HTMLElement>('[data-gallery-track]');
+      if (!gallery || !track) return;
+
+      gallery.classList.add('is-pinned');
+      const travel = () => Math.max(0, track.scrollWidth - gallery.clientWidth);
+
+      gsap.to(track, {
+        x: () => -travel(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: gallery,
+          start: 'center center',
+          end: () => `+=${travel() + window.innerHeight * 0.35}`,
+          pin: true,
+          anticipatePin: 1,
+          scrub: 0.6,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      return () => {
+        gallery.classList.remove('is-pinned');
+        gsap.set(track, { x: 0 });
+      };
+    },
+  );
+
+  // Pointer effects: the wash that follows the cursor across a craft row, and
+  // links that lean toward it. Both are meaningless without a real pointer.
+  media.add('(hover: hover) and (pointer: fine)', () => {
+    q('.craft-row').forEach((row) => {
       row.addEventListener(
         'pointermove',
         (event) => {
@@ -190,9 +391,31 @@ function setupPage() {
         { passive: true, signal },
       );
     });
-  }
 
-  // In-page jumps go through Lenis so they ease instead of teleporting.
+    q('[data-magnetic]').forEach((element) => {
+      const xTo = gsap.quickTo(element, 'x', { duration: 0.5, ease: 'power3.out' });
+      const yTo = gsap.quickTo(element, 'y', { duration: 0.5, ease: 'power3.out' });
+
+      element.addEventListener(
+        'pointermove',
+        (event) => {
+          const bounds = element.getBoundingClientRect();
+          xTo((event.clientX - (bounds.left + bounds.width / 2)) * 0.28);
+          yTo((event.clientY - (bounds.top + bounds.height / 2)) * 0.4);
+        },
+        { passive: true, signal },
+      );
+      element.addEventListener('pointerleave', () => { xTo(0); yTo(0); }, { signal });
+      element.addEventListener('blur', () => { xTo(0); yTo(0); }, { signal });
+    });
+  });
+
+  // ── Same-document jumps ──
+  //
+  // Runs in the capture phase because Astro's router claims clicks on
+  // same-origin links in the bubble phase; marking the event handled first is
+  // what stops the nav's /#about tile from being treated as a navigation back
+  // to the page we are already on.
   const scrollToTarget = (hash: string, immediate: boolean) => {
     const target = hash.length > 1 ? document.getElementById(hash.slice(1)) : null;
     if (!target) return false;
@@ -200,11 +423,6 @@ function setupPage() {
     return true;
   };
 
-  // One handler for every same-document jump on this page: the cue, and the
-  // nav's about tile, which points at /#about from everywhere. It runs in the
-  // capture phase because Astro's router claims clicks on same-origin links in
-  // the bubble phase — marking the event handled first is what stops /#about
-  // from being treated as a navigation back to the page we are already on.
   const hashFor = (link: HTMLAnchorElement) => {
     const href = link.getAttribute('href') || '';
     if (!href.startsWith('#') && !href.startsWith('/#')) return '';
@@ -240,10 +458,7 @@ function setupPage() {
 
   cleanupActivePage = () => {
     controller.abort();
-    animations.forEach((animation) => {
-      animation.scrollTrigger?.kill();
-      animation.kill();
-    });
+    media.revert();
     cleanupActivePage = () => {};
   };
 }

@@ -1333,41 +1333,58 @@ svg {
 
 /* ─────────────────────────────────────────────
    Landing page
-   One continuous scroll: a full-height title, the about chapter that used to
-   be its own route, then the pages that are still their own. Every reveal is
-   scrubbed against scroll position in src/scripts/home-scroll.ts, so scrolling
-   back up unplays the same motion instead of stranding a half-drawn screen.
+   One continuous scroll, arranged the way cuberto.com arranges one: an
+   oversized title, a photograph that breaks the fold, a ticker, then the
+   sections. There is no scroll arrow anywhere — the picture cut off by the
+   bottom of the first screen is what asks you to keep going.
+
+   The motion lives in src/scripts/home-scroll.ts. Every scroll-linked reveal
+   is scrubbed rather than fired once, so scrolling back up unplays it.
    ───────────────────────────────────────────── */
 .landing-page {
+  --shell-gutter: max(20px, calc((100% - 1180px) / 2));
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+/* Chapters run full width; their contents sit on the shared column. */
+.chapter-shell {
   width: min(1180px, calc(100% - 40px));
   margin-inline: auto;
 }
 
 .chapter {
   position: relative;
-  display: flex;
-  flex-direction: column;
   padding-block: clamp(92px, 13vh, 168px);
 }
 
-/* The sticky nav sits above the page in flow, so the first screen is the
-   viewport minus its height. home-scroll.ts measures it; 80px is the value
-   the nav's own min-height works out to before that lands. */
+/* ── 1 · Title ──
+   Sized to stop short of the fold on purpose: the leftover room belongs to
+   the photograph underneath, and that overlap is the invitation to scroll. */
 .chapter--hero {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  min-height: calc(100svh - var(--top-nav-height, 80px));
-  padding-block: clamp(40px, 7vh, 90px) clamp(28px, 5vh, 56px);
+  min-height: calc(
+    100svh - var(--top-nav-height, 80px) - clamp(110px, 19vh, 210px)
+  );
+  padding-block: clamp(28px, 5vh, 64px) clamp(24px, 4vh, 52px);
 }
 
-.hero-copy {
-  flex: 0 0 auto;
+.hero-eyebrow {
+  margin-bottom: clamp(18px, 2.5vw, 30px);
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .hero-title {
   max-width: none;
-  margin-bottom: clamp(26px, 3.5vw, 40px);
+  margin-bottom: clamp(26px, 3.5vw, 44px);
   font-size: clamp(4.4rem, 15vw, 11.5rem);
   font-weight: 650;
   letter-spacing: -0.085em;
@@ -1378,19 +1395,26 @@ svg {
   color: var(--accent-sage);
 }
 
-.hero-summary {
-  max-width: 620px;
-  margin-bottom: 26px;
+.hero-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(20px, 4vw, 56px);
+}
+
+.hero-lead {
+  max-width: 46ch;
+  margin-bottom: 0;
   color: var(--color-text-muted);
-  font-size: clamp(1.08rem, 1.8vw, 1.3rem);
+  font-size: clamp(1.05rem, 1.6vw, 1.28rem);
   line-height: 1.55;
   text-wrap: pretty;
 }
 
 /* ── Masked line reveal ──
    A line of type sits in its own clipped box and slides up out of it. The
-   padding keeps descenders off the clip edge; the negative margin takes the
-   room back so the line spacing is unchanged. */
+   padding keeps ascenders and descenders off the clip edge; the negative
+   margin takes the room straight back so line spacing is unchanged. */
 .reveal-line {
   display: block;
   overflow: hidden;
@@ -1403,16 +1427,15 @@ svg {
   will-change: transform;
 }
 
-/* The hero runs a 0.84 line-height, which crowds ascenders and descenders
-   against the clip edge. Widen its mask and take the space straight back. */
+/* The hero runs a 0.84 line-height, which crowds the glyphs harder. */
 .hero-title .reveal-line {
   padding-block: 0.08em 0.22em;
   margin-block: -0.08em -0.22em;
 }
 
-/* Hold the hero down until the script can play it in. Gated on the attribute
-   the theme script sets, so a page rendered without JS is never left blank —
-   and home-scroll.ts clears the attribute as soon as it takes over. */
+/* Hold the hero back until the script can play it in. Gated on the attribute
+   the layout's inline script sets, which it also drops after a beat, so a
+   page whose bundle never arrives is never left blank. */
 html[data-motion-armed] .hero-reveal > span {
   transform: translateY(118%);
 }
@@ -1421,85 +1444,117 @@ html[data-motion-armed] [data-hero-tail] {
   opacity: 0;
 }
 
-/* ── Scroll cue ──
-   The anchor carries the scroll-linked fade and the inner element carries the
-   intro reveal, so the two never write to the same opacity. */
-.scroll-cue {
-  align-self: center;
-  margin-top: auto;
-  padding-top: clamp(36px, 6vh, 72px);
-  color: var(--color-text-muted);
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: color 220ms ease;
+/* ── 2 · The photograph ──
+   Starts as a narrow rounded window and opens to full bleed as it is scrolled
+   through, with the image drifting against its own crop. */
+.showcase {
+  position: relative;
+  width: 100%;
 }
 
-.scroll-cue-inner {
+.showcase-frame {
+  position: relative;
+  height: min(86svh, 820px);
+  margin: 0;
+  overflow: hidden;
+}
+
+.showcase-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  clip-path: inset(0% 18% 0% 18% round 26px);
+}
+
+.showcase-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform;
+}
+
+.showcase-caption {
+  position: absolute;
+  right: var(--shell-gutter);
+  bottom: clamp(18px, 3vw, 34px);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, #0b0f11 62%, transparent);
+  color: #ede8df;
+  font-family: var(--font-mono);
+  text-align: right;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.scroll-cue:hover,
-.scroll-cue:focus-visible {
-  color: var(--color-text);
+.showcase-caption-title {
+  font-size: 0.86rem;
+  font-weight: 500;
 }
 
-.scroll-cue:focus-visible {
-  outline: 2px solid var(--accent-copper);
-  outline-offset: 8px;
-  border-radius: 6px;
+.showcase-caption-meta {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+  text-transform: uppercase;
 }
 
-.scroll-cue-rail {
-  position: relative;
-  display: block;
-  width: 1px;
-  height: 46px;
+/* ── 3 · Ticker ──
+   Two identical runs so a -50% shift on the track loops seamlessly. */
+.marquee {
+  width: 100%;
   overflow: hidden;
-  background: linear-gradient(
-    to bottom,
-    var(--color-border-strong),
-    transparent
-  );
+  border-block: 1px solid var(--color-border-subtle);
+  padding-block: clamp(16px, 2.4vw, 26px);
+  user-select: none;
 }
 
-.scroll-cue-dot {
-  position: absolute;
-  top: 0;
-  left: 0;
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.marquee-run {
+  display: flex;
+  align-items: center;
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 44px);
+  padding-right: clamp(20px, 3vw, 44px);
+  color: var(--color-text-muted);
+  font-size: clamp(1.35rem, 2.9vw, 2.4rem);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.marquee-sep {
   display: block;
-  width: 1px;
-  height: 16px;
-  background: var(--accent-copper);
-  animation: scroll-cue-travel 2.2s var(--ease-out) infinite;
-}
-
-@keyframes scroll-cue-travel {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  22% {
-    opacity: 1;
-  }
-  72% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(290%);
-    opacity: 0;
-  }
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-signal);
 }
 
 /* ── Chapter headings ── */
 .chapter-head {
   margin-bottom: clamp(36px, 5vw, 64px);
+}
+
+.chapter-head--split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  align-items: end;
+  gap: clamp(20px, 4vw, 64px);
 }
 
 .chapter-eyebrow {
@@ -1521,7 +1576,59 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1;
 }
 
-/* ── About chapter ──
+.chapter-lead {
+  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  font-size: clamp(0.98rem, 1.4vw, 1.1rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.chapter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  justify-self: end;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chapter-link-arrow {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent-copper);
+  transition: transform 260ms var(--ease-spring);
+}
+
+.chapter-link-arrow svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chapter-link:hover .chapter-link-arrow,
+.chapter-link:focus-visible .chapter-link-arrow {
+  transform: translateX(5px);
+}
+
+.chapter-link:focus-visible {
+  outline: 2px solid var(--accent-copper);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+/* ── 4 · What I do ──
    The rows borrow their shape from Cuberto's services list: a hairline that
    draws itself in, an index, an oversized title lifting out of its mask, and
    the copy sitting alongside. */
@@ -1622,112 +1729,178 @@ html[data-motion-armed] [data-hero-tail] {
   }
 }
 
-.about-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: clamp(38px, 5vw, 58px);
-}
-
-/* ── Explore chapter ── */
-.route-grid {
+/* ── 5 · Selected work ── */
+.work-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: clamp(16px, 2.4vw, 28px);
 }
 
-.route-card {
-  position: relative;
-  display: grid;
-  min-height: clamp(180px, 23vh, 244px);
-  padding: 28px;
-  overflow: hidden;
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 14px 14px 26px;
   border: 1px solid var(--accent-copper-glow);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: var(--shadow-card);
-  isolation: isolate;
-  transition: color 220ms ease, background-color 220ms ease,
-    border-color 220ms ease, transform 260ms var(--ease-out),
-    box-shadow 260ms ease;
+  text-decoration: none;
+  transition: border-color 240ms ease, background-color 240ms ease,
+    transform 300ms var(--ease-out), box-shadow 300ms ease;
 }
 
-.route-card:hover,
-.route-card:focus-visible {
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--accent-copper) 62%, transparent);
+.work-card:hover,
+.work-card:focus-visible {
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--accent-copper) 60%, transparent);
   background: color-mix(in srgb, var(--bg-card) 95%, var(--accent-copper));
-  color: var(--text-primary);
   box-shadow: var(--shadow-lift);
 }
 
-.route-card:active {
-  transform: translateY(-2px) scale(0.985);
-}
-
-.route-card:focus-visible {
+.work-card:focus-visible {
   outline: 2px solid var(--accent-copper);
   outline-offset: 4px;
 }
 
-.route-card-copy {
-  align-self: end;
-  padding-right: 54px;
+.work-card-media {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  aspect-ratio: 16 / 10;
 }
 
-.route-card h3 {
-  margin-bottom: 9px;
-  font-size: clamp(1.55rem, 2.5vw, 2.15rem);
-  font-weight: 620;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
-}
-
-.route-card p {
-  max-width: 390px;
-  margin-bottom: 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
-.route-card-arrow {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  display: block;
-  width: 1.45rem;
-  height: 1.45rem;
-  color: var(--accent-copper);
-  opacity: 0.92;
-  transition: transform 260ms var(--ease-spring), opacity 180ms ease;
-}
-
-.route-card-arrow svg {
+.work-card-media img {
   display: block;
   width: 100%;
   height: 100%;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  object-fit: cover;
+  transition: transform 620ms var(--ease-out);
 }
 
-.route-card:hover .route-card-arrow,
-.route-card:focus-visible .route-card-arrow {
-  transform: translate(3px, -3px) rotate(8deg);
-  opacity: 1;
+.work-card:hover .work-card-media img,
+.work-card:focus-visible .work-card-media img {
+  transform: scale(1.04);
 }
 
-/* This one points straight ahead, so it nudges the way it is pointing. */
-.route-card--photo:hover .route-card-arrow,
-.route-card--photo:focus-visible .route-card-arrow {
-  transform: translate(4px, 0);
+.work-card-body {
+  padding-inline: 10px;
 }
 
-/* Nothing on this page should move for a reader who asked for stillness. The
-   script skips its timelines; these undo the resting states they start from. */
+.work-card-index {
+  margin-bottom: 10px;
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+}
+
+.work-card-title {
+  margin-bottom: 10px;
+  font-size: clamp(1.35rem, 2.1vw, 1.85rem);
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.work-card-summary {
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* ── 6 · Photography ──
+   A real horizontal scroller by default, so a swipe or a shift-wheel always
+   works. On a wide screen the script pins the section and drives the track
+   from vertical scroll, and only then does it take the overflow away. */
+.gallery {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.gallery::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery.is-pinned {
+  overflow: hidden;
+}
+
+.gallery-track {
+  display: flex;
+  gap: clamp(14px, 2vw, 26px);
+  width: max-content;
+  padding-inline: var(--shell-gutter);
+  will-change: transform;
+}
+
+.gallery-item {
+  flex: 0 0 clamp(230px, 29vw, 400px);
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+.gallery-media {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  aspect-ratio: 4 / 5;
+}
+
+.gallery-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 14px;
+  font-family: var(--font-mono);
+}
+
+.gallery-caption-title {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.gallery-caption-meta {
+  color: var(--color-text-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── 7 · Close ── */
+.chapter--contact {
+  padding-bottom: clamp(64px, 9vh, 110px);
+}
+
+.contact-title {
+  margin-bottom: clamp(28px, 4vw, 46px);
+  font-size: clamp(3rem, 9vw, 8rem);
+  font-weight: 650;
+  letter-spacing: -0.075em;
+  line-height: 0.9;
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Nothing here should move for a reader who asked for stillness. The script
+   skips its timelines; these undo the resting states they start from. */
 @media (prefers-reduced-motion: reduce) {
   html[data-motion-armed] .hero-reveal > span {
     transform: none;
@@ -1741,11 +1914,15 @@ html[data-motion-armed] [data-hero-tail] {
     transform: none;
   }
 
-  .scroll-cue-dot {
-    animation: none;
+  .showcase-media {
+    clip-path: inset(0% 0% 0% 0% round 0px);
   }
 
   .craft-row:hover .craft-lead {
+    transform: none;
+  }
+
+  .work-card:hover .work-card-media img {
     transform: none;
   }
 }
@@ -3317,7 +3494,7 @@ body.is-photo-viewing {
 
   .page-shell,
   .detail-shell,
-  .landing-page,
+  .chapter-shell,
   .journal-featured,
   .site-footer {
     width: min(100% - 28px, 1180px);
@@ -3349,18 +3526,28 @@ body.is-photo-viewing {
   }
 
   /* One column each: the title needs the whole width before the copy gets a
-     turn, and the two route cards stop being readable side by side. */
-  .craft-row {
+     turn, and two work cards stop being readable side by side. */
+  .craft-row,
+  .chapter-head--split,
+  .hero-foot,
+  .work-grid {
     grid-template-columns: 1fr;
     gap: 20px;
   }
 
-  .route-grid {
-    grid-template-columns: 1fr;
+  .chapter-head--split,
+  .hero-foot {
+    align-items: start;
   }
 
-  .route-card {
-    min-height: 0;
+  .chapter-link {
+    justify-self: start;
+  }
+
+  /* The photograph has no room to open sideways on a phone, so it arrives
+     already full width and simply gets shorter. */
+  .showcase-frame {
+    height: min(70svh, 560px);
   }
 
   .portfolio-card,
@@ -3467,7 +3654,7 @@ body.is-photo-viewing {
   }
   .page-shell,
   .detail-shell,
-  .landing-page,
+  .chapter-shell,
   .journal-featured,
   .site-footer {
     width: min(100% - 22px, 1180px);
@@ -3477,17 +3664,8 @@ body.is-photo-viewing {
     font-size: clamp(3.8rem, 22vw, 5.6rem);
   }
 
-  .hero-summary {
+  .hero-lead {
     font-size: 1.02rem;
-  }
-
-  .route-card {
-    padding: 22px;
-  }
-
-  .route-card-arrow {
-    right: 18px;
-    bottom: 18px;
   }
 
   .craft-row {
