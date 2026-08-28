@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
+import WaterlooMark from "../components/WaterlooMark.astro";
 
 const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -20,12 +21,15 @@ const photos = [...photoManifest.data.photos].sort(
 const [showcase, ...strip] = photos;
 
 const [workManifest] = await getCollection("work");
+// Oldest first. The history reads forwards from the degree, so the ladder it
+// draws climbs as the page comes down rather than unwinding backwards.
 const roles = [...(workManifest?.data.roles ?? [])].sort((a, b) =>
-  b.start.localeCompare(a.start),
+  a.start.localeCompare(b.start),
 );
-// Internships come out of the main run and into one bundled row beneath it.
+// The co-ops come out of the main run and fold into the degree above them,
+// where they belong: they are the work terms of that same programme.
 const positions = roles.filter((role) => !role.internship);
-const internships = roles.filter((role) => role.internship);
+const coops = roles.filter((role) => role.internship);
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 // UTC accessors: the manifest's dates parse as UTC midnight, so local getters
@@ -62,40 +66,90 @@ const lengthOf = (total: number) => {
   return parts.join(" ") || "1 mo";
 };
 
+// The rungs the ladder is drawn against. A role's `level` indexes into this,
+// so the word printed beside a role and its distance from the left edge are
+// the same fact told twice.
+const RUNGS = ["Student", "Engineer", "Engineer II", "Senior", "Principal"];
+
+// Every position, told in terms of the one before it: the rung it came from,
+// whether that was a step up, and which of the scroll motions it gets. Deriving
+// the motion rather than listing it means a role added to the manifest later
+// still arrives with one.
+const topLevel = Math.max(...positions.map((role) => role.level), 0);
+const decorated = positions.map((role, index) => {
+  const previous = positions[index - 1];
+  const from = previous ? previous.level : role.level;
+  const rose = role.level > from;
+  return {
+    role,
+    from,
+    rose,
+    // enroll   · the degree, where the whole thing starts
+    // launch   · the first job out of school
+    // promote  · a step up the ladder
+    // summit   · the step onto the highest rung reached
+    // join     · a new employer at the rung already held
+    // sidestep · a new team at the same rung
+    move:
+      role.kind === "education"
+        ? "enroll"
+        : !previous || previous.kind === "education"
+          ? "launch"
+          : rose
+            ? role.level === topLevel
+              ? "summit"
+              : "promote"
+            : previous.company === role.company
+              ? "sidestep"
+              : "join",
+  };
+});
+
 // Consecutive roles at one employer are one tenure. Six separate Amazon rows
 // would repeat the name six times and cost six screens; this is how the
 // profile they came from groups them too.
-type Role = (typeof positions)[number];
-const grouped: { company: string; roles: Role[] }[] = [];
-for (const role of positions) {
+type Entry = (typeof decorated)[number];
+const grouped: { company: string; entries: Entry[] }[] = [];
+for (const entry of decorated) {
   const current = grouped[grouped.length - 1];
-  if (current && current.company === role.company) current.roles.push(role);
-  else grouped.push({ company: role.company, roles: [role] });
+  if (current && current.company === entry.role.company) current.entries.push(entry);
+  else grouped.push({ company: entry.role.company, entries: [entry] });
 }
 
-// The longest single role sets the scale every duration bar is drawn against,
-// so the bars are comparable to each other rather than to nothing.
+// The longest single job sets the scale every duration bar is drawn against, so
+// the bars are comparable to each other rather than to nothing. The degree is
+// kept out of it: five years of school would flatten every job beside it.
 const longestRole = Math.max(
   1,
-  ...positions.map((role) => monthsBetween(role.start, role.end)),
+  ...positions
+    .filter((role) => role.kind !== "education")
+    .map((role) => monthsBetween(role.start, role.end)),
 );
 
+const thisYear = String(new Date().getUTCFullYear());
 const tenures = grouped.map((group) => {
-  const newest = group.roles[0];
-  const oldest = group.roles[group.roles.length - 1];
+  const oldest = group.entries[0].role;
+  const newest = group.entries[group.entries.length - 1].role;
+  const education = oldest.kind === "education";
+  const count = group.entries.length;
   return {
     company: group.company,
+    mark: oldest.mark,
+    education,
     startYear: oldest.start.slice(0, 4),
-    endYear: newest.end ? newest.end.slice(0, 4) : String(new Date().getUTCFullYear()),
+    endYear: newest.end ? newest.end.slice(0, 4) : thisYear,
+    // The degree counts its work terms, since that is what sits underneath it.
     summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
-      group.roles.length
-    } ${group.roles.length === 1 ? "role" : "roles"}`,
-    single: group.roles.length === 1,
+      education
+        ? `${coops.length} co-op employers`
+        : `${count} ${count === 1 ? "role" : "roles"}`
+    }`,
+    single: count === 1,
     // A lone role's dates are already the tenure's, in the column to the left,
     // so it carries only what that heading does not already say.
-    roles: group.roles.map((role) => ({
+    roles: group.entries.map(({ role, from, rose, move }) => ({
       title: role.title,
-      meta: (group.roles.length === 1
+      meta: (count === 1
         ? [role.location]
         : [span(role), lengthOf(monthsBetween(role.start, role.end)), role.location]
       )
@@ -103,14 +157,23 @@ const tenures = grouped.map((group) => {
         .join(" · "),
       bar: Math.round((monthsBetween(role.start, role.end) / longestRole) * 100),
       note: role.note,
+      move,
+      from,
+      level: role.level,
+      rose,
+      rung: RUNGS[role.level] ?? "",
+      fromRung: RUNGS[from] ?? "",
+      // "First role" reads truer than "Promoted" for the step off the degree.
+      flag: move === "launch" ? "First role" : "Promoted",
     })),
   };
 });
-// The bundle's range runs from the earliest internship to the latest.
-const bundleSpan = internships.length
-  ? `${monthYear(internships[internships.length - 1].start)} — ${
-      internships[0].end ? monthYear(internships[0].end) : "Present"
-    }`
+
+// The co-op strip's own range, from the first work term to the last.
+const coopSpan = coops.length
+  ? `${coops[0].start.slice(0, 4)} — ${(
+      coops[coops.length - 1].end ?? coops[coops.length - 1].start
+    ).slice(0, 4)}`
   : "";
 ---
 
@@ -268,25 +331,39 @@ const bundleSpan = internships.length
           </li>
         </ol>
 
-        {(positions.length > 0 || internships.length > 0) && (
+        {(positions.length > 0 || coops.length > 0) && (
           <div class="history" id="history">
             <header class="history-head">
               <p class="chapter-eyebrow" data-reveal>Work history</p>
               <h3 class="history-heading" data-mask-title>
-                <span class="reveal-line"><span>Where that's taken me.</span></span>
+                <span class="reveal-line"><span>How I got here.</span></span>
               </h3>
+              <p class="history-legend" data-reveal>
+                Forwards from the degree. The ladder on the left steps out a
+                rung at every promotion.
+              </p>
             </header>
 
             <ol class="history-list">
               {tenures.map((tenure) => (
-                <li class="history-row" data-row data-tenure>
+                <li
+                  class="history-row"
+                  data-row
+                  data-tenure
+                  data-education={tenure.education ? "" : undefined}
+                >
                   <span class="craft-rule" aria-hidden="true" data-row-rule></span>
 
                   <div class="craft-lead">
+                    {tenure.mark === "uwaterloo" && <WaterlooMark />}
                     <p class="history-year" data-row-meta>
                       <span>{tenure.startYear}</span>
                       <span class="history-year-dash" aria-hidden="true"></span>
-                      <span>{tenure.endYear}</span>
+                      {/* Counts up to the year it already reads, so a tenure's
+                          length is felt on the way past it. */}
+                      <span data-year-count data-year-from={tenure.startYear}>
+                        {tenure.endYear}
+                      </span>
                     </p>
                     <h4 class="history-role" data-row-title>
                       <span class="reveal-line"><span>{tenure.company}</span></span>
@@ -295,14 +372,53 @@ const bundleSpan = internships.length
                   </div>
 
                   <ol class="history-stints" data-row-body>
-                    <span class="history-spine" aria-hidden="true">
-                      <span class="history-spine-fill" data-spine-fill></span>
-                    </span>
-
                     {tenure.roles.map((role) => (
-                      <li class="history-stint" data-stint>
+                      <li
+                        class="history-stint"
+                        data-stint
+                        data-move={role.move}
+                        data-rose={role.rose ? "" : undefined}
+                        style={`--from:${role.from};--to:${role.level}`}
+                      >
+                        {/* The ladder, in three pieces: a lead-in from the
+                            tenure above, the step across to this role's own
+                            rung, and the tail carrying the line on down to the
+                            next role. CSS drops the two that would dangle — the
+                            lead below the first role, the tail after the last.
+                            Each is a faint track with a copper fill over it. */}
+                        <span class="rung rung--lead" aria-hidden="true">
+                          <i class="rung-fill" data-rung></i>
+                        </span>
+                        <span class="rung rung--step" aria-hidden="true">
+                          <i class="rung-fill" data-rung></i>
+                        </span>
+                        <span class="rung rung--tail" aria-hidden="true">
+                          <i class="rung-fill" data-tail></i>
+                        </span>
                         <span class="history-node" aria-hidden="true"></span>
-                        <div class="history-stint-inner">
+                        {role.rose && (
+                          <span class="history-halo" aria-hidden="true" data-halo></span>
+                        )}
+
+                        <div class="history-stint-inner" data-stint-card>
+                          <p class="history-rung">
+                            {role.rose && (
+                              <span class="history-flag" data-flag>{role.flag}</span>
+                            )}
+                            {role.rose ? (
+                              /* The rung a promotion left rolls up out of the
+                                 way and the new one takes its place. */
+                              <span class="history-rung-roll" data-rung-roll>
+                                <span class="history-rung-track" data-rung-track>
+                                  <span aria-hidden="true">{role.fromRung}</span>
+                                  <span>{role.rung}</span>
+                                </span>
+                              </span>
+                            ) : (
+                              <span class="history-rung-label">{role.rung}</span>
+                            )}
+                          </p>
+
                           <p class="history-stint-title" data-stint-title>{role.title}</p>
                           {/* Clipped, so the detail can be drawn downwards out
                               from under the title once the title has landed. */}
@@ -324,47 +440,42 @@ const bundleSpan = internships.length
                         </div>
                       </li>
                     ))}
+
+                    {/* The co-op terms hang off the degree as one more stop on
+                        its ladder: they are the work half of that programme,
+                        and four full rows of their own would cost a screen. */}
+                    {tenure.education && coops.length > 0 && (
+                      <li
+                        class="history-stint history-stint--terms"
+                        data-stint
+                        data-move="terms"
+                        style="--from:0;--to:0"
+                      >
+                        {/* No lead-in of its own: the degree's tail is the
+                            line that reaches down to this node. */}
+                        <span class="history-node" aria-hidden="true"></span>
+
+                        <div class="history-stint-inner" data-stint-card>
+                          <p class="history-stint-title" data-stint-title>Co-op terms</p>
+                          <p class="history-stint-meta">
+                            {coops.length} employers · {coopSpan}
+                          </p>
+
+                          <ul class="coop-strip">
+                            {coops.map((coop) => (
+                              <li class="coop-term" data-coop-term>
+                                <p class="coop-term-company">{coop.company}</p>
+                                <p class="coop-term-span">{span(coop)}</p>
+                                {coop.note && <p class="coop-term-note">{coop.note}</p>}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </li>
+                    )}
                   </ol>
                 </li>
               ))}
-
-              {/* Every co-op folded into one row: a two-up grid of small
-                  cards costs a fraction of what four full rows would. */}
-              {internships.length > 0 && (
-                <li class="history-row history-row--bundle" data-row>
-                  <span class="craft-rule" aria-hidden="true" data-row-rule></span>
-                  <div class="craft-lead">
-                    <p class="history-year" data-row-meta>
-                      <span>{internships[internships.length - 1].start.slice(0, 4)}</span>
-                      <span class="history-year-dash" aria-hidden="true"></span>
-                      <span>
-                        {(internships[0].end ?? internships[0].start).slice(0, 4)}
-                      </span>
-                    </p>
-                    <h4 class="history-role" data-row-title>
-                      <span class="reveal-line"><span>Internships</span></span>
-                    </h4>
-                    <p class="history-summary">
-                      {internships.length} co-op terms
-                    </p>
-                  </div>
-
-                  <ul class="history-bundle" data-row-body>
-                    {internships.map((role) => (
-                      <li class="history-bundle-item" data-bundle-card>
-                        <div class="history-stint-inner">
-                          <p class="history-bundle-company">{role.company}</p>
-                          <p class="history-bundle-role">{role.title}</p>
-                          <p class="history-bundle-span">{span(role)}</p>
-                          {role.note && (
-                            <p class="history-bundle-note">{role.note}</p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              )}
             </ol>
 
             <a

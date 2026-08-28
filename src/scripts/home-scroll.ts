@@ -64,6 +64,10 @@ function setupPage() {
   // ── Motion, for readers who have not asked for stillness ──
   media.add('(prefers-reduced-motion: no-preference)', () => {
     const splits: SplitText[] = [];
+    // Anything that writes over real text has to be able to put it back when
+    // the context is torn down — a resize past a breakpoint, say — or it is
+    // left frozen mid-animation.
+    const restores: (() => void)[] = [];
 
     // 1 · The title arrives line by line, its lead a beat behind it.
     const lead = page.querySelector<HTMLElement>('[data-split-lead]');
@@ -250,43 +254,154 @@ function setupPage() {
 
     });
 
-    // 5b · The work history gets its own set of moves. The spine fills behind
-    //      a tenure's roles, each role's node pops as its title lands, and
-    //      then the detail is drawn downwards out from under that title.
-    q('[data-spine-fill]').forEach((fill) => {
-      const list = fill.closest<HTMLElement>('[data-row-body]');
-      if (!list) return;
+    // 5b · The work history is a ladder, and every role climbs a piece of it.
+    //
+    //      A role sits one notch further from the left edge for every rung of
+    //      seniority it has climbed, and draws its own share of the line: the
+    //      step across to its rung, and the tail carrying that rung on down to
+    //      the role after it. A promotion is therefore a visible jog outwards
+    //      and a sideways move is a straight line — the same fact the words
+    //      beside it carry.
+    //
+    //      What arrives alongside the line depends on what kind of move the
+    //      role was. index.astro works that out from the manifest and writes it
+    //      onto the element as data-move, so a role added later still turns up
+    //      with a motion of its own rather than nothing.
+    //
+    //      The sideways moves are told with a wipe rather than a long slide:
+    //      there is only about ten pixels of gutter to the right of the roles
+    //      at 320px, and anything that overshoots it puts the whole document
+    //      into horizontal scroll. So the clip carries the direction and the
+    //      translate is only enough to give it some weight behind it.
+    const ENTRANCES: Record<string, { from: gsap.TweenVars; to: gsap.TweenVars }> = {
+      // The degree: the whole thing settles in from below, under its crest.
+      enroll: { from: { opacity: 0, y: 34 }, to: { opacity: 1, y: 0 } },
+      // The co-op terms, arriving as a block before their cards are dealt.
+      terms: { from: { opacity: 0, y: 20 }, to: { opacity: 1, y: 0 } },
+      // First job out of school — steps out from the left, opening as it comes.
+      launch: {
+        from: { opacity: 0, x: -14, clipPath: 'inset(0% 100% 0% 0%)' },
+        to: { opacity: 1, x: 0, clipPath: 'inset(0% 0% 0% 0%)' },
+      },
+      // A new employer at the rung already held: in from the other side.
+      join: {
+        from: { opacity: 0, x: 10, clipPath: 'inset(0% 0% 0% 100%)' },
+        to: { opacity: 1, x: 0, clipPath: 'inset(0% 0% 0% 0%)' },
+      },
+      // A new team at the same rung. Purely lateral, and only half a wipe,
+      // because the move itself is a shuffle along rather than an arrival.
+      sidestep: {
+        from: { opacity: 0, x: 10, clipPath: 'inset(0% 0% 0% 55%)' },
+        to: { opacity: 1, x: 0, clipPath: 'inset(0% 0% 0% 0%)' },
+      },
+      // A step up, so it lifts.
+      promote: { from: { opacity: 0, y: 32 }, to: { opacity: 1, y: 0 } },
+      // The highest rung reached: lifts further, and out of a slight shrink.
+      summit: {
+        from: { opacity: 0, y: 42, scale: 0.965 },
+        to: { opacity: 1, y: 0, scale: 1 },
+      },
+    };
+
+    q('[data-stint]').forEach((stint) => {
+      const lead = stint.querySelector<HTMLElement>('.rung--lead [data-rung]');
+      const step = stint.querySelector<HTMLElement>('.rung--step [data-rung]');
+      const node = stint.querySelector<HTMLElement>('.history-node');
+      const halo = stint.querySelector<HTMLElement>('[data-halo]');
+      const card = stint.querySelector<HTMLElement>('[data-stint-card]');
+      const flag = stint.querySelector<HTMLElement>('[data-flag]');
+      const roll = stint.querySelector<HTMLElement>('[data-rung-track]');
+      const move = stint.dataset.move ?? 'sidestep';
+      const summit = move === 'summit';
+
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: stint,
+          start: 'top 96%',
+          end: 'top 64%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      const entrance = ENTRANCES[move] ?? ENTRANCES.sidestep;
+      if (card) {
+        timeline.fromTo(
+          card,
+          entrance.from,
+          { ...entrance.to, duration: 1, ease: 'power3.out' },
+          0,
+        );
+      }
+      if (lead) timeline.fromTo(lead, { scaleY: 0 }, { scaleY: 1, ease: 'none', duration: 0.85 }, 0);
+      // The step waits for the line above to arrive at it, so the ladder is
+      // drawn in the order you would draw it by hand.
+      if (step) {
+        timeline.fromTo(step, { scaleX: 0 }, { scaleX: 1, ease: 'power2.inOut', duration: 0.45 }, 0.8);
+      }
+      if (node) timeline.fromTo(node, { scale: 0 }, { scale: 1, ease: 'back.out(2.6)', duration: 0.5 }, 1.05);
+
+      // Only a step up gets the rest of it: the ring off the node, the flag,
+      // and the rung left behind rolling up out of the way.
+      if (halo) {
+        timeline
+          .fromTo(
+            halo,
+            { scale: 0.3, opacity: 0 },
+            { scale: 1, opacity: summit ? 0.75 : 0.55, duration: 0.35, ease: 'power2.out' },
+            1.15,
+          )
+          .to(
+            halo,
+            { scale: summit ? 3.2 : 2, opacity: 0, duration: 0.6, ease: 'power2.out' },
+            1.5,
+          );
+      }
+      // Reaching the top rung is worth a slightly bigger marker to stop on.
+      if (summit && node) {
+        timeline.to(node, { scale: 1.35, duration: 0.4, ease: 'power2.out' }, 1.5);
+      }
+      if (flag) {
+        timeline.fromTo(
+          flag,
+          { opacity: 0, x: -12, scale: 0.88 },
+          { opacity: 1, x: 0, scale: 1, duration: 0.45, ease: 'back.out(2)' },
+          1.2,
+        );
+      }
+      if (roll) {
+        // CSS rests the track on the arrived-at rung, so this only has to start
+        // it a line higher and let it fall back to where it already is. `y: 0`
+        // on both ends for the same reason the hero needs it: GSAP reads that
+        // resting translate as a px `y` and would otherwise add the roll on top
+        // of it, carrying the track a whole line past both words.
+        timeline.fromTo(
+          roll,
+          { yPercent: 0, y: 0 },
+          { yPercent: -50, y: 0, duration: 0.55, ease: 'power3.inOut' },
+          1.25,
+        );
+      }
+    });
+
+    // The tail is the long piece: it runs from a role's node, down past
+    // everything that role has to say, to the node of the one after it. Given
+    // the same short window as the arrival beats it would race away ahead of
+    // the reader, so it draws across the whole card instead — the line grows
+    // at about the pace you get through the role it belongs to.
+    q('.rung--tail [data-tail]').forEach((tail) => {
+      const stint = tail.closest<HTMLElement>('[data-stint]');
+      if (!stint) return;
       gsap.fromTo(
-        fill,
+        tail,
         { scaleY: 0 },
         {
           scaleY: 1,
           ease: 'none',
           scrollTrigger: {
-            trigger: list,
-            start: 'top 78%',
-            end: 'bottom 72%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        },
-      );
-    });
-
-    // Beat one: the node lands with the title.
-    q('[data-stint]').forEach((stint) => {
-      const node = stint.querySelector<HTMLElement>('.history-node');
-      if (!node) return;
-      gsap.fromTo(
-        node,
-        { scale: 0 },
-        {
-          scale: 1,
-          ease: 'back.out(2.4)',
-          scrollTrigger: {
             trigger: stint,
-            start: 'top 96%',
-            end: 'top 82%',
+            start: 'top 72%',
+            end: 'bottom 62%',
             scrub: true,
             invalidateOnRefresh: true,
           },
@@ -337,23 +452,101 @@ function setupPage() {
       }
     });
 
-    q('[data-bundle-card]').forEach((card) => {
+    // The co-op terms are dealt onto the page rather than faded in, tilting up
+    // off their own top edge one after another.
+    q('.coop-strip').forEach((strip) => {
+      const cards = strip.querySelectorAll<HTMLElement>('[data-coop-term]');
+      if (!cards.length) return;
       gsap.fromTo(
-        card,
-        { opacity: 0, y: 22 },
+        cards,
+        { opacity: 0, y: 30, rotateX: -42, transformOrigin: 'top center' },
         {
           opacity: 1,
           y: 0,
+          rotateX: 0,
           ease: 'power2.out',
+          stagger: 0.14,
           scrollTrigger: {
-            trigger: card,
+            trigger: strip,
             start: 'top 94%',
-            end: 'top 72%',
+            end: 'bottom 72%',
             scrub: true,
             invalidateOnRefresh: true,
           },
         },
       );
+    });
+
+    // The crest builds a layer at a time: the shape turns in, the chevrons run
+    // down behind it, and the lions land last.
+    const orgMark = page.querySelector<HTMLElement>('[data-org-mark]');
+    if (orgMark) {
+      const layer = (name: string) =>
+        orgMark.querySelector<SVGGElement>(`[data-mark-layer="${name}"]`);
+      const lions = layer('lions')?.children;
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: orgMark.closest<HTMLElement>('[data-tenure]') ?? orgMark,
+          start: 'top 88%',
+          end: 'top 54%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      timeline.fromTo(
+        orgMark,
+        { opacity: 0, scale: 0.66, rotate: -10 },
+        { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: 'back.out(1.6)' },
+        0,
+      );
+      const lines = layer('lines');
+      if (lines) {
+        timeline.fromTo(
+          lines,
+          { yPercent: -45, opacity: 0 },
+          { yPercent: 0, opacity: 1, duration: 0.7, ease: 'power2.out' },
+          0.45,
+        );
+      }
+      if (lions?.length) {
+        timeline.fromTo(
+          lions,
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.5, stagger: 0.014, ease: 'back.out(2.2)' },
+          0.6,
+        );
+      }
+    }
+
+    // Each tenure's closing year counts up from its opening one, so how long
+    // it ran is felt on the way past rather than only read.
+    q('[data-year-count]').forEach((element) => {
+      const from = Number(element.dataset.yearFrom);
+      const settled = element.textContent ?? '';
+      const to = Number(settled);
+      if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return;
+
+      restores.push(() => {
+        element.textContent = settled;
+      });
+
+      const counter = { value: from };
+      gsap.to(counter, {
+        value: to,
+        ease: 'none',
+        snap: { value: 1 },
+        onUpdate: () => {
+          element.textContent = String(counter.value);
+        },
+        scrollTrigger: {
+          trigger: element.closest<HTMLElement>('[data-tenure]') ?? element,
+          start: 'top 74%',
+          end: 'bottom 74%',
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
     });
 
     // Role titles come in a word at a time, the same way the hero's lead does.
@@ -470,6 +663,7 @@ function setupPage() {
     return () => {
       removeTick?.();
       splits.forEach((split) => split.revert());
+      restores.forEach((restore) => restore());
     };
   });
 

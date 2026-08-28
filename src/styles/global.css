@@ -1779,6 +1779,16 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.02;
 }
 
+/* Says what the ladder to the left of the roles is, once, so the steps in it
+   read as meaning something rather than as decoration. */
+.history-legend {
+  max-width: 48ch;
+  margin: 14px 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(0.9rem, 1.2vw, 0.98rem);
+  line-height: 1.6;
+}
+
 .history-list {
   margin: 0;
   padding: 0;
@@ -1825,51 +1835,176 @@ html[data-motion-armed] [data-hero-tail] {
   text-transform: uppercase;
 }
 
-/* ── The roles, running down a spine ── */
+/* ── The roles, climbing a ladder ──
+   The rungs are the seniority steps in RUNGS (index.astro): a role sits one
+   notch further out for every one it has climbed, so the shape of the career
+   is legible from the left edge alone. Each role draws the step across to its
+   own rung and the tail carrying that rung down to the role after it — which
+   means a promotion is a visible jog outwards and a sideways move is a
+   straight line. The motion is in src/scripts/home-scroll.ts. */
 .history-stints {
+  /* The ladder's whole geometry, in one place. --ladder-left has to clear the
+     widest rung (four notches) with room left for the node. */
+  --rung-gap: clamp(9px, 1.05vw, 14px);
+  --ladder-left: clamp(46px, 5.2vw, 72px);
+  --stint-gap: clamp(20px, 2.4vw, 30px);
+  --node-y: 9px;
+
   position: relative;
   display: grid;
-  gap: clamp(20px, 2.4vw, 30px);
+  gap: var(--stint-gap);
   margin: 0;
-  padding: 4px 0 0 clamp(22px, 2.6vw, 34px);
+  padding: 4px 0 0 var(--ladder-left);
   list-style: none;
-}
-
-.history-spine {
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 0;
-  width: 1px;
-  background: var(--color-border-subtle);
-}
-
-.history-spine-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    var(--accent-copper),
-    color-mix(in srgb, var(--accent-copper) 35%, transparent)
-  );
-  transform: scaleY(0);
-  transform-origin: top center;
 }
 
 .history-stint {
   position: relative;
 }
 
+/* Every piece of the ladder is a faint track with a copper fill drawn over it,
+   so where the line is going is visible before it gets there. */
+.rung {
+  position: absolute;
+  /* Measured back out of the text column into the ladder's gutter. */
+  left: calc(var(--from, 0) * var(--rung-gap) - var(--ladder-left));
+  border-radius: 1px;
+  background: var(--color-border-subtle);
+}
+
+/* Reaches up out of the tenure above into this one's first role. Every later
+   role has the previous role's tail arriving at it instead. */
+.rung--lead {
+  top: calc(-1 * var(--stint-gap) - 1px);
+  width: 2px;
+  height: calc(var(--stint-gap) + var(--node-y) + 1px);
+}
+
+.rung--step {
+  top: calc(var(--node-y) - 1px);
+  width: calc((var(--to, 0) - var(--from, 0)) * var(--rung-gap));
+  height: 2px;
+}
+
+/* Carries the line on down this role's own rung, past everything it has to say,
+   and lands exactly on the next role's node. */
+.rung--tail {
+  top: var(--node-y);
+  bottom: calc(-1 * var(--stint-gap) - var(--node-y));
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
+  width: 2px;
+}
+
+/* The two that would dangle: nothing is above the first role on the page, and
+   nothing follows the last role of a tenure. */
+.history-stint:not(:first-child) .rung--lead,
+.history-row:first-child .history-stint:first-child .rung--lead,
+.history-stint:last-child .rung--tail {
+  display: none;
+}
+
+.rung-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-copper);
+}
+
+.rung--lead .rung-fill,
+.rung--tail .rung-fill {
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+.rung--step .rung-fill {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
 .history-node {
   position: absolute;
-  top: 7px;
-  left: calc(-1 * clamp(22px, 2.6vw, 34px) - 3.5px);
-  width: 8px;
-  height: 8px;
+  top: calc(var(--node-y) - 4.5px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 3.5px);
+  width: 9px;
+  height: 9px;
   border: 1px solid var(--accent-copper);
   border-radius: 50%;
   background: var(--color-bg);
+}
+
+/* Rings out of the node when a role is a step up. Sized around the node, and
+   invisible until the script has something to say with it. */
+.history-halo {
+  position: absolute;
+  top: calc(var(--node-y) - 12px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 11px);
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--accent-copper);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── The rung a role sits on, in words ── */
+.history-rung {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.history-rung-label {
+  color: var(--color-text-muted);
+}
+
+/* A promotion rolls: one line tall with the rung left behind stacked above the
+   one arrived at. It rests showing the new one, so with the script gone — or
+   for a reader who asked for stillness — the word on screen is still right. */
+.history-rung-roll {
+  display: block;
+  height: 1.15em;
+  overflow: hidden;
+  color: var(--accent-copper);
+}
+
+.history-rung-track {
+  display: block;
+  transform: translateY(-50%);
+}
+
+.history-rung-track > span {
+  display: block;
+  height: 1.15em;
+  line-height: 1.15em;
+}
+
+.history-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent-copper) 42%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-copper) 12%, transparent);
+  color: var(--accent-copper);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.history-flag::before {
+  content: "\2191";
+  /* Full size: below about 9px the arrow stops reading as an arrow. */
+  font-size: 1.05em;
+  line-height: 1;
 }
 
 /* The detail is clipped so it can be drawn downwards out from under the
@@ -1933,62 +2068,58 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.65;
 }
 
-/* ── The bundled co-ops ──
-   A small two-up grid, where four full rows would have cost most of a screen.
-   Four abreast would leave each card too narrow for its title to sit on one
-   line at any width the right-hand column actually gets. */
-.history-bundle {
+/* ── The co-op terms ──
+   Hung off the degree rather than given four rows of their own: two abreast in
+   the space one role takes, small enough to skim and still say who and when.
+   Four abreast would leave each card too narrow for a company name to sit on
+   one line at any width the right-hand column actually gets. */
+.coop-strip {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(10px, 1.4vw, 16px);
-  margin: 0;
+  gap: clamp(8px, 1.1vw, 12px);
+  margin: clamp(12px, 1.6vw, 18px) 0 0;
   padding: 0;
   list-style: none;
+  /* The cards are dealt in on a tilt; without this they arrive flat. */
+  perspective: 900px;
 }
 
-.history-bundle-item {
-  padding: clamp(14px, 1.8vw, 20px);
+.coop-term {
+  padding: clamp(10px, 1.3vw, 15px);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface-raised) 60%, transparent);
   transition: border-color 260ms ease, background-color 260ms ease;
 }
 
-.history-bundle-company {
-  margin-bottom: 4px;
+.coop-term-company {
+  margin-bottom: 3px;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 640;
   letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
-.history-bundle-role {
-  margin-bottom: 8px;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.history-bundle-span {
+.coop-term-span {
   margin-bottom: 0;
   color: var(--color-signal);
   font-family: var(--font-mono);
-  font-size: 0.63rem;
+  font-size: 0.58rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
-.history-bundle-note {
-  margin-top: 8px;
-  margin-bottom: 0;
+.coop-term-note {
+  margin: 7px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .history-bundle-item:hover {
+  .coop-term:hover {
     border-color: color-mix(in srgb, var(--accent-copper) 55%, transparent);
     background: color-mix(in srgb, var(--bg-card) 92%, var(--accent-copper));
   }
@@ -2179,10 +2310,25 @@ html[data-motion-armed] [data-hero-tail] {
     opacity: 1;
   }
 
+  /* Written out per segment: the resting scales are set on
+     `.rung--drop .rung-fill` and `.rung--step .rung-fill`, which out-specify a
+     bare `.rung-fill` here and would leave the ladder drawn but never filled. */
   .craft-rule,
-  .history-spine-fill,
+  .rung--lead .rung-fill,
+  .rung--tail .rung-fill,
+  .rung--step .rung-fill,
   .history-bar-fill {
     transform: none;
+  }
+
+  /* The rung roll rests on the arrived-at word already, so only the outgoing
+     one has to go: left in place it would read as a second, wrong rung. */
+  .history-rung-track {
+    transform: none;
+  }
+
+  .history-rung-track > span:first-child {
+    display: none;
   }
 
   .showcase-media {
@@ -3950,19 +4096,17 @@ body.is-photo-viewing {
     padding-inline: 0;
   }
 
-  /* Two 179px columns cannot hold "Software Development Engineer Co-op"
-     without shredding it, so the co-ops stack at this width. */
-  .history-bundle {
+  /* Two 179px columns cannot hold "Arista Networks, Inc." without shredding
+     it, so the co-op terms stack at this width. */
+  .coop-strip {
     grid-template-columns: 1fr;
   }
 
-  .history-bundle-item {
-    grid-template-columns: 1fr;
-  }
-
-  .history-bundle-span {
-    grid-row: auto;
-    grid-column: 1;
+  /* The ladder has to give back some of the gutter too, or the roles lose
+     more of a narrow column to it than they can spare. */
+  .history-stints {
+    --rung-gap: 8px;
+    --ladder-left: 40px;
   }
 
   .craft-rule {

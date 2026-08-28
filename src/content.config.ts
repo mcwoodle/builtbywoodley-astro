@@ -78,8 +78,13 @@ const photos = defineCollection({
 });
 
 // Work history is a single manifest holding the whole list, the same shape the
-// photo archive uses. `end` omitted means the role is current; `internship`
-// pulls an entry out of the main list and into the bundled row beneath it.
+// photo archive uses. It runs oldest first on the page, so the degree at the
+// top of the list is the start of the story rather than a footnote to it.
+//
+// `end` omitted means the role is current; `internship` pulls an entry out of
+// the main run and into the co-op terms bundled under the degree; `level` is
+// the rung the role sits on, which is what the ladder down the left of the
+// roles is drawn from.
 const work = defineCollection({
   loader: glob({ pattern: '**/*.mdx', base: './src/content/work' }),
   schema: z.object({
@@ -94,6 +99,15 @@ const work = defineCollection({
           end: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY or YYYY-MM.').optional(),
           note: z.string().optional(),
           internship: z.boolean().default(false),
+          // Schooling reads differently from a job: no duration bar, and it is
+          // the one entry that carries an institutional mark.
+          kind: z.enum(['role', 'education']).default('role'),
+          // 0 student · 1 engineer · 2 engineer II · 3 senior · 4 principal.
+          // A rise between consecutive entries is what the page calls out.
+          level: z.number().int().min(0).max(4).default(1),
+          // Named rather than a path: the marks are inline SVG components, so
+          // their layers can be animated separately.
+          mark: z.enum(['uwaterloo']).optional(),
         }),
       )
       .default([]),

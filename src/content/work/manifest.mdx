@@ -1,88 +1,35 @@
 ---
 # The work history shown beneath the about section on the landing page.
 #
-# One entry per role, newest first is applied at render time so the order here
-# does not matter. Consecutive roles at the same employer are grouped under one
-# heading, the way LinkedIn groups them.
+# One entry per role. The page runs them oldest first, so the list reads as a
+# career from the degree forward, and the order here does not matter.
+# Consecutive roles at the same employer are grouped under one heading, the way
+# LinkedIn groups them.
 #
-# title      - the role
-# company    - the employer; consecutive matches are grouped
+# title      - the role, or the degree for an education entry
+# company    - the employer or institution; consecutive matches are grouped
 # location   - optional; shown after the role's dates
 # start      - YYYY or YYYY-MM
 # end        - YYYY or YYYY-MM; omit entirely for a role you still hold
 # note       - optional; one line shown under the role
-# internship - true pulls the entry into the bundled row at the foot of the list
+# internship - true folds the entry into the co-op terms under the degree
+# kind       - "education" for schooling; anything else is a job
+# level      - the rung: 0 student, 1 engineer, 2 engineer II, 3 senior,
+#              4 principal. A rise from one entry to the next is drawn as a
+#              step on the ladder and called out as a promotion.
+# mark       - names an inline logo component; only the degree carries one
 #
 # The section renders nothing at all while this list is empty.
 roles:
-  - title: "Principal Software Engineer, Customer Service"
-    company: "Amazon"
-    location: "Newmarket, Ontario, Canada"
-    start: 2022-10
-    end: 2026-04
-    note: "Contact Center infrastructure management & large engineering org process stuff."
-
-  - title: "Senior Software Engineer, Customer Service"
-    company: "Amazon"
-    location: "Newmarket, Ontario, Canada"
-    start: 2017-10
-    end: 2022-10
-    note: "Order and Account handling stuff."
-
-  - title: "Software Engineer II, Customer Service"
-    company: "Amazon"
-    location: "Toronto, Ontario, Canada"
-    start: 2016-02
-    end: 2017-10
-    note: "Workforce Management automation stuff."
-
-  - title: "Software Engineer II, Fulfillment Tech"
-    company: "Amazon"
-    location: "Toronto, Ontario, Canada"
-    start: 2015-03
-    end: 2016-02
-    note: "Robot picking stuff."
-
-  - title: "Software Engineer II, Digital and Devices"
-    company: "Amazon"
-    location: "Seattle, Washington, United States"
-    start: 2013-10
-    end: 2015-03
-    note: "More Fire Phone (RIP) stuff."
-
-  - title: "Software Engineer I, Digital and Devices"
-    company: "Amazon"
-    location: "Seattle, Washington, United States"
-    start: 2011-06
-    end: 2013-10
-    note: "Fire Phone stuff."
-
-  - title: "Software Engineer"
-    company: "Sandvine"
-    start: 2010-05
-    end: 2011-05
-    note: "More networking switch(-ish) stuff."
-
-  - title: "Software Engineer Co-op"
-    company: "Arista Networks, Inc."
-    start: 2009-09
-    end: 2009-12
-    note: "Networking switch stuff."
-    internship: true
-
-  - title: "Software Engineer Co-op"
-    company: "Qualcomm"
-    start: 2009-01
-    end: 2009-04
-    note: "Cellular network base station stuff."
-    internship: true
-
-  - title: "Software Development Engineer Co-op"
-    company: "Amazon.com"
-    start: 2008-05
-    end: 2008-08
-    note: "Event tracking stuff."
-    internship: true
+  - title: "BSE, Software Engineering"
+    company: "University of Waterloo"
+    location: "Waterloo, Ontario, Canada"
+    start: 2005-09
+    end: 2010-04
+    note: "Five years of the co-op stream, with study terms braided through the work terms below."
+    kind: education
+    level: 0
+    mark: uwaterloo
 
   - title: "Programmer Analyst Co-op"
     company: "Emergis"
@@ -91,4 +38,84 @@ roles:
     end: 2007-08
     note: "Health stuff."
     internship: true
+    level: 0
+
+  - title: "Software Development Engineer Co-op"
+    company: "Amazon.com"
+    start: 2008-05
+    end: 2008-08
+    note: "Event tracking stuff."
+    internship: true
+    level: 0
+
+  - title: "Software Engineer Co-op"
+    company: "Qualcomm"
+    start: 2009-01
+    end: 2009-04
+    note: "Cellular network base station stuff."
+    internship: true
+    level: 0
+
+  - title: "Software Engineer Co-op"
+    company: "Arista Networks, Inc."
+    start: 2009-09
+    end: 2009-12
+    note: "Networking switch stuff."
+    internship: true
+    level: 0
+
+  - title: "Software Engineer"
+    company: "Sandvine"
+    start: 2010-05
+    end: 2011-05
+    note: "More networking switch(-ish) stuff."
+    level: 1
+
+  - title: "Software Engineer I, Digital and Devices"
+    company: "Amazon"
+    location: "Seattle, Washington, United States"
+    start: 2011-06
+    end: 2013-10
+    note: "Fire Phone stuff."
+    level: 1
+
+  - title: "Software Engineer II, Digital and Devices"
+    company: "Amazon"
+    location: "Seattle, Washington, United States"
+    start: 2013-10
+    end: 2015-03
+    note: "More Fire Phone (RIP) stuff."
+    level: 2
+
+  - title: "Software Engineer II, Fulfillment Tech"
+    company: "Amazon"
+    location: "Toronto, Ontario, Canada"
+    start: 2015-03
+    end: 2016-02
+    note: "Robot picking stuff."
+    level: 2
+
+  - title: "Software Engineer II, Customer Service"
+    company: "Amazon"
+    location: "Toronto, Ontario, Canada"
+    start: 2016-02
+    end: 2017-10
+    note: "Workforce Management automation stuff."
+    level: 2
+
+  - title: "Senior Software Engineer, Customer Service"
+    company: "Amazon"
+    location: "Newmarket, Ontario, Canada"
+    start: 2017-10
+    end: 2022-10
+    note: "Order and Account handling stuff."
+    level: 3
+
+  - title: "Principal Software Engineer, Customer Service"
+    company: "Amazon"
+    location: "Newmarket, Ontario, Canada"
+    start: 2022-10
+    end: 2026-04
+    note: "Contact Center infrastructure management & large engineering org process stuff."
+    level: 4
 ---
