@@ -88,8 +88,11 @@ const crumb = path.startsWith('/software/')
   // The tile for the page you are already on has nowhere to send you, so it
   // stays put: it leans, and its label says where you are. Delegated from the
   // document so the behaviour survives ClientRouter swapping the nav out.
-  const HOLD_MS = 1600;
-  const CURRENT = '.top-nav .brand-link[aria-current="page"], .top-nav .about-link.active';
+  // Long enough to read a two-word label, and it always lets go on its own —
+  // a phone has no hover to dismiss it with. Matches the theme toggle.
+  const HOLD_MS = 1800;
+  // The landing page marks whichever tile you are already at.
+  const CURRENT = '.top-nav [data-here]';
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   let held: Element | undefined;

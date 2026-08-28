@@ -1180,10 +1180,19 @@ svg {
   transition: opacity 150ms ease, transform 180ms var(--ease-out);
 }
 
-[data-tooltip]:hover::after,
 [data-tooltip]:focus-visible::after,
 [data-tooltip][data-tooltip-open]::after {
   opacity: 1;
+}
+
+/* Hover, but only where there is a real pointer to hover with. A tap leaves
+   :hover latched on a touch screen, which pins the label open until something
+   else is tapped — the click-opened state below is what phones get instead,
+   and it lets go on its own. */
+@media (hover: hover) {
+  [data-tooltip]:hover::after {
+    opacity: 1;
+  }
 }
 
 /* The page edge is directly below the footer control, so its label hangs
@@ -1194,9 +1203,9 @@ svg {
   transform: translate(-50%, 4px) scale(0.98);
 }
 
-.theme-toggle:hover::after,
 .theme-toggle:focus-visible::after,
-.theme-toggle[data-tooltip-open]::after {
+.theme-toggle[data-tooltip-open]::after,
+.theme-toggle:where(:hover)::after {
   transform: translate(-50%, 0) scale(1);
 }
 
@@ -1215,12 +1224,12 @@ svg {
   transform: translateY(4px) scale(0.98);
 }
 
-.top-nav .about-link:hover::after,
 .top-nav .about-link:focus-visible::after,
 .top-nav .about-link[data-tooltip-open]::after,
-.top-nav .brand-link:hover::after,
+.top-nav .about-link:where(:hover)::after,
 .top-nav .brand-link:focus-visible::after,
-.top-nav .brand-link[data-tooltip-open]::after {
+.top-nav .brand-link[data-tooltip-open]::after,
+.top-nav .brand-link:where(:hover)::after {
   transform: translateY(0) scale(1);
 }
 

@@ -616,7 +616,8 @@ function setupPage() {
         // Either way this is not a navigation to the page we are already on,
         // so the router does not get to treat it as one.
         event.preventDefault();
-        if (window.scrollY <= 4) return;
+        // Already at the top: nothing to scroll, so the tile leans and says so.
+        if (home.hasAttribute('data-here')) return;
         (event as MouseEvent & { pageHandled?: boolean }).pageHandled = true;
         scrollTo(0, false);
         return;
@@ -629,21 +630,45 @@ function setupPage() {
       if (!hash) return;
 
       event.preventDefault();
+      // Already reading the section this points at — same as the house tile at
+      // the top of the page, it leans and says so rather than scrolling.
+      if (link.hasAttribute('data-here')) return;
+      (event as MouseEvent & { pageHandled?: boolean }).pageHandled = true;
       history.replaceState(history.state, '', hash);
       scrollToTarget(hash, false);
     },
     { capture: true, signal },
   );
 
-  // The tile's label follows what it will actually do.
-  const brand = document.querySelector<HTMLElement>('.top-nav [data-scroll-top]');
-  if (brand) {
-    const syncBrandLabel = () => {
-      brand.dataset.tooltip = window.scrollY > 4 ? 'Back to top' : "You're home";
-    };
-    syncBrandLabel();
-    window.addEventListener('scroll', syncBrandLabel, { passive: true, signal });
-  }
+  // A nav tile is "here" when clicking it would not move the page. That single
+  // fact drives everything: the label it shows, whether a tap pops that label
+  // open, and whether the tile leans instead of scrolling. The label itself is
+  // always present, so hovering on a desktop still says what the icon does.
+  const brandTile = document.querySelector<HTMLElement>('.top-nav [data-scroll-top]');
+  const aboutTile = document.querySelector<HTMLElement>('.top-nav .about-link');
+  const aboutSection = document.getElementById('about');
+
+  const syncTiles = () => {
+    if (brandTile) {
+      const atTop = window.scrollY <= 4;
+      brandTile.toggleAttribute('data-here', atTop);
+      brandTile.dataset.tooltip = atTop ? "You're home" : 'Back to top';
+    }
+
+    if (aboutTile && aboutSection) {
+      // Reading the section counts as being there, rather than only the exact
+      // scroll position a click would land on.
+      const bounds = aboutSection.getBoundingClientRect();
+      const middle = window.innerHeight / 2;
+      const here = bounds.top <= middle && bounds.bottom >= middle;
+      aboutTile.toggleAttribute('data-here', here);
+      aboutTile.dataset.tooltip = here ? "It's me" : 'About me';
+    }
+  };
+
+  syncTiles();
+  window.addEventListener('scroll', syncTiles, { passive: true, signal });
+  window.addEventListener('resize', syncTiles, { passive: true, signal });
 
   ScrollTrigger.refresh();
   // Arriving from another page with /#about in the URL should land on the
