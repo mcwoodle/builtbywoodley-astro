@@ -246,6 +246,17 @@ function setupPage() {
       if (rule) timeline.fromTo(rule, { scaleX: 0 }, { scaleX: 1, ease: 'power2.inOut', duration: 1 }, 0);
       if (index) timeline.fromTo(index, { opacity: 0, y: 16 }, { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8 }, 0.1);
       if (title) timeline.fromTo(title, { yPercent: 115 }, { yPercent: 0, ease: 'power3.out', duration: 0.95 }, 0.15);
+
+      // A tenure's roles arrive under its heading rather than all at once.
+      const body = row.querySelectorAll<HTMLElement>('[data-row-body] > *');
+      if (body.length) {
+        timeline.fromTo(
+          body,
+          { opacity: 0, y: 22 },
+          { opacity: 1, y: 0, ease: 'power2.out', duration: 0.8, stagger: 0.06 },
+          0.25,
+        );
+      }
     });
 
     // ...and its copy arrives a line at a time. autoSplit re-cuts the lines

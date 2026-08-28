@@ -1657,6 +1657,15 @@ html[data-motion-armed] [data-hero-tail] {
   padding-block: clamp(26px, 3.4vw, 42px);
 }
 
+/* A long tenure's roles run well past its heading, so the employer and the
+   span stay put alongside them rather than scrolling away at the first role. */
+@media (min-width: 761px) {
+  .history-row .craft-lead {
+    position: sticky;
+    top: calc(var(--top-nav-height, 80px) + 26px);
+  }
+}
+
 .craft-rule {
   position: absolute;
   top: 0;
@@ -1779,21 +1788,64 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.05;
 }
 
-.history-company {
-  margin-bottom: 10px;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(0.95rem, 1.3vw, 1.05rem);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+/* The tenure's own length, set apart from the range it spans. */
+.history-length {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
 }
 
-.history-note {
-  max-width: 54ch;
+/* The roles held inside one tenure, stacked in the right-hand column. */
+.history-stints {
+  display: grid;
+  gap: clamp(16px, 2vw, 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-stint {
+  padding-top: clamp(16px, 2vw, 24px);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.history-stint:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.history-stint-title {
+  margin-bottom: 5px;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.4vw, 1.14rem);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.history-stint-meta {
   margin-bottom: 0;
   color: var(--color-text-muted);
-  font-size: clamp(0.95rem, 1.35vw, 1.05rem);
-  line-height: 1.68;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.history-stint-note {
+  max-width: 54ch;
+  margin-top: 8px;
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-size: clamp(0.92rem, 1.3vw, 1rem);
+  line-height: 1.65;
 }
 
 /* The bundled internships: one line each, so a run of early jobs is on the

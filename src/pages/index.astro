@@ -41,6 +41,60 @@ const monthYear = (value: string) => {
 };
 const span = (role: { start: string; end?: string }) =>
   `${monthYear(role.start)} — ${role.end ? monthYear(role.end) : "Present"}`;
+
+// Inclusive month counting — counting both the first and last month is what
+// reproduces the figures LinkedIn shows against the same dates.
+const monthsBetween = (start: string, end?: string) => {
+  const startYear = Number(start.slice(0, 4));
+  const startMonth = Number(start.slice(5, 7) || 1);
+  const now = new Date();
+  const endYear = end ? Number(end.slice(0, 4)) : now.getUTCFullYear();
+  const endMonth = end ? Number(end.slice(5, 7) || 1) : now.getUTCMonth() + 1;
+  return Math.max(1, (endYear - startYear) * 12 + (endMonth - startMonth) + 1);
+};
+
+const lengthOf = (total: number) => {
+  const years = Math.floor(total / 12);
+  const rest = total % 12;
+  const parts: string[] = [];
+  if (years) parts.push(`${years} yr${years === 1 ? "" : "s"}`);
+  if (rest) parts.push(`${rest} mo${rest === 1 ? "" : "s"}`);
+  return parts.join(" ") || "1 mo";
+};
+
+// Consecutive roles at one employer are one tenure. Six separate Amazon rows
+// would repeat the name six times and cost six screens; this is how the
+// profile they came from groups them too.
+type Role = (typeof positions)[number];
+const grouped: { company: string; roles: Role[] }[] = [];
+for (const role of positions) {
+  const current = grouped[grouped.length - 1];
+  if (current && current.company === role.company) current.roles.push(role);
+  else grouped.push({ company: role.company, roles: [role] });
+}
+
+const tenures = grouped.map((group) => {
+  const newest = group.roles[0];
+  const oldest = group.roles[group.roles.length - 1];
+  return {
+    company: group.company,
+    range: `${monthYear(oldest.start)} — ${newest.end ? monthYear(newest.end) : "Present"}`,
+    length: lengthOf(monthsBetween(oldest.start, newest.end)),
+    single: group.roles.length === 1,
+    // A lone role's dates are already the tenure's, in the column to the left,
+    // so it carries only what that heading does not already say.
+    roles: group.roles.map((role) => ({
+      title: role.title,
+      meta: (group.roles.length === 1
+        ? [role.location]
+        : [span(role), lengthOf(monthsBetween(role.start, role.end)), role.location]
+      )
+        .filter(Boolean)
+        .join(" · "),
+      note: role.note,
+    })),
+  };
+});
 // The bundle's range runs from the earliest internship to the latest.
 const bundleSpan = internships.length
   ? `${monthYear(internships[internships.length - 1].start)} — ${
@@ -213,23 +267,26 @@ const bundleSpan = internships.length
             </header>
 
             <ol class="history-list">
-              {positions.map((role) => (
+              {tenures.map((tenure) => (
                 <li class="history-row" data-row>
                   <span class="craft-rule" aria-hidden="true" data-row-rule></span>
                   <div class="craft-lead">
-                    <p class="history-dates" data-row-meta>{span(role)}</p>
+                    <p class="history-dates" data-row-meta>
+                      {tenure.range} <span class="history-length">{tenure.length}</span>
+                    </p>
                     <h4 class="history-role" data-row-title>
-                      <span class="reveal-line"><span>{role.title}</span></span>
+                      <span class="reveal-line"><span>{tenure.company}</span></span>
                     </h4>
                   </div>
-                  <div class="history-body">
-                    <p class="history-company">
-                      {role.company}{role.location ? ` \u00b7 ${role.location}` : ""}
-                    </p>
-                    {role.note && (
-                      <p class="history-note" data-split-copy>{role.note}</p>
-                    )}
-                  </div>
+                  <ol class="history-stints" data-row-body>
+                    {tenure.roles.map((role) => (
+                      <li class="history-stint">
+                        <p class="history-stint-title">{role.title}</p>
+                        {role.meta && <p class="history-stint-meta">{role.meta}</p>}
+                        {role.note && <p class="history-stint-note">{role.note}</p>}
+                      </li>
+                    ))}
+                  </ol>
                 </li>
               ))}
 
