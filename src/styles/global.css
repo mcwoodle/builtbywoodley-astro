@@ -1759,13 +1759,92 @@ html[data-motion-armed] [data-hero-tail] {
    from "At work" into the roles themselves reads as one movement.
 
    Each tenure is one row: the employer holds the left column and stays put
-   there, while the roles run down a ladder on the right. The dates are not in
-   the heading — they are stamped on the ladder itself, a year to each stop. The
-   motion is in src/scripts/home-scroll.ts: a ladder that draws itself, years
-   that ride down it counting up, bars that fill, and siblings that step back
-   from whichever role you are pointing at. */
+   there, while the roles run down a ladder on the right. That ladder is a
+   single line for the whole history — one SVG path over every row rather than
+   a piece per role — and the only date on it is one year riding its leading
+   edge. Both are measured and driven in src/scripts/home-scroll.ts. */
 .history {
+  /* The ladder's whole geometry, in one place, on the ancestor both the rows
+     and the travelling year hang off. --ladder-left has to clear the widest
+     rung (four notches) with room left for the node; the year sits outside
+     that again, and reserves only what it is wide on screen — which on a phone
+     is its height, since it lies on its side there. */
+  --rung-gap: clamp(8px, 0.9vw, 12px);
+  --ladder-left: clamp(44px, 4.6vw, 60px);
+  --marker-box: clamp(30px, 3.2vw, 40px);
+  --marker-h: 14px;
+  --marker-w: var(--marker-box);
+  --marker-gap: clamp(8px, 0.9vw, 12px);
+  --stint-gap: clamp(20px, 2.4vw, 30px);
+  --node-y: 9px;
+  /* How far the line runs on past the last stop, and the distance it takes to
+     fade out over. The two are the same number: the run is the fade. */
+  --history-fade: clamp(74px, 8vw, 116px);
+
   margin-top: clamp(52px, 7vw, 96px);
+}
+
+/* ── The line ──
+   Everything it runs through sits in here so it can be measured against one
+   box. The bottom padding is the run past the last stop that the track's mask
+   fades away over, which is what puts clear air between the line and the link
+   underneath it. */
+.history-body {
+  position: relative;
+  padding-bottom: var(--history-fade);
+}
+
+.history-track {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--history-fade)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--history-fade)),
+    transparent 100%
+  );
+}
+
+.history-track svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Both paths are drawn by the script: the base is the whole route, faint, so
+   where the line is going is visible before it gets there; the line itself is
+   revealed over it with a dash offset. With no script neither has a `d` and
+   the ladder simply is not there — it is decoration, and every date it carries
+   is also printed in the role's own meta line. */
+.history-track-base,
+.history-track-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.history-track-base {
+  stroke: var(--color-border-subtle);
+}
+
+.history-track-line {
+  stroke: var(--accent-copper);
+}
+
+/* The rows have to sit over the line so the nodes — which are opaque discs —
+   can punch their holes in it. */
+.history-list,
+.history-row--coda {
+  position: relative;
+  z-index: 1;
 }
 
 .history-head {
@@ -1817,27 +1896,22 @@ html[data-motion-armed] [data-hero-tail] {
 /* ── The roles, climbing a ladder ──
    The rungs are the seniority steps in RUNGS (index.astro): a role sits one
    notch further out for every one it has climbed, so the shape of the career
-   is legible from the left edge alone. Each role draws the step across to its
-   own rung and the tail carrying that rung down to the role after it — which
-   means a promotion is a visible jog outwards and a sideways move is a
-   straight line. The motion is in src/scripts/home-scroll.ts. */
-.history-stints {
-  /* The ladder's whole geometry, in one place. --ladder-left has to clear the
-     widest rung (four notches) with room left for the node, and the stamp
-     column sits outside that again. */
-  --rung-gap: clamp(8px, 0.9vw, 12px);
-  --ladder-left: clamp(44px, 4.6vw, 60px);
-  --stamp-w: clamp(30px, 3.2vw, 40px);
-  --stamp-gap: clamp(8px, 0.9vw, 12px);
-  --stint-gap: clamp(20px, 2.4vw, 30px);
-  --node-y: 9px;
+   is legible from the left edge alone. The line joining them is not drawn
+   here — it is one path over the whole history, measured off these nodes in
+   src/scripts/home-scroll.ts — but the gutter it runs down is. */
+.history-stints,
+.history-coda-body {
+  /* The gutter the line and its year share, measured back out of the text
+     column by everything positioned in it. */
+  padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
+}
 
+.history-stints {
   position: relative;
   display: grid;
   gap: var(--stint-gap);
   margin: 0;
-  padding: 4px 0 0
-    calc(var(--ladder-left) + var(--stamp-gap) + var(--stamp-w));
+  padding-top: 4px;
   list-style: none;
 }
 
@@ -1845,66 +1919,8 @@ html[data-motion-armed] [data-hero-tail] {
   position: relative;
 }
 
-/* Every piece of the ladder is a faint track with a copper fill drawn over it,
-   so where the line is going is visible before it gets there. */
-.rung {
-  position: absolute;
-  /* Measured back out of the text column into the ladder's gutter. */
-  left: calc(var(--from, 0) * var(--rung-gap) - var(--ladder-left));
-  border-radius: 1px;
-  background: var(--color-border-subtle);
-}
-
-/* Reaches up out of the tenure above into this one's first role. Every later
-   role has the previous role's tail arriving at it instead. */
-.rung--lead {
-  top: calc(-1 * var(--stint-gap) - 1px);
-  width: 2px;
-  height: calc(var(--stint-gap) + var(--node-y) + 1px);
-}
-
-.rung--step {
-  top: calc(var(--node-y) - 1px);
-  width: calc((var(--to, 0) - var(--from, 0)) * var(--rung-gap));
-  height: 2px;
-}
-
-/* Carries the line on down this role's own rung, past everything it has to say,
-   and lands exactly on the next role's node. */
-.rung--tail {
-  top: var(--node-y);
-  bottom: calc(-1 * var(--stint-gap) - var(--node-y));
-  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
-  width: 2px;
-}
-
-/* The two that would dangle: nothing is above the first role on the page, and
-   nothing follows the last role of a tenure. */
-.history-stint:not(:first-child) .rung--lead,
-.history-row:first-child .history-stint:first-child .rung--lead,
-.history-stint:last-child .rung--tail {
-  display: none;
-}
-
-.rung-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-copper);
-}
-
-.rung--lead .rung-fill,
-.rung--tail .rung-fill {
-  transform: scaleY(0);
-  transform-origin: top center;
-}
-
-.rung--step .rung-fill {
-  transform: scaleX(0);
-  transform-origin: left center;
-}
-
+/* The stops the line is measured between. Opaque, so each one punches its own
+   hole in the line running behind it. */
 .history-node {
   position: absolute;
   top: calc(var(--node-y) - 4.5px);
@@ -1914,6 +1930,16 @@ html[data-motion-armed] [data-hero-tail] {
   border: 1px solid var(--accent-copper);
   border-radius: 50%;
   background: var(--color-bg);
+}
+
+/* The last stop is the one still ahead, so it is drawn open rather than as a
+   full stop: a ring with the page showing through it. */
+.history-node--coda {
+  width: 13px;
+  height: 13px;
+  top: calc(var(--node-y) - 6.5px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 5.5px);
+  border-style: dashed;
 }
 
 /* Rings out of the node when a role is a step up. Sized around the node, and
@@ -1930,35 +1956,91 @@ html[data-motion-armed] [data-hero-tail] {
   pointer-events: none;
 }
 
-/* ── The year a stop began ──
-   Tucked against the left of its own node rather than ruled off in a column of
-   its own, so the years climb the same staircase the roles do: a promotion
-   carries its year outwards with it. Right-aligned, so whatever the digits do
-   the gap to the node stays the same. Marked aria-hidden — the role's meta line
-   carries the real dates, and this one is mid-count for most of the scroll. */
-.history-stamp {
+/* ── The one year on the ladder ──
+   An anchor with no size of its own: the script parks it on the leading edge
+   of the line, wherever that has got to, and everything visible hangs off it.
+   It starts hidden and stays hidden without the script — a year parked at the
+   top of a line that never moves says the wrong thing, and every date it would
+   carry is printed in the roles' own meta lines anyway. */
+.history-marker {
   position: absolute;
-  top: calc(var(--node-y) - 7px);
-  left: calc(
-    var(--to, 0) * var(--rung-gap) - var(--ladder-left) - var(--stamp-gap) -
-      var(--stamp-w)
-  );
-  width: var(--stamp-w);
-  height: 14px;
-  color: var(--color-signal);
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.history-marker-tip {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+}
+
+/* Sat off the left of the tip and centred on it. */
+.history-marker-inner {
+  position: absolute;
+  top: 0;
+  right: var(--marker-gap);
+  width: var(--marker-box);
+  height: var(--marker-h);
+  transform: translateY(-50%);
+}
+
+.history-marker-year {
+  display: flex;
+  justify-content: flex-end;
+  height: var(--marker-h);
+  color: var(--accent-copper);
   font-family: var(--font-mono);
   font-size: clamp(0.62rem, 0.85vw, 0.74rem);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-  line-height: 14px;
-  text-align: right;
 }
 
-/* A step up is worth saying twice: the rung word turns copper, and so does the
-   year it happened in. */
-.history-stint[data-rose] .history-stamp {
-  color: var(--accent-copper);
+/* One digit, one window, one reel of ten behind it. The resting offset is a
+   custom property so the year reads right before the script has said anything;
+   after that the script drives the reels itself. */
+.history-marker-digit {
+  display: block;
+  height: var(--marker-h);
+  overflow: hidden;
+}
+
+.history-marker-reel {
+  display: block;
+  transform: translateY(calc(var(--d, 0) * -10%));
+}
+
+.history-marker-reel > span {
+  display: block;
+  height: var(--marker-h);
+  line-height: var(--marker-h);
+  text-align: center;
+}
+
+/* ── Where the line ends up ──
+   The same grid as a tenure row, so its stop lands on the same rung the last
+   role did and the line runs straight down into it. */
+.history-row--coda {
+  padding-block: clamp(20px, 2.6vw, 32px) 0;
+}
+
+.history-coda-label {
+  margin-bottom: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-weight: 630;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
 }
 
 /* ── The rung a role sits on, in words ── */
@@ -2139,8 +2221,35 @@ html[data-motion-armed] [data-hero-tail] {
   }
 }
 
+/* The line has already faded out above this by the width of the body's bottom
+   padding, so the link needs far less air of its own than a chapter link
+   usually gets. */
 .history-link {
-  margin-top: clamp(28px, 4vw, 44px);
+  margin-top: clamp(4px, 1vw, 12px);
+}
+
+/* The same line-art mark the footer signs off with, standing in for the word. */
+.history-link-mark {
+  display: block;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--accent-copper);
+  transition: transform 260ms var(--ease-spring);
+}
+
+.history-link-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chapter-link:hover .history-link-mark,
+.chapter-link:focus-visible .history-link-mark {
+  transform: translateY(-3px);
 }
 
 /* ── 5 · Selected work ── */
@@ -2324,15 +2433,16 @@ html[data-motion-armed] [data-hero-tail] {
     opacity: 1;
   }
 
-  /* Written out per segment: the resting scales are set on
-     `.rung--drop .rung-fill` and `.rung--step .rung-fill`, which out-specify a
-     bare `.rung-fill` here and would leave the ladder drawn but never filled. */
   .craft-rule,
-  .rung--lead .rung-fill,
-  .rung--tail .rung-fill,
-  .rung--step .rung-fill,
   .history-bar-fill {
     transform: none;
+  }
+
+  /* The line is drawn in full rather than revealed, and the year that would
+     have ridden its leading edge has nowhere to be — the roles' own meta lines
+     carry every date it would have shown. */
+  .history-marker {
+    display: none;
   }
 
   /* The rung roll rests on the arrived-at word already, so only the outgoing
@@ -4118,24 +4228,25 @@ body.is-photo-viewing {
 
   /* The ladder has to give back some of the gutter too, or the roles lose
      more of a narrow column to it than they can spare. */
-  .history-stints {
+  .history {
     --rung-gap: 7px;
     --ladder-left: 36px;
-    --stamp-w: 15px;
-    --stamp-gap: 8px;
+    --marker-box: 30px;
+    --marker-h: 13px;
+    --marker-gap: 8px;
+    /* Turned on its side, the year is only as wide as it is tall, and the
+       gutter only has to reserve that much. */
+    --marker-w: var(--marker-h);
   }
 
-  /* Turned on its side. Four digits laid across cost more than twice the width
-     of the same four stacked, and this is the width there is least of. The
-     block direction runs right-to-left, so the digits hug the edge nearest the
-     node and read downwards from it, labelling the line they start. */
-  .history-stamp {
-    writing-mode: vertical-rl;
-    top: calc(var(--node-y) - 3px);
-    height: auto;
-    line-height: var(--stamp-w);
-    letter-spacing: 0.05em;
-    text-align: left;
+  /* Four digits laid across cost more than twice the width of the same four
+     stacked, and this is the width there is least of. Rotating rather than
+     restacking keeps the reels rolling along their own digits' up-and-down.
+     The translate re-centres the quarter-turn on the tip: rotating about the
+     box's middle would otherwise leave it hanging half a box too far left. */
+  .history-marker-inner {
+    transform: translate(calc((var(--marker-box) - var(--marker-h)) / 2), -50%)
+      rotate(90deg);
   }
 
   .craft-rule {

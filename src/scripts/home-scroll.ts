@@ -61,6 +61,119 @@ function setupPage() {
   gsap.set(heroLines, { yPercent: 0, y: 0, opacity: 1 });
   gsap.set(heroTail, { y: 0, opacity: 1 });
 
+  // ── The line the whole history hangs off ──
+  //
+  // One path over every row rather than a piece per role, so it runs unbroken
+  // from the degree through to the stop still ahead instead of stopping dead at
+  // each employer. It has to be measured rather than declared: how far it is
+  // from one stop to the next is however tall the role in between turned out to
+  // be, which is not a thing CSS can be told up front.
+  //
+  // Built out here rather than inside a motion context, so a reader who asked
+  // for stillness still gets the finished line — only the reveal is motion.
+  const historyBody = page.querySelector<HTMLElement>('[data-history-body]');
+  const trackSvg = page.querySelector<SVGSVGElement>('[data-track-svg]');
+  const trackBase = page.querySelector<SVGPathElement>('[data-track-base]');
+  const trackLine = page.querySelector<SVGPathElement>('[data-track-line]');
+  const marker = page.querySelector<HTMLElement>('[data-marker]');
+
+  // A promotion's jog outwards is drawn as a short diagonal rather than a right
+  // angle. It reads as a climb, and — the reason it is here — it gives the step
+  // a height, which is what lets a point on the line be found from a y alone.
+  const STEP_RISE = 14;
+
+  /** A corner of the line, with how far along the line it is. */
+  type Vertex = { x: number; y: number; at: number };
+  let vertices: Vertex[] = [];
+  /** Each stop the line passes through, and the year it is. */
+  let stops: { y: number; year: number }[] = [];
+  let lineLength = 0;
+  /** Where the last stop is, so the run on past it can be faded over. */
+  let lastStopAt = 0;
+
+  const buildTrack = () => {
+    if (!historyBody || !trackSvg || !trackBase || !trackLine) return;
+
+    const frame = historyBody.getBoundingClientRect();
+    // Read off the nodes rather than the cards: they are the thing the line is
+    // meant to join, and their centres do not move when the script scales them.
+    const points = [
+      ...historyBody.querySelectorAll<HTMLElement>('[data-stint] .history-node'),
+    ].map((node) => {
+      const box = node.getBoundingClientRect();
+      const stint = node.closest<HTMLElement>('[data-stint]');
+      return {
+        x: box.left + box.width / 2 - frame.left,
+        y: box.top + box.height / 2 - frame.top,
+        year: Number(stint?.dataset.year) || 0,
+      };
+    });
+    if (points.length < 2) return;
+
+    vertices = [];
+    const push = (x: number, y: number) => vertices.push({ x, y, at: 0 });
+    push(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i += 1) {
+      // Only a change of rung needs a corner to turn at.
+      if (Math.abs(points[i].x - points[i - 1].x) > 0.5) {
+        push(points[i - 1].x, points[i].y - STEP_RISE);
+      }
+      push(points[i].x, points[i].y);
+    }
+    const lastStop = vertices.length - 1;
+    // On past the last stop, into the padding the track's mask fades out over.
+    push(points[points.length - 1].x, frame.height);
+
+    lineLength = 0;
+    for (let i = 1; i < vertices.length; i += 1) {
+      const a = vertices[i - 1];
+      const b = vertices[i];
+      lineLength += Math.hypot(b.x - a.x, b.y - a.y);
+      b.at = lineLength;
+    }
+    lastStopAt = vertices[lastStop].at;
+    stops = points.map((point) => ({ y: point.y, year: point.year }));
+
+    const d = vertices
+      .map((v, i) => `${i ? 'L' : 'M'}${v.x.toFixed(1)} ${v.y.toFixed(1)}`)
+      .join('');
+    trackSvg.setAttribute('viewBox', `0 0 ${frame.width} ${frame.height}`);
+    trackBase.setAttribute('d', d);
+    trackLine.setAttribute('d', d);
+  };
+
+  // Where the line has got to, given the y it has reached. The vertices climb
+  // in y and never repeat one — which is what the diagonal jogs buy — so one
+  // walk down the list finds the segment the point is on.
+  const pointAt = (y: number) => {
+    const last = vertices[vertices.length - 1];
+    if (y <= vertices[0].y) return { x: vertices[0].x, y: vertices[0].y, at: 0 };
+    for (let i = 1; i < vertices.length; i += 1) {
+      const b = vertices[i];
+      if (y > b.y) continue;
+      const a = vertices[i - 1];
+      const t = (y - a.y) / (b.y - a.y);
+      return { x: a.x + (b.x - a.x) * t, y, at: a.at + (b.at - a.at) * t };
+    }
+    return { x: last.x, y: last.y, at: last.at };
+  };
+
+  // The year at that same point: whatever the two stops either side of it say,
+  // read across the distance between them.
+  const yearAt = (y: number) => {
+    if (y <= stops[0].y) return stops[0].year;
+    for (let i = 1; i < stops.length; i += 1) {
+      const b = stops[i];
+      if (y > b.y) continue;
+      const a = stops[i - 1];
+      return a.year + ((b.year - a.year) * (y - a.y)) / (b.y - a.y);
+    }
+    return stops[stops.length - 1].year;
+  };
+
+  buildTrack();
+  ScrollTrigger.addEventListener('refreshInit', buildTrack);
+
   // ── Motion, for readers who have not asked for stillness ──
   media.add('(prefers-reduced-motion: no-preference)', () => {
     const splits: SplitText[] = [];
@@ -254,19 +367,14 @@ function setupPage() {
 
     });
 
-    // 5b · The work history is a ladder, and every role climbs a piece of it.
+    // 5b · The work history is a ladder, and every role is a stop on it.
     //
     //      A role sits one notch further from the left edge for every rung of
-    //      seniority it has climbed, and draws its own share of the line: the
-    //      step across to its rung, and the tail carrying that rung on down to
-    //      the role after it. A promotion is therefore a visible jog outwards
+    //      seniority it has climbed, so a promotion is a visible jog outwards
     //      and a sideways move is a straight line — the same fact the words
-    //      beside it carry.
-    //
-    //      Riding down with the line is the year that stop began, counting up
-    //      from the year of the stop above it and stepping outwards with the
-    //      rung when the move was a promotion — so the dates are read off the
-    //      ladder rather than off a heading, and climb as it is drawn.
+    //      beside it carry. The line itself is the one path built above; what
+    //      happens here is the reveal of it, the single year riding its leading
+    //      edge, and what each stop does as that edge arrives at it.
     //
     //      What arrives alongside the line depends on what kind of move the
     //      role was. index.astro works that out from the manifest and writes it
@@ -306,19 +414,20 @@ function setupPage() {
         from: { opacity: 0, y: 42, scale: 0.965 },
         to: { opacity: 1, y: 0, scale: 1 },
       },
+      // The stop still ahead. Nothing has happened yet, so it opens rather
+      // than arrives: up out of a shrink, with nothing lateral about it.
+      coda: {
+        from: { opacity: 0, y: 26, scale: 0.94 },
+        to: { opacity: 1, y: 0, scale: 1 },
+      },
     };
+    // Where the longest of those beats — a promotion's halo — finishes.
+    const BEATS_END = 2.1;
 
     q('[data-stint]').forEach((stint) => {
-      const lead = stint.querySelector<HTMLElement>('.rung--lead [data-rung]');
-      const step = stint.querySelector<HTMLElement>('.rung--step [data-rung]');
       const node = stint.querySelector<HTMLElement>('.history-node');
       const halo = stint.querySelector<HTMLElement>('[data-halo]');
       const card = stint.querySelector<HTMLElement>('[data-stint-card]');
-      const stamp = stint.querySelector<HTMLElement>('[data-stamp]');
-      // The step is the measure of how far out this role sits from the one
-      // above: its width is exactly one rung when the role was a promotion,
-      // and nothing at all when it was not.
-      const stepBox = stint.querySelector<HTMLElement>('.rung--step');
       const flag = stint.querySelector<HTMLElement>('[data-flag]');
       const roll = stint.querySelector<HTMLElement>('[data-rung-track]');
       const move = stint.dataset.move ?? 'sidestep';
@@ -343,58 +452,11 @@ function setupPage() {
           0,
         );
       }
-      if (lead) timeline.fromTo(lead, { scaleY: 0 }, { scaleY: 1, ease: 'none', duration: 0.85 }, 0);
-      // The step waits for the line above to arrive at it, so the ladder is
-      // drawn in the order you would draw it by hand.
-      if (step) {
-        timeline.fromTo(step, { scaleX: 0 }, { scaleX: 1, ease: 'power2.inOut', duration: 0.45 }, 0.8);
-      }
+      // The node lands when the line's leading edge reaches it: 1.05 of a
+      // timeline that ends at 2.1, off a window from 96% to 64%, puts it at
+      // 76% of the viewport — which is the reading line the track's own reveal
+      // is pinned to further down.
       if (node) timeline.fromTo(node, { scale: 0 }, { scale: 1, ease: 'back.out(2.6)', duration: 0.5 }, 1.05);
-
-      // The year comes down the line rather than appearing beside it, arriving
-      // at the node just as the node lands. Three beats, deliberately apart:
-      // the drop, the step outwards, and the digits climbing between them.
-      if (stamp) {
-        timeline.fromTo(
-          stamp,
-          { opacity: 0, y: -20 },
-          { opacity: 1, y: 0, duration: 0.75, ease: 'power2.out' },
-          0.3,
-        );
-        // Measured rather than declared, and as a function so a resize past a
-        // breakpoint re-reads the rung width instead of keeping the old one.
-        timeline.fromTo(
-          stamp,
-          { x: () => -(stepBox?.offsetWidth ?? 0) },
-          { x: 0, duration: 0.5, ease: 'power3.inOut' },
-          0.8,
-        );
-
-        const settled = (stamp.textContent ?? '').trim();
-        const from = Number(stamp.dataset.stampFrom);
-        const to = Number(settled);
-        if (Number.isFinite(from) && Number.isFinite(to) && to > from) {
-          // Whatever the count leaves on screen has to be put back when the
-          // context is torn down, or the year is frozen mid-climb.
-          restores.push(() => {
-            stamp.textContent = settled;
-          });
-          const counter = { value: from };
-          timeline.to(
-            counter,
-            {
-              value: to,
-              duration: 0.85,
-              ease: 'none',
-              snap: { value: 1 },
-              onUpdate: () => {
-                stamp.textContent = String(counter.value);
-              },
-            },
-            0.35,
-          );
-        }
-      }
 
       // Only a step up gets the rest of it: the ring off the node, the flag,
       // and the rung left behind rolling up out of the way.
@@ -437,32 +499,109 @@ function setupPage() {
           1.25,
         );
       }
+      // Every stint is scrubbed across the same window, so they all have to run
+      // the same length. Left to itself a quiet role's timeline ends at 1.55
+      // and lands its node seven points of viewport higher than a promotion
+      // does — and the line's leading edge, pinned to one reading line for the
+      // whole history, would then arrive at half of them long after they had
+      // popped. Padding to the longest is what keeps the two together.
+      timeline.set({}, {}, BEATS_END);
     });
 
-    // The tail is the long piece: it runs from a role's node, down past
-    // everything that role has to say, to the node of the one after it. Given
-    // the same short window as the arrival beats it would race away ahead of
-    // the reader, so it draws across the whole card instead — the line grows
-    // at about the pace you get through the role it belongs to.
-    q('.rung--tail [data-tail]').forEach((tail) => {
-      const stint = tail.closest<HTMLElement>('[data-stint]');
-      if (!stint) return;
+    // The line draws itself, and the one year on the ladder rides the tip of
+    // it. Both come off the same number, so the year is never anywhere the
+    // line has not reached.
+    //
+    // The tip is pinned to 76% of the viewport — the same reading line each
+    // stop's node pops on — and the path is walked by y rather than by length,
+    // so the tip is exactly at a node at the moment that node lands rather
+    // than drifting a diagonal's worth further behind at every promotion.
+    if (historyBody && trackLine && marker) {
+      const reels = [...marker.querySelectorAll<HTMLElement>('[data-reel]')];
+      const yearBox = marker.querySelector<HTMLElement>('[data-marker-year]');
+      let shownYear = -1;
+
+      // Each reel rests on a CSS transform naming its digit, which GSAP would
+      // otherwise read as a pixel offset and stack its own on top of. Normalise
+      // them to the same terms the rolls are written in, once, up front.
+      reels.forEach((reel) => {
+        const digit = Number(reel.style.getPropertyValue('--d')) || 0;
+        reel.dataset.at = String(digit);
+        gsap.set(reel, { yPercent: -10 * digit, y: 0 });
+      });
+      restores.push(() => {
+        trackLine.style.strokeDasharray = '';
+        trackLine.style.strokeDashoffset = '';
+      });
+
+      // Only the digits that actually changed turn, so a year climbing by one
+      // moves one reel rather than flickering all four.
+      const rollTo = (year: number) => {
+        if (year === shownYear) return;
+        shownYear = year;
+        const digits = String(year).padStart(reels.length, '0').slice(-reels.length);
+        reels.forEach((reel, index) => {
+          const digit = Number(digits[index]);
+          if (reel.dataset.at === String(digit)) return;
+          reel.dataset.at = String(digit);
+          gsap.to(reel, {
+            yPercent: -10 * digit,
+            duration: 0.42,
+            ease: 'power3.out',
+            overwrite: true,
+          });
+        });
+        if (yearBox) {
+          gsap.fromTo(
+            yearBox,
+            { scale: 1.14 },
+            { scale: 1, duration: 0.5, ease: 'power3.out', overwrite: 'auto' },
+          );
+        }
+      };
+
+      const drawTo = (progress: number) => {
+        if (vertices.length < 2 || !lineLength) return;
+        const top = vertices[0].y;
+        const y = top + (vertices[vertices.length - 1].y - top) * progress;
+        const tip = pointAt(y);
+
+        trackLine.style.strokeDasharray = String(lineLength);
+        trackLine.style.strokeDashoffset = String(lineLength - tip.at);
+        rollTo(Math.round(yearAt(y)));
+
+        // On at the very top of the line, and off again over the run past the
+        // last stop — the same distance the track's mask fades the line out
+        // over, so the two go together.
+        const trail = lineLength - lastStopAt;
+        gsap.set(marker, {
+          x: tip.x,
+          y: tip.y,
+          opacity: Math.min(
+            gsap.utils.clamp(0, 1, tip.at / 30),
+            trail > 0 ? gsap.utils.clamp(0, 1, (lineLength - tip.at) / trail) : 1,
+          ),
+        });
+      };
+
+      const head = { at: 0 };
       gsap.fromTo(
-        tail,
-        { scaleY: 0 },
+        head,
+        { at: 0 },
         {
-          scaleY: 1,
+          at: 1,
           ease: 'none',
+          onUpdate: () => drawTo(head.at),
           scrollTrigger: {
-            trigger: stint,
-            start: 'top 72%',
-            end: 'bottom 62%',
+            trigger: historyBody,
+            start: () => `top+=${vertices[0]?.y ?? 0} 76%`,
+            end: () => `top+=${vertices[vertices.length - 1]?.y ?? 0} 76%`,
             scrub: true,
             invalidateOnRefresh: true,
           },
         },
       );
-    });
+    }
 
     // Beat two, once the title has settled: the clip opens downwards while the
     // detail slides down inside it, so the dates and the note read as though
@@ -906,6 +1045,7 @@ function setupPage() {
 
   cleanupActivePage = () => {
     controller.abort();
+    ScrollTrigger.removeEventListener('refreshInit', buildTrack);
     media.revert();
     cleanupActivePage = () => {};
   };
