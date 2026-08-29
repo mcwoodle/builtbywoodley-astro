@@ -263,6 +263,11 @@ function setupPage() {
     //      and a sideways move is a straight line — the same fact the words
     //      beside it carry.
     //
+    //      Riding down with the line is the year that stop began, counting up
+    //      from the year of the stop above it and stepping outwards with the
+    //      rung when the move was a promotion — so the dates are read off the
+    //      ladder rather than off a heading, and climb as it is drawn.
+    //
     //      What arrives alongside the line depends on what kind of move the
     //      role was. index.astro works that out from the manifest and writes it
     //      onto the element as data-move, so a role added later still turns up
@@ -309,6 +314,11 @@ function setupPage() {
       const node = stint.querySelector<HTMLElement>('.history-node');
       const halo = stint.querySelector<HTMLElement>('[data-halo]');
       const card = stint.querySelector<HTMLElement>('[data-stint-card]');
+      const stamp = stint.querySelector<HTMLElement>('[data-stamp]');
+      // The step is the measure of how far out this role sits from the one
+      // above: its width is exactly one rung when the role was a promotion,
+      // and nothing at all when it was not.
+      const stepBox = stint.querySelector<HTMLElement>('.rung--step');
       const flag = stint.querySelector<HTMLElement>('[data-flag]');
       const roll = stint.querySelector<HTMLElement>('[data-rung-track]');
       const move = stint.dataset.move ?? 'sidestep';
@@ -340,6 +350,51 @@ function setupPage() {
         timeline.fromTo(step, { scaleX: 0 }, { scaleX: 1, ease: 'power2.inOut', duration: 0.45 }, 0.8);
       }
       if (node) timeline.fromTo(node, { scale: 0 }, { scale: 1, ease: 'back.out(2.6)', duration: 0.5 }, 1.05);
+
+      // The year comes down the line rather than appearing beside it, arriving
+      // at the node just as the node lands. Three beats, deliberately apart:
+      // the drop, the step outwards, and the digits climbing between them.
+      if (stamp) {
+        timeline.fromTo(
+          stamp,
+          { opacity: 0, y: -20 },
+          { opacity: 1, y: 0, duration: 0.75, ease: 'power2.out' },
+          0.3,
+        );
+        // Measured rather than declared, and as a function so a resize past a
+        // breakpoint re-reads the rung width instead of keeping the old one.
+        timeline.fromTo(
+          stamp,
+          { x: () => -(stepBox?.offsetWidth ?? 0) },
+          { x: 0, duration: 0.5, ease: 'power3.inOut' },
+          0.8,
+        );
+
+        const settled = (stamp.textContent ?? '').trim();
+        const from = Number(stamp.dataset.stampFrom);
+        const to = Number(settled);
+        if (Number.isFinite(from) && Number.isFinite(to) && to > from) {
+          // Whatever the count leaves on screen has to be put back when the
+          // context is torn down, or the year is frozen mid-climb.
+          restores.push(() => {
+            stamp.textContent = settled;
+          });
+          const counter = { value: from };
+          timeline.to(
+            counter,
+            {
+              value: to,
+              duration: 0.85,
+              ease: 'none',
+              snap: { value: 1 },
+              onUpdate: () => {
+                stamp.textContent = String(counter.value);
+              },
+            },
+            0.35,
+          );
+        }
+      }
 
       // Only a step up gets the rest of it: the ring off the node, the flag,
       // and the rung left behind rolling up out of the way.
@@ -518,36 +573,6 @@ function setupPage() {
         );
       }
     }
-
-    // Each tenure's closing year counts up from its opening one, so how long
-    // it ran is felt on the way past rather than only read.
-    q('[data-year-count]').forEach((element) => {
-      const from = Number(element.dataset.yearFrom);
-      const settled = element.textContent ?? '';
-      const to = Number(settled);
-      if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return;
-
-      restores.push(() => {
-        element.textContent = settled;
-      });
-
-      const counter = { value: from };
-      gsap.to(counter, {
-        value: to,
-        ease: 'none',
-        snap: { value: 1 },
-        onUpdate: () => {
-          element.textContent = String(counter.value);
-        },
-        scrollTrigger: {
-          trigger: element.closest<HTMLElement>('[data-tenure]') ?? element,
-          start: 'top 74%',
-          end: 'bottom 74%',
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
-    });
 
     // Role titles come in a word at a time, the same way the hero's lead does.
     q('[data-stint-title]').forEach((title) => {

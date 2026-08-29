@@ -1758,11 +1758,12 @@ html[data-motion-armed] [data-hero-tail] {
    Picks up the ruled rhythm of the about rows directly above it, so the run
    from "At work" into the roles themselves reads as one movement.
 
-   Each tenure is one row: the employer and its span hold the left column and
-   stay put there, while the roles run down a spine on the right. The motion is
-   in src/scripts/home-scroll.ts — a year that climbs as the tenure scrolls, a
-   spine that fills, bars that draw, and siblings that step back from whichever
-   role you are pointing at. */
+   Each tenure is one row: the employer holds the left column and stays put
+   there, while the roles run down a ladder on the right. The dates are not in
+   the heading — they are stamped on the ladder itself, a year to each stop. The
+   motion is in src/scripts/home-scroll.ts: a ladder that draws itself, years
+   that ride down it counting up, bars that fill, and siblings that step back
+   from whichever role you are pointing at. */
 .history {
   margin-top: clamp(52px, 7vw, 96px);
 }
@@ -1796,28 +1797,6 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── The tenure's left column ── */
-.history-year {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: clamp(8px, 1.2vw, 14px);
-  color: var(--color-signal);
-  font-family: var(--font-mono);
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.history-year-dash {
-  flex: 0 0 auto;
-  width: clamp(18px, 3vw, 38px);
-  height: 1px;
-  background: currentColor;
-  opacity: 0.5;
-}
-
 .history-role {
   margin-bottom: 8px;
   font-size: clamp(1.7rem, 3.4vw, 2.7rem);
@@ -1844,9 +1823,12 @@ html[data-motion-armed] [data-hero-tail] {
    straight line. The motion is in src/scripts/home-scroll.ts. */
 .history-stints {
   /* The ladder's whole geometry, in one place. --ladder-left has to clear the
-     widest rung (four notches) with room left for the node. */
-  --rung-gap: clamp(9px, 1.05vw, 14px);
-  --ladder-left: clamp(46px, 5.2vw, 72px);
+     widest rung (four notches) with room left for the node, and the stamp
+     column sits outside that again. */
+  --rung-gap: clamp(8px, 0.9vw, 12px);
+  --ladder-left: clamp(44px, 4.6vw, 60px);
+  --stamp-w: clamp(30px, 3.2vw, 40px);
+  --stamp-gap: clamp(8px, 0.9vw, 12px);
   --stint-gap: clamp(20px, 2.4vw, 30px);
   --node-y: 9px;
 
@@ -1854,7 +1836,8 @@ html[data-motion-armed] [data-hero-tail] {
   display: grid;
   gap: var(--stint-gap);
   margin: 0;
-  padding: 4px 0 0 var(--ladder-left);
+  padding: 4px 0 0
+    calc(var(--ladder-left) + var(--stamp-gap) + var(--stamp-w));
   list-style: none;
 }
 
@@ -1945,6 +1928,37 @@ html[data-motion-armed] [data-hero-tail] {
   border-radius: 50%;
   opacity: 0;
   pointer-events: none;
+}
+
+/* ── The year a stop began ──
+   Tucked against the left of its own node rather than ruled off in a column of
+   its own, so the years climb the same staircase the roles do: a promotion
+   carries its year outwards with it. Right-aligned, so whatever the digits do
+   the gap to the node stays the same. Marked aria-hidden — the role's meta line
+   carries the real dates, and this one is mid-count for most of the scroll. */
+.history-stamp {
+  position: absolute;
+  top: calc(var(--node-y) - 7px);
+  left: calc(
+    var(--to, 0) * var(--rung-gap) - var(--ladder-left) - var(--stamp-gap) -
+      var(--stamp-w)
+  );
+  width: var(--stamp-w);
+  height: 14px;
+  color: var(--color-signal);
+  font-family: var(--font-mono);
+  font-size: clamp(0.62rem, 0.85vw, 0.74rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 14px;
+  text-align: right;
+}
+
+/* A step up is worth saying twice: the rung word turns copper, and so does the
+   year it happened in. */
+.history-stint[data-rose] .history-stamp {
+  color: var(--accent-copper);
 }
 
 /* ── The rung a role sits on, in words ── */
@@ -4105,8 +4119,23 @@ body.is-photo-viewing {
   /* The ladder has to give back some of the gutter too, or the roles lose
      more of a narrow column to it than they can spare. */
   .history-stints {
-    --rung-gap: 8px;
-    --ladder-left: 40px;
+    --rung-gap: 7px;
+    --ladder-left: 36px;
+    --stamp-w: 15px;
+    --stamp-gap: 8px;
+  }
+
+  /* Turned on its side. Four digits laid across cost more than twice the width
+     of the same four stacked, and this is the width there is least of. The
+     block direction runs right-to-left, so the digits hug the edge nearest the
+     node and read downwards from it, labelling the line they start. */
+  .history-stamp {
+    writing-mode: vertical-rl;
+    top: calc(var(--node-y) - 3px);
+    height: auto;
+    line-height: var(--stamp-w);
+    letter-spacing: 0.05em;
+    text-align: left;
   }
 
   .craft-rule {

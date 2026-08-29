@@ -126,31 +126,32 @@ const longestRole = Math.max(
     .map((role) => monthsBetween(role.start, role.end)),
 );
 
-const thisYear = String(new Date().getUTCFullYear());
+// Every stop on the ladder is stamped with the year it began, and counts up to
+// it from the year stamped on the stop above — so the years climb as the line
+// comes down. One pass, in page order, because a stop only knows what it counts
+// up from by what came before it, the co-op strip included.
+let priorYear = "";
+const countFrom = (year: string) => {
+  const from = priorYear || year;
+  priorYear = year;
+  return from;
+};
+
 const tenures = grouped.map((group) => {
   const oldest = group.entries[0].role;
   const newest = group.entries[group.entries.length - 1].role;
   const education = oldest.kind === "education";
   const count = group.entries.length;
-  return {
-    company: group.company,
-    mark: oldest.mark,
-    education,
-    startYear: oldest.start.slice(0, 4),
-    endYear: newest.end ? newest.end.slice(0, 4) : thisYear,
-    // The degree counts its work terms, since that is what sits underneath it.
-    summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
-      education
-        ? `${coops.length} co-op employers`
-        : `${count} ${count === 1 ? "role" : "roles"}`
-    }`,
-    single: count === 1,
-    // A lone role's dates are already the tenure's, in the column to the left,
-    // so it carries only what that heading does not already say.
-    roles: group.entries.map(({ role, from, rose, move }) => ({
+
+  const roles = group.entries.map(({ role, from, rose, move }) => {
+    const year = role.start.slice(0, 4);
+    return {
       title: role.title,
+      // Every role carries its own dates: the tenure heading no longer prints a
+      // range, and the stamp on the ladder is only ever a year. A lone role
+      // leaves its length to the summary above it, which already says it.
       meta: (count === 1
-        ? [role.location]
+        ? [span(role), role.location]
         : [span(role), lengthOf(monthsBetween(role.start, role.end)), role.location]
       )
         .filter(Boolean)
@@ -165,7 +166,30 @@ const tenures = grouped.map((group) => {
       fromRung: RUNGS[from] ?? "",
       // "First role" reads truer than "Promoted" for the step off the degree.
       flag: move === "launch" ? "First role" : "Promoted",
-    })),
+      year,
+      fromYear: countFrom(year),
+    };
+  });
+
+  // The co-op strip is the next stop down the same ladder, so it is stamped
+  // like one: the year the first work term started.
+  const coopYear = education && coops.length ? coops[0].start.slice(0, 4) : "";
+  const coopFromYear = coopYear ? countFrom(coopYear) : "";
+
+  return {
+    company: group.company,
+    mark: oldest.mark,
+    education,
+    // The degree counts its work terms, since that is what sits underneath it.
+    summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
+      education
+        ? `${coops.length} co-op employers`
+        : `${count} ${count === 1 ? "role" : "roles"}`
+    }`,
+    single: count === 1,
+    roles,
+    coopYear,
+    coopFromYear,
   };
 });
 
@@ -339,8 +363,8 @@ const coopSpan = coops.length
                 <span class="reveal-line"><span>How I got here.</span></span>
               </h3>
               <p class="history-legend" data-reveal>
-                Forwards from the degree. The ladder on the left steps out a
-                rung at every promotion.
+                Forwards from the degree. The ladder steps out a rung at every
+                promotion, and the year riding down it is when each stop began.
               </p>
             </header>
 
@@ -356,19 +380,10 @@ const coopSpan = coops.length
 
                   <div class="craft-lead">
                     {tenure.mark === "uwaterloo" && <WaterlooMark />}
-                    <p class="history-year" data-row-meta>
-                      <span>{tenure.startYear}</span>
-                      <span class="history-year-dash" aria-hidden="true"></span>
-                      {/* Counts up to the year it already reads, so a tenure's
-                          length is felt on the way past it. */}
-                      <span data-year-count data-year-from={tenure.startYear}>
-                        {tenure.endYear}
-                      </span>
-                    </p>
                     <h4 class="history-role" data-row-title>
                       <span class="reveal-line"><span>{tenure.company}</span></span>
                     </h4>
-                    <p class="history-summary">{tenure.summary}</p>
+                    <p class="history-summary" data-row-meta>{tenure.summary}</p>
                   </div>
 
                   <ol class="history-stints" data-row-body>
@@ -399,6 +414,17 @@ const coopSpan = coops.length
                         {role.rose && (
                           <span class="history-halo" aria-hidden="true" data-halo></span>
                         )}
+                        {/* The year rides the line down and lands beside the
+                            node, counting up from the one above it on the way.
+                            Hidden from readers: the role's own meta line below
+                            carries the full dates, and this one spends most of
+                            the scroll mid-count. */}
+                        <span
+                          class="history-stamp"
+                          aria-hidden="true"
+                          data-stamp
+                          data-stamp-from={role.fromYear}
+                        >{role.year}</span>
 
                         <div class="history-stint-inner" data-stint-card>
                           <p class="history-rung">
@@ -454,6 +480,12 @@ const coopSpan = coops.length
                         {/* No lead-in of its own: the degree's tail is the
                             line that reaches down to this node. */}
                         <span class="history-node" aria-hidden="true"></span>
+                        <span
+                          class="history-stamp"
+                          aria-hidden="true"
+                          data-stamp
+                          data-stamp-from={tenure.coopFromYear}
+                        >{tenure.coopYear}</span>
 
                         <div class="history-stint-inner" data-stint-card>
                           <p class="history-stint-title" data-stint-title>Co-op terms</p>
