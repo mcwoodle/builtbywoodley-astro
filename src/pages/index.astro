@@ -212,10 +212,13 @@ const firstYear = positions[0]?.start.slice(0, 4) ?? codaYear;
 // The reel each digit of the travelling year turns on.
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-// A term's own length: what it says it ran for where the dates bracket more
-// than was actually worked, and the span between them otherwise.
-const ranOf = (role: { start: string; end?: string; months?: number }) =>
-  lengthOf(role.months ?? monthsBetween(role.start, role.end));
+// A term's own length, always in months — a co-op is counted in terms, and
+// rolling four of them up into "1 yr" loses that. What it says it ran for
+// where the dates bracket more than was worked, and the span otherwise.
+const termOf = (role: { start: string; end?: string; months?: number }) => {
+  const total = role.months ?? monthsBetween(role.start, role.end);
+  return `${total} mo${total === 1 ? "" : "s"}`;
+};
 
 // The co-op strip's own range, from the first work term to the last.
 const coopSpan = coops.length
@@ -561,10 +564,10 @@ const coopSpan = coops.length
                                   <span
                                     class="history-when"
                                     data-tap-tip
-                                    data-tooltip={span(coop)}
+                                    data-tooltip={coop.dates ?? span(coop)}
                                   >
-                                    <span aria-hidden="true">{ranOf(coop)}</span>
-                                    <span class="sr-only">{span(coop)} · {ranOf(coop)}</span>
+                                    <span aria-hidden="true">{termOf(coop)}</span>
+                                    <span class="sr-only">{coop.dates ?? span(coop)} · {termOf(coop)}</span>
                                   </span>
                                   {coop.location && <> · {city(coop.location)}</>}
                                 </p>

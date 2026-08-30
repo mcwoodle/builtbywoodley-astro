@@ -2177,6 +2177,13 @@ html[data-motion-armed] [data-hero-tail] {
 .history-when::after {
   top: calc(100% + 7px);
   left: 0;
+  /* A term that came back three times spells all three out, which is far wider
+     than the card it hangs off. Labels are laid out whether they are showing
+     or not, so an unwrapped one reaches past a narrow window and takes the
+     document sideways with it. */
+  width: max-content;
+  max-width: min(15rem, 58vw);
+  white-space: normal;
 }
 
 .history-stint-meta {

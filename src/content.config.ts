@@ -102,6 +102,9 @@ const work = defineCollection({
           // start and end — a co-op that came back for separate terms sits
           // between two dates it did not work all of.
           months: z.number().int().positive().optional(),
+          // How its dates read, where a range between start and end would not
+          // tell the truth: the separate terms, spelled out.
+          dates: z.string().optional(),
           internship: z.boolean().default(false),
           // Schooling reads differently from a job: no duration bar, and it is
           // the one entry that carries an institutional mark rather than an

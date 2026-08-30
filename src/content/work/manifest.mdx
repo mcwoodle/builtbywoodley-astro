@@ -16,6 +16,8 @@
 # note       - optional; one line shown under the role
 # months     - optional; how long it actually ran, when that is not the span
 #              between the dates — a co-op that came back for separate terms
+# dates      - optional; how the dates read, when a range between start and end
+#              would not tell the truth
 # internship - true folds the entry into the co-op terms under the degree
 # kind       - "education" for schooling; anything else is a job
 # level      - the rung: 0 student, 1 engineer, 2 engineer II, 3 senior,
@@ -26,7 +28,7 @@
 #
 # The section renders nothing at all while this list is empty.
 roles:
-  - title: "BSE, Software Engineering"
+  - title: "Bachelor of Software Engineering"
     company: "University of Waterloo"
     location: "Waterloo, Ontario, Canada"
     start: 2005-09
@@ -41,8 +43,10 @@ roles:
     location: "Toronto, Ontario, Canada"
     start: 2006-05
     end: 2007-08
-    # Two terms, a year apart. The dates bracket both; this is the work.
-    months: 9
+    # Three terms across two years. The dates bracket all of them, so both the
+    # length and the reading of them are given rather than worked out.
+    months: 12
+    dates: "May — Aug 2006, Jan — Apr 2007, Aug — Dec 2007"
     note: "Health stuff."
     internship: true
     level: 0
