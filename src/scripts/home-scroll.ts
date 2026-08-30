@@ -178,9 +178,18 @@ function setupPage() {
       // reach are true either way; only the top has to be taken off the mask
       // around it, which nothing moves. Measuring the word itself here would
       // leave the gap wherever the reveal happened to be mid-flight.
-      const rest = (ink.closest('.reveal-line') ?? ink).getBoundingClientRect();
-      const top = rest.top - frame.top - CROSS_PAD;
-      const bottom = rest.top - frame.top + box.height + CROSS_PAD;
+      // Where the thing rests, which is not always where it is drawn. A name
+      // rides up into place on a transform of its own, so its mask — which
+      // nothing moves — is measured instead. A mark has no mask, so its height
+      // is taken from layout, where no transform reaches, and hung off the
+      // middle of its box, which a scale about the centre does not move either.
+      const mask = ink.closest('.reveal-line');
+      const rest = mask
+        ? mask.getBoundingClientRect().top - frame.top
+        : box.top + box.height / 2 - frame.top - (ink.offsetHeight || box.height) / 2;
+      const height = mask ? box.height : ink.offsetHeight || box.height;
+      const top = rest - CROSS_PAD;
+      const bottom = rest + height + CROSS_PAD;
       if (
         box.right - frame.left > lineLeft + CROSS_BITE &&
         box.left - frame.left < lineRight - CROSS_BITE &&

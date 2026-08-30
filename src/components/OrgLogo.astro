@@ -2,7 +2,12 @@
 // An employer's own mark, shipped as an image rather than drawn inline. The
 // Waterloo crest is a component of its own because it is taken apart and built
 // a layer at a time; these two are just the companies' logos, so there is
-// nothing to take apart and nothing to animate beyond arriving with the row.
+// nothing to take apart and nothing to animate — they are simply there.
+//
+// Deliberately not on `data-reveal` either: the line has to know where a mark
+// sits so it can stop short of it, and it measures that off the page. A mark
+// being slid into place at the moment of measuring puts the gap somewhere the
+// mark is not.
 //
 // See src/assets/logos/README.md for where each file came from.
 
@@ -20,7 +25,6 @@ const logo = { sandvine, amazon }[name];
 
 <span
   class="org-logo"
-  data-reveal
   data-ink
   aria-hidden="true"
   style={`--mark-ratio:${(logo.height / logo.width).toFixed(4)}`}
