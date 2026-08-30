@@ -1,0 +1,77 @@
+---
+// Where a role was, drawn rather than spelled out: the Space Needle for
+// Seattle, the CN Tower for Toronto, a house for remote work. Anywhere else
+// takes a pin, so a place with no landmark of its own still reads as a place.
+//
+// In the same line-art hand as the footer's glyphs — one weight, round caps, no
+// fill — and kept to strokes that stay open at the size a role's meta line
+// gives them, which is about twenty pixels. A closed shape that small silts up
+// into a blob: the saucer and the pod are arcs for that reason, not ellipses.
+//
+// The name itself is on the label, and spelled out for a reader who is being
+// read to rather than hovering.
+
+interface Props {
+  /** The place as the manifest writes it, which is also what the label says. */
+  place: string;
+}
+
+const { place } = Astro.props;
+
+const kind = /Seattle/i.test(place)
+  ? "needle"
+  : /Toronto/i.test(place)
+    ? "tower"
+    : /^remote$/i.test(place.trim())
+      ? "home"
+      : "pin";
+
+const MARKS: Record<string, string[]> = {
+  // Legs splayed, the saucer across them, the spire above.
+  needle: [
+    "M9.4 21c.9-4.6 1.6-7.4 2-8.9",
+    "M14.6 21c-.9-4.6-1.6-7.4-2-8.9",
+    "M6.5 11.1c1.7-1.6 9.3-1.6 11 0",
+    "M12 9.6V3.1",
+  ],
+  // A straight shaft, the pod higher up it, the mast above that.
+  tower: [
+    "M10.3 21c.5-6.2.9-10.2 1-12.3",
+    "M13.7 21c-.5-6.2-.9-10.2-1-12.3",
+    "M7.6 8.6c1.5-1.6 7.3-1.6 8.8 0",
+    "M12 7.3V2.3",
+  ],
+  home: ["M3.8 10.6 12 4.2l8.2 6.4", "M6.1 9.5V20h11.8V9.5", "M10.1 20v-4.6h3.8V20"],
+  pin: [
+    "M12 20.6c3.6-4.2 5.6-7.4 5.6-10a5.6 5.6 0 1 0-11.2 0c0 2.6 2 5.8 5.6 10Z",
+    "M14.1 10.4a2.1 2.1 0 1 1-4.2 0 2.1 2.1 0 0 1 4.2 0Z",
+  ],
+};
+---
+
+<span class="place" data-place={kind} data-tap-tip data-tooltip={place}>
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+    {MARKS[kind].map((d) => <path d={d}></path>)}
+  </svg>
+  <span class="sr-only">{place}</span>
+</span>
+
+<style>
+  .place {
+    position: relative;
+    display: inline-flex;
+    color: var(--accent-copper);
+    cursor: help;
+  }
+
+  .place svg {
+    display: block;
+    /* Against the meta line's own type, so it stays in step with it. */
+    width: 2.25em;
+    height: 2.25em;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

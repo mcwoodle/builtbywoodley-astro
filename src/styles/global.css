@@ -2170,6 +2170,7 @@ html[data-motion-armed] [data-hero-tail] {
    line has its title directly above it. */
 .history-when {
   position: relative;
+  vertical-align: middle;
   border-bottom: 1px dotted color-mix(in srgb, currentColor 55%, transparent);
   cursor: help;
 }
@@ -2177,6 +2178,31 @@ html[data-motion-armed] [data-hero-tail] {
 .history-when::after {
   top: calc(100% + 7px);
   left: 0;
+}
+
+/* Centred on its mark and allowed to wrap, with a cap on how wide it gets. A
+   place name is long, the marks sit well into a narrow column, and a label that
+   will not wrap — anchored to either edge — reaches past the window and takes
+   the whole document sideways with it. It is laid out whether it is showing or
+   not, so this is not something only a hover would notice. */
+.place::after {
+  top: calc(100% + 7px);
+  left: 50%;
+  width: max-content;
+  max-width: 10.5rem;
+  translate: -50% 0;
+  white-space: normal;
+  text-align: center;
+}
+
+/* The marks sit on the line rather than after it, so the row is dates and then
+   places with nothing spelled out between them. */
+.history-places {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-left: 0.7em;
+  vertical-align: middle;
 }
 
 .history-stint-meta {

@@ -305,7 +305,8 @@ function setupPage() {
 
   // ── Dates that say more when asked ──
   //
-  // A role's line shows the years; the months and the length are on a label.
+  // A role's line shows how long it ran and marks where; the dates and the
+  // place names are on labels.
   // Pointers get that by hovering. A touch screen has no hover, so a tap opens
   // it for a moment and anything else closes it — the same bargain the nav
   // tiles strike with their own labels.
@@ -323,10 +324,10 @@ function setupPage() {
       clearTimeout(tipTimer);
       dropTip();
       if (!(target instanceof Element)) return;
-      const dates = target.closest('[data-when]');
-      if (!dates) return;
-      tipHeld = dates;
-      dates.setAttribute('data-tooltip-open', '');
+      const tip = target.closest('[data-tap-tip]');
+      if (!tip) return;
+      tipHeld = tip;
+      tip.setAttribute('data-tooltip-open', '');
       tipTimer = setTimeout(dropTip, 2800);
     },
     { signal },

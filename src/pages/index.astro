@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 import WaterlooMark from "../components/WaterlooMark.astro";
 import OrgLogo from "../components/OrgLogo.astro";
+import PlaceMark from "../components/PlaceMark.astro";
 
 const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -173,7 +174,8 @@ const tenures = grouped.map((group, index) => {
       // A role's line carries how long it ran and where; the dates it ran
       // between are behind that, for whoever wants them.
       length: lengthOf(monthsBetween(role.start, role.end)),
-      place: role.location,
+      // A role held in two places names both, and gets a mark for each.
+      places: role.location ? role.location.split(" & ") : [],
       range: span(role),
       bar: Math.round((monthsBetween(role.start, role.end) / longestRole) * 100),
       note: role.note,
@@ -494,13 +496,19 @@ const coopSpan = coops.length
                                     hovering. */}
                                 <span
                                   class="history-when"
-                                  data-when
+                                  data-tap-tip
                                   data-tooltip={role.range}
                                 >
                                   <span aria-hidden="true">{role.length}</span>
                                   <span class="sr-only">{role.range} · {role.length}</span>
                                 </span>
-                                {role.place && <> · {role.place}</>}
+                                {role.places.length > 0 && (
+                                  <span class="history-places">
+                                    {role.places.map((place) => (
+                                      <PlaceMark place={place} />
+                                    ))}
+                                  </span>
+                                )}
                               </p>
                               {!tenure.single && (
                                 <span class="history-bar" aria-hidden="true">
