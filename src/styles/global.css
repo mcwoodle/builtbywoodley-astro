@@ -1872,6 +1872,19 @@ html[data-motion-armed] [data-hero-tail] {
   display: inline-block;
 }
 
+/* The closing block does not stand beside the line the way an employer's name
+   does — it stands on it, centred on the rung the last role reached, with the
+   line running in at the top and out at the bottom. Shrunk to its content so
+   the half it is pulled back by is half of the type, not half of the column. */
+.history-coda-mark {
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: clamp(20px, 2.6vw, 32px);
+  margin-left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
+  transform: translateX(-50%);
+  text-align: center;
+}
+
 .history-role {
   margin-bottom: 8px;
   font-size: clamp(1.7rem, 3.4vw, 2.7rem);
@@ -2211,7 +2224,11 @@ html[data-motion-armed] [data-hero-tail] {
    so it reads at the size the roles beside it do and spaces like a sentence
    rather than like a row of buttons. */
 .history-link {
-  gap: 0.36em;
+  gap: 0.5em;
+  /* Clear of its own dot: butted up against the node it reads as a label on
+     the line rather than as something to go and do. Margin rather than padding,
+     so neither the hit area nor the focus ring reaches back over the node. */
+  margin-left: clamp(12px, 1.4vw, 20px);
   margin-bottom: 0;
   font-size: clamp(1rem, 1.4vw, 1.14rem);
 }
@@ -4061,7 +4078,7 @@ body.is-photo-viewing {
      dissolves into the heading and comes back underneath, which the big display
      type carries; the summary under it is a short mono line that would just be
      struck through, so it steps aside to where the roles start instead. */
-  .history-summary {
+  .craft-lead .history-summary {
     padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
   }
 

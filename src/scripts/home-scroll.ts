@@ -153,17 +153,18 @@ function setupPage() {
     lastStopAt = vertices[lastStop].at;
     stops = points.map((point) => ({ y: point.y, year: point.year }));
 
-    // Which tenure headings the line actually runs through. In a two-column
+    // Which pieces of type the line actually runs through. In a two-column
     // layout the heading is a whole column away from the line and never meets
-    // it; stacked, the line goes straight down the middle of the word. Testing
-    // the geometry rather than the breakpoint means the answer stays right at
-    // any width, and nothing is dissolved where nothing is in the way.
+    // it; stacked, the line goes straight down the middle of the word. The last
+    // block is centred on the line on purpose and is crossed at every width.
+    // Testing the geometry rather than the breakpoint means the answer stays
+    // right in all three cases, and nothing is dissolved that is not in the way.
     const lineLeft = Math.min(...vertices.map((v) => v.x));
     const lineRight = Math.max(...vertices.map((v) => v.x));
     const lineTop = vertices[0].y;
     const lineBottom = vertices[vertices.length - 1].y;
     crossings = [];
-    historyBody.querySelectorAll<HTMLElement>('[data-role-ink]').forEach((ink) => {
+    historyBody.querySelectorAll<HTMLElement>('[data-ink]').forEach((ink) => {
       const box = ink.getBoundingClientRect();
       // The word rides up into place on a transform of its own, so where it is
       // right now is not where it comes to rest. Its height and its horizontal
