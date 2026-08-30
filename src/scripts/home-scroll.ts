@@ -303,8 +303,41 @@ function setupPage() {
     return stops[stops.length - 1].year;
   };
 
-  buildTrack();
-  ScrollTrigger.addEventListener('refreshInit', buildTrack);
+  // ── The ticker's strip has to be wider than the window ──
+  //
+  // It loops by shifting the track the width of one run, so the track has to
+  // carry the window plus that run — otherwise the shift drags the end of the
+  // last run into view and you can see where the words stop. The markup ships
+  // the two runs the wrap needs at a minimum; how many more it takes depends on
+  // the window, which is only known here. The type is clamped, so a run stops
+  // widening long before a large monitor does: this is not something a bigger
+  // font would solve.
+  //
+  // Out here rather than in the motion context because a short strip is just as
+  // wrong standing still.
+  const marqueeTrack = page.querySelector<HTMLElement>('[data-marquee-track]');
+  /** One run's width, which is the distance the loop repeats over. */
+  let marqueeSpan = 1;
+
+  const fillMarquee = () => {
+    const run = marqueeTrack?.querySelector<HTMLElement>('.marquee-run');
+    if (!marqueeTrack || !run) return;
+    marqueeSpan = run.getBoundingClientRect().width || marqueeSpan;
+    const wanted = Math.ceil(window.innerWidth / marqueeSpan) + 1;
+    for (let have = marqueeTrack.childElementCount; have < wanted; have += 1) {
+      const copy = run.cloneNode(true) as HTMLElement;
+      copy.dataset.marqueeCopy = '';
+      marqueeTrack.appendChild(copy);
+    }
+  };
+
+  const remeasure = () => {
+    fillMarquee();
+    buildTrack();
+  };
+
+  remeasure();
+  ScrollTrigger.addEventListener('refreshInit', remeasure);
 
   // ── Motion, for readers who have not asked for stillness ──
   media.add('(prefers-reduced-motion: no-preference)', () => {
@@ -426,24 +459,21 @@ function setupPage() {
     //
     //     Not a tween. A tween has a start and an end, and a repeating one wound
     //     back to its own start has nowhere left to go — which is what used to
-    //     make it stall. This is a position that wraps: two identical runs, so
-    //     shifting by the width of one lands exactly where it began. It can be
-    //     wound in either direction, as far as you like, for ever.
+    //     make it stall. This is a position that wraps: the runs are identical,
+    //     so shifting by the width of one lands exactly where it began. It can
+    //     be wound in either direction, as far as you like, for ever.
     //
     //     Everything acts on one number, the speed. It eases towards the drift
     //     it is meant to be doing — so a hard fling bleeds off, a slow one is
     //     wound back up, and scrolling the page leans on it in passing — and
     //     while a finger is down it is the finger's, directly.
     const marquee = page.querySelector<HTMLElement>('[data-marquee]');
-    const marqueeTrack = page.querySelector<HTMLElement>('[data-marquee-track]');
     let stopMarquee: (() => void) | undefined;
 
     if (marquee && marqueeTrack) {
-      // One run's width: what the track has to travel to repeat itself.
-      let span = marqueeTrack.scrollWidth / 2 || 1;
       // The pace it settles back to, kept relative to the run so the words go
       // by at the same rate whatever the column is doing.
-      const drift = () => -span / 26;
+      const drift = () => -marqueeSpan / 26;
 
       let offset = 0;
       let speed = drift();
@@ -454,7 +484,7 @@ function setupPage() {
       let flung = 0;
 
       const place = () => {
-        gsap.set(marqueeTrack, { x: gsap.utils.wrap(-span, 0, offset) });
+        gsap.set(marqueeTrack, { x: gsap.utils.wrap(-marqueeSpan, 0, offset) });
       };
 
       const tick = (_time: number, delta: number) => {
@@ -530,12 +560,9 @@ function setupPage() {
         onToggle: (self) => {
           onScreen = self.isActive;
         },
-        // The run's width is the whole loop, so it has to be re-read whenever
-        // the column it is laid out in changes.
-        onRefresh: () => {
-          span = marqueeTrack.scrollWidth / 2 || span;
-          place();
-        },
+        // The strip is re-measured and topped up on refresh above; this only
+        // has to put the track back where the new measurement says.
+        onRefresh: place,
       });
       // onToggle only reports a change, which says nothing about the state the
       // page happened to load in.
@@ -1295,7 +1322,7 @@ function setupPage() {
 
   cleanupActivePage = () => {
     controller.abort();
-    ScrollTrigger.removeEventListener('refreshInit', buildTrack);
+    ScrollTrigger.removeEventListener('refreshInit', remeasure);
     media.revert();
     cleanupActivePage = () => {};
   };
