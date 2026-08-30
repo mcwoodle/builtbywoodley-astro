@@ -422,63 +422,139 @@ function setupPage() {
       );
     }
 
-    // 3 · The ticker drifts on its own and takes its pace from the page —
-    //     faster the harder you scroll, either way you scroll, easing back to
-    //     a drift when you stop. Always the same way round: scrolling up winds
-    //     it on rather than rewinding it, so it never runs back over ground it
-    //     has already covered or stalls against the start of its own loop.
+    // 3 · The ticker drifts leftwards for ever, and can be pushed around.
     //
-    //     It only turns while it is on screen. There is nothing to see in it
-    //     otherwise, and a tween left running is a frame's work every frame.
+    //     Not a tween. A tween has a start and an end, and a repeating one wound
+    //     back to its own start has nowhere left to go — which is what used to
+    //     make it stall. This is a position that wraps: two identical runs, so
+    //     shifting by the width of one lands exactly where it began. It can be
+    //     wound in either direction, as far as you like, for ever.
+    //
+    //     Everything acts on one number, the speed. It eases towards the drift
+    //     it is meant to be doing — so a hard fling bleeds off, a slow one is
+    //     wound back up, and scrolling the page leans on it in passing — and
+    //     while a finger is down it is the finger's, directly.
+    const marquee = page.querySelector<HTMLElement>('[data-marquee]');
     const marqueeTrack = page.querySelector<HTMLElement>('[data-marquee-track]');
-    let removeTick: (() => void) | undefined;
+    let stopMarquee: (() => void) | undefined;
 
-    if (marqueeTrack) {
-      const loop = gsap.to(marqueeTrack, {
-        xPercent: -50,
-        ease: 'none',
-        duration: 26,
-        repeat: -1,
-      });
+    if (marquee && marqueeTrack) {
+      // One run's width: what the track has to travel to repeat itself.
+      let span = marqueeTrack.scrollWidth / 2 || 1;
+      // The pace it settles back to, kept relative to the run so the words go
+      // by at the same rate whatever the column is doing.
+      const drift = () => -span / 26;
 
-      // Speed only — never a direction. A negative timeScale would run the
-      // tween backwards, and a repeating tween wound back to its own start has
-      // nowhere left to go: it sits there until the page moves forwards again.
-      let target = 1;
-      let speed = 1;
-      const tick = () => {
-        speed += (target - speed) * 0.05;
-        loop.timeScale(speed);
+      let offset = 0;
+      let speed = drift();
+      let onScreen = false;
+      let held = false;
+      let heldAt = 0;
+      let heldWhen = 0;
+      let flung = 0;
+
+      const place = () => {
+        gsap.set(marqueeTrack, { x: gsap.utils.wrap(-span, 0, offset) });
+      };
+
+      const tick = (_time: number, delta: number) => {
+        if (held || !onScreen) return;
+        // Capped: coming back to a backgrounded tab hands over one enormous
+        // frame, and the ticker should not have leapt while you were away.
+        const seconds = Math.min(delta, 50) / 1000;
+        // Framerate-independent friction — the same curve on 60Hz and 120Hz.
+        speed += (drift() - speed) * (1 - Math.exp(-seconds * 2.6));
+        offset += speed * seconds;
+        place();
       };
       gsap.ticker.add(tick);
-      removeTick = () => gsap.ticker.remove(tick);
 
+      const take = (event: PointerEvent) => {
+        held = true;
+        heldAt = event.clientX;
+        heldWhen = event.timeStamp;
+        flung = 0;
+        marquee.dataset.dragging = '';
+        // Capture only keeps the drag alive past the ticker's own edges. It is
+        // a nicety, and it throws on a pointer the browser has already let go
+        // of, so it must not be what the drag depends on having worked.
+        try {
+          marquee.setPointerCapture(event.pointerId);
+        } catch {
+          /* dragging still works, it just ends at the edge */
+        }
+      };
+
+      const move = (event: PointerEvent) => {
+        if (!held) return;
+        const by = event.clientX - heldAt;
+        const since = Math.max(1, event.timeStamp - heldWhen);
+        offset += by;
+        // Smoothed, so one stuttery sample cannot decide the whole fling.
+        flung = flung * 0.7 + ((by / since) * 1000) * 0.3;
+        heldAt = event.clientX;
+        heldWhen = event.timeStamp;
+        place();
+      };
+
+      const release = (event: PointerEvent) => {
+        if (!held) return;
+        held = false;
+        speed = flung;
+        delete marquee.dataset.dragging;
+        try {
+          marquee.releasePointerCapture(event.pointerId);
+        } catch {
+          /* nothing was captured */
+        }
+      };
+
+      marquee.addEventListener('pointerdown', take, { signal });
+      marquee.addEventListener('pointermove', move, { signal });
+      marquee.addEventListener('pointerup', release, { signal });
+      marquee.addEventListener('pointercancel', release, { signal });
+      marquee.dataset.grab = '';
+
+      stopMarquee = () => {
+        gsap.ticker.remove(tick);
+        delete marquee.dataset.grab;
+        delete marquee.dataset.dragging;
+      };
+
+      // Only while it is on screen: there is nothing to see in it otherwise,
+      // and a ticker left turning is a frame's work every frame.
+      const shown = ScrollTrigger.create({
+        trigger: marquee,
+        start: 'top bottom',
+        end: 'bottom top',
+        onToggle: (self) => {
+          onScreen = self.isActive;
+        },
+        // The run's width is the whole loop, so it has to be re-read whenever
+        // the column it is laid out in changes.
+        onRefresh: () => {
+          span = marqueeTrack.scrollWidth / 2 || span;
+          place();
+        },
+      });
+      // onToggle only reports a change, which says nothing about the state the
+      // page happened to load in.
+      onScreen = shown.isActive;
+
+      // Scrolling leans on it in passing. A shove rather than a setting: the
+      // friction above is what carries it, so it is always on its way back to
+      // the drift rather than held above it by a page that stopped moving.
       ScrollTrigger.create({
         trigger: page,
         start: 'top top',
         end: 'bottom bottom',
         onUpdate: (self) => {
-          target = gsap.utils.clamp(1, 6, 1 + Math.abs(self.getVelocity()) / 900);
+          if (held) return;
+          speed = drift() * gsap.utils.clamp(1, 6, 1 + Math.abs(self.getVelocity()) / 900);
         },
       });
 
-      const marquee = page.querySelector<HTMLElement>('[data-marquee]');
-      if (marquee) {
-        const onScreen = ScrollTrigger.create({
-          trigger: marquee,
-          start: 'top bottom',
-          end: 'bottom top',
-          onToggle: (self) => {
-            if (self.isActive) loop.play();
-            else loop.pause();
-          },
-        });
-        // onToggle only fires on a change, so it says nothing about the state
-        // the page happens to load in. On a screen tall enough to show the
-        // ticker straight away, parking it first and waiting to be told would
-        // park it for good.
-        if (!onScreen.isActive) loop.pause();
-      }
+      place();
     }
 
     // 4 · Section headings rise out of their masks.
@@ -999,7 +1075,7 @@ function setupPage() {
     });
 
     return () => {
-      removeTick?.();
+      stopMarquee?.();
       splits.forEach((split) => split.revert());
       restores.forEach((restore) => restore());
     };

@@ -1514,13 +1514,26 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── 3 · Ticker ──
-   Two identical runs so a -50% shift on the track loops seamlessly. */
+   Two identical runs, so wrapping the track by the width of one lands it back
+   where it started and the loop has no end to reach. */
 .marquee {
   width: 100%;
   overflow: hidden;
   border-block: 1px solid var(--color-border-subtle);
   padding-block: clamp(16px, 2.4vw, 26px);
   user-select: none;
+}
+
+/* Set by the script once it has taken the track over, so nothing offers to be
+   dragged that cannot be. Vertical panning is left to the page — only the
+   sideways half of a gesture belongs to the ticker. */
+.marquee[data-grab] {
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.marquee[data-grab][data-dragging] {
+  cursor: grabbing;
 }
 
 .marquee-track {
@@ -1540,7 +1553,7 @@ html[data-motion-armed] [data-hero-tail] {
   gap: clamp(20px, 3vw, 44px);
   padding-right: clamp(20px, 3vw, 44px);
   color: var(--color-text-muted);
-  font-size: clamp(1.35rem, 2.9vw, 2.4rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.85rem);
   font-weight: 620;
   letter-spacing: -0.045em;
   white-space: nowrap;
