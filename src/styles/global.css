@@ -2326,9 +2326,23 @@ html[data-motion-armed] [data-hero-tail] {
   stroke-linejoin: round;
 }
 
-.chapter-link:hover .history-link-mark,
-.chapter-link:focus-visible .history-link-mark {
-  transform: translateY(-3px);
+/* The arrow is what moves on hover. The mark does not: it is a syllable of the
+   word now, and a syllable that jumps out of its own word reads as a fault. */
+.history-link .chapter-link-arrow {
+  /* Clear of the sentence — the link's own gap is tuned for the join between
+     the mark and the "t", which is far too tight to part a word from an icon. */
+  margin-left: 0.5em;
+  /* Against the link's type rather than the root's, so it keeps its place in
+     the line at any width. */
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* This line is set heavier than the chapter links the arrow was drawn for, so
+   the arrow is drawn heavier to sit in it. Scoped: everywhere else it pairs
+   with lighter type and wants its own weight. */
+.history-link .chapter-link-arrow svg {
+  stroke-width: 2.8;
 }
 
 /* ── 5 · Selected work ── */
