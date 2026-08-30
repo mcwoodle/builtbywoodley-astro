@@ -1775,6 +1775,8 @@ html[data-motion-armed] [data-hero-tail] {
   --marker-h: 14px;
   --marker-w: var(--marker-box);
   --marker-gap: clamp(8px, 0.9vw, 12px);
+  --org-mark-w: clamp(38px, 4.6vw, 54px);
+  --org-mark-gap: clamp(11px, 1.3vw, 17px);
   --stint-gap: clamp(20px, 2.4vw, 30px);
   --node-y: 9px;
   /* How far the line runs on past the last stop. The run is the fade — the
@@ -1885,16 +1887,30 @@ html[data-motion-armed] [data-hero-tail] {
   text-align: center;
 }
 
-/* The mark, where a row has one, stands beside the name and its summary rather
-   than over them, so the two lines read as one block with a crest against it. */
+/* The mark, where a row has one, stands beside the name rather than over it,
+   and is centred on that name's own line — not on the block of name-plus-
+   summary, which would sit it low. Taken out of flow to do it: an em here is an
+   em of the heading, so half a line of the heading is where its middle goes. */
 .history-lead {
-  display: flex;
-  align-items: center;
-  gap: clamp(11px, 1.3vw, 17px);
+  position: relative;
 }
 
-.history-lead-text {
-  min-width: 0;
+.history-lead:has(> .org-mark, > .org-logo) {
+  padding-left: calc(var(--org-mark-w) + var(--org-mark-gap));
+}
+
+.history-lead > .org-mark,
+.history-lead > .org-logo {
+  position: absolute;
+  top: 0.51em;
+  left: 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.7rem);
+  /* Offset rather than translated. These marks are animated, and GSAP takes
+     the whole transform — including `translate` — for itself, resolving any
+     percentage in it against a box it measured earlier. Half a mark's height
+     is a number the stylesheet already knows, so it is spent here where nothing
+     can overwrite it. */
+  top: calc(0.51em - var(--org-mark-w) * var(--mark-ratio, 1) / 2);
 }
 
 .history-role {
@@ -4101,6 +4117,24 @@ body.is-photo-viewing {
      name beside the crest. */
   .history-list > .history-row:first-child .history-summary {
     padding-left: 0;
+  }
+
+  /* Stacked, the line runs down the same column the mark is in, so the mark
+     sits astride it: centred on the rung the line is at where the heading
+     falls. The name then starts clear of the mark's outer half. */
+  .history-lead > .org-mark,
+  .history-lead > .org-logo {
+    left: calc(
+      var(--marker-gap) + var(--marker-w) + var(--lead-rung, 0) * var(--rung-gap) -
+        var(--org-mark-w) / 2
+    );
+  }
+
+  .history-lead:has(> .org-mark, > .org-logo) {
+    padding-left: calc(
+      var(--marker-gap) + var(--marker-w) + var(--lead-rung, 0) * var(--rung-gap) +
+        var(--org-mark-w) / 2 + var(--org-mark-gap)
+    );
   }
 
   /* One column each: the title needs the whole width before the copy gets a

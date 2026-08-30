@@ -96,10 +96,10 @@ function setupPage() {
   let lastStopAt = 0;
   /** A word the line runs through, and the stretch it is gone over. */
   let crossings: { top: number; bottom: number }[] = [];
-  // How far outside the ink the line is gone entirely, and how far either side
-  // of that it takes to go: enough to read as dissolving into the word rather
-  // than stopping at it.
-  const CROSS_PAD = 3;
+  // How far clear of the ink the line is gone entirely — enough that it visibly
+  // stops short of a mark rather than running up against it — and how far either
+  // side of that it takes to go, which is what makes it a dissolve.
+  const CROSS_PAD = 10;
   const CROSS_FADE = 18;
   // How far into something the line has to reach before it counts as crossing.
   const CROSS_BITE = 4;

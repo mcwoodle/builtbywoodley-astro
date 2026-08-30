@@ -52,10 +52,12 @@
 <style>
   .org-mark {
     display: block;
-    width: clamp(38px, 4.6vw, 54px);
+    width: var(--org-mark-w, clamp(38px, 4.6vw, 54px));
     /* The crest is taller than it is wide; the box follows the artwork so
-       nothing has to be centred inside dead space. */
-    aspect-ratio: 434.94 / 500;
+       nothing has to be centred inside dead space. Declared as a ratio the
+       layout can do arithmetic with, since that is how it is centred. */
+    --mark-ratio: 1.1496;
+    aspect-ratio: 1 / var(--mark-ratio);
     /* It stands in a row beside the name; the gap there is what spaces it. */
     flex: 0 0 auto;
   }

@@ -127,15 +127,25 @@ const longestRole = Math.max(
     .map((role) => monthsBetween(role.start, role.end)),
 );
 
-const tenures = grouped.map((group) => {
+const tenures = grouped.map((group, index) => {
   const oldest = group.entries[0].role;
   const newest = group.entries[group.entries.length - 1].role;
   const education = oldest.kind === "education";
   const count = group.entries.length;
 
+  // Stacked, a tenure's heading sits between the last stop of the tenure above
+  // and its own first one, so the line is running at the rung the one above
+  // finished on where the mark goes. The first heading is above the line
+  // altogether and has nothing to line up with, so it takes its own.
+  const previous = grouped[index - 1];
+  const leadRung = previous
+    ? previous.entries[previous.entries.length - 1].role.level
+    : oldest.level;
+
   return {
     company: group.company,
     mark: oldest.mark,
+    leadRung,
     education,
     // The degree counts its work terms, since that is what sits underneath it.
     summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
@@ -408,23 +418,22 @@ const coopSpan = coops.length
                 >
                   <span class="craft-rule" aria-hidden="true" data-row-rule></span>
 
-                  <div class="craft-lead history-lead">
+                  <div
+                    class="craft-lead history-lead"
+                    style={`--lead-rung:${tenure.leadRung}`}
+                  >
                     {tenure.mark === "uwaterloo" && <WaterlooMark />}
                     {(tenure.mark === "sandvine" || tenure.mark === "amazon") && (
                       <OrgLogo name={tenure.mark} />
                     )}
-                    <div class="history-lead-text">
-                      {/* Wrapped in an inline-block so the line can be told how
-                          wide the ink actually is. Where the line runs through
-                          the letters — which is every stacked layout, since the
-                          heading and the roles share a column there — it fades
-                          out into the word and back in underneath rather than
-                          being cut off at its edge. */}
-                      <h4 class="history-role" data-row-title>
-                        <span class="reveal-line"><span><span class="history-role-ink" data-ink>{tenure.company}</span></span></span>
-                      </h4>
-                      <p class="history-summary" data-row-meta>{tenure.summary}</p>
-                    </div>
+                    {/* Wrapped in an inline-block so the line can be told how
+                        wide the ink actually is. Where the line runs through the
+                        letters it fades out into the word and back in underneath
+                        rather than being cut off at its edge. */}
+                    <h4 class="history-role" data-row-title>
+                      <span class="reveal-line"><span><span class="history-role-ink" data-ink>{tenure.company}</span></span></span>
+                    </h4>
+                    <p class="history-summary" data-row-meta>{tenure.summary}</p>
                   </div>
 
                   <ol class="history-stints" data-row-body>
