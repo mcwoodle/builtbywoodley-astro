@@ -2165,6 +2165,20 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.25;
 }
 
+/* The dates carry a label with the months and the length in it, in the same
+   hand as the icon-only controls elsewhere. It hangs below, since a role's
+   line has its title directly above it. */
+.history-when {
+  position: relative;
+  border-bottom: 1px dotted color-mix(in srgb, currentColor 55%, transparent);
+  cursor: help;
+}
+
+.history-when::after {
+  top: calc(100% + 7px);
+  left: 0;
+}
+
 .history-stint-meta {
   margin-bottom: 0;
   color: var(--color-text-muted);

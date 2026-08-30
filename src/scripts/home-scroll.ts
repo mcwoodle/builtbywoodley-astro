@@ -303,6 +303,35 @@ function setupPage() {
     return stops[stops.length - 1].year;
   };
 
+  // ── Dates that say more when asked ──
+  //
+  // A role's line shows the years; the months and the length are on a label.
+  // Pointers get that by hovering. A touch screen has no hover, so a tap opens
+  // it for a moment and anything else closes it — the same bargain the nav
+  // tiles strike with their own labels.
+  let tipHeld: Element | undefined;
+  let tipTimer: ReturnType<typeof setTimeout> | undefined;
+  const dropTip = () => {
+    tipHeld?.removeAttribute('data-tooltip-open');
+    tipHeld = undefined;
+  };
+
+  page.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target;
+      clearTimeout(tipTimer);
+      dropTip();
+      if (!(target instanceof Element)) return;
+      const dates = target.closest('[data-when]');
+      if (!dates) return;
+      tipHeld = dates;
+      dates.setAttribute('data-tooltip-open', '');
+      tipTimer = setTimeout(dropTip, 2800);
+    },
+    { signal },
+  );
+
   // ── The ticker's strip has to be wider than the window ──
   //
   // It loops by shifting the track the width of one run, so the track has to

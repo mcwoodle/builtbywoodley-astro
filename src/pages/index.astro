@@ -54,6 +54,7 @@ const monthYear = (value: string) => {
 const span = (role: { start: string; end?: string }) =>
   `${monthYear(role.start)} — ${role.end ? monthYear(role.end) : "Present"}`;
 
+
 // Inclusive month counting — counting both the first and last month is what
 // reproduces the figures LinkedIn shows against the same dates.
 const monthsBetween = (start: string, end?: string) => {
@@ -154,27 +155,26 @@ const tenures = grouped.map((group, index) => {
     mark: oldest.mark,
     leadRung,
     education,
-    // The degree counts its work terms, since that is what sits underneath it.
-    summary: `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${
-      education
-        ? `${coops.length} co-op employers`
-        : `${count} ${count === 1 ? "role" : "roles"}`
-    }`,
+    // Every role prints its own length now, so a tenure only quotes one where
+    // it is a fact of its own — a total across several roles. A lone role would
+    // just be saying the same thing twice, a line apart. The degree counts its
+    // work terms instead, which is the thing worth knowing about it.
+    summary: education
+      ? `${coops.length} co-op employers`
+      : count > 1
+        ? `${lengthOf(monthsBetween(oldest.start, newest.end))} · ${count} roles`
+        : "",
     single: count === 1,
     // The co-op strip is the next stop down the same ladder, so it carries a
     // year like the rest of them: the one its first work term started in.
     coopYear: education && coops.length ? coops[0].start.slice(0, 4) : "",
     roles: group.entries.map(({ role, from, rose, move }) => ({
       title: role.title,
-      // Every role carries its own dates: the tenure heading does not print a
-      // range, and the ladder only ever shows a year. A lone role leaves its
-      // length to the summary above it, which already says it.
-      meta: (count === 1
-        ? [span(role), role.location]
-        : [span(role), lengthOf(monthsBetween(role.start, role.end)), role.location]
-      )
-        .filter(Boolean)
-        .join(" · "),
+      // A role's line carries how long it ran and where; the dates it ran
+      // between are behind that, for whoever wants them.
+      length: lengthOf(monthsBetween(role.start, role.end)),
+      place: role.location,
+      range: span(role),
       bar: Math.round((monthsBetween(role.start, role.end) / longestRole) * 100),
       note: role.note,
       move,
@@ -440,7 +440,9 @@ const coopSpan = coops.length
                     <h4 class="history-role" data-row-title>
                       <span class="reveal-line"><span><span class="history-role-ink" data-ink>{tenure.company}</span></span></span>
                     </h4>
-                    <p class="history-summary" data-row-meta>{tenure.summary}</p>
+                    {tenure.summary && (
+                      <p class="history-summary" data-row-meta>{tenure.summary}</p>
+                    )}
                   </div>
 
                   <ol class="history-stints" data-row-body>
@@ -485,7 +487,21 @@ const coopSpan = coops.length
                               from under the title once the title has landed. */}
                           <div class="history-stint-detail" data-stint-detail>
                             <div class="history-stint-detail-inner" data-stint-detail-inner>
-                              {role.meta && <p class="history-stint-meta">{role.meta}</p>}
+                              <p class="history-stint-meta">
+                                {/* How long it ran is what shows; the dates it
+                                    ran between are on the label, and spelled out
+                                    for a reader who is being read to rather than
+                                    hovering. */}
+                                <span
+                                  class="history-when"
+                                  data-when
+                                  data-tooltip={role.range}
+                                >
+                                  <span aria-hidden="true">{role.length}</span>
+                                  <span class="sr-only">{role.range} · {role.length}</span>
+                                </span>
+                                {role.place && <> · {role.place}</>}
+                              </p>
                               {!tenure.single && (
                                 <span class="history-bar" aria-hidden="true">
                                   <span
