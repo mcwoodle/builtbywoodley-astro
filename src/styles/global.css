@@ -2318,7 +2318,10 @@ html[data-motion-armed] [data-hero-tail] {
   width: 100%;
   height: 100%;
   stroke: currentColor;
-  stroke-width: 1.7;
+  /* Heavier than the footer's version of this mark, which sits on its own. Here
+     it is a syllable in a word, so its strokes have to weigh what the letters
+     beside them weigh — measured against a stem of "troduce", not guessed. */
+  stroke-width: 2.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
