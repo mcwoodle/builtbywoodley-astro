@@ -1879,10 +1879,28 @@ html[data-motion-armed] [data-hero-tail] {
 .history-coda-mark {
   width: max-content;
   max-width: 100%;
-  margin-bottom: clamp(20px, 2.6vw, 32px);
+  margin-bottom: clamp(10px, 1.2vw, 15px);
   margin-left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
   transform: translateX(-50%);
   text-align: center;
+}
+
+/* Its note is not on the line but beside it, hard against the left of the text
+   column — the same edge every role's own dates start from. */
+.history-coda-note {
+  margin-bottom: clamp(20px, 2.6vw, 32px);
+}
+
+/* The mark, where a row has one, stands beside the name and its summary rather
+   than over them, so the two lines read as one block with a crest against it. */
+.history-lead {
+  display: flex;
+  align-items: center;
+  gap: clamp(11px, 1.3vw, 17px);
+}
+
+.history-lead-text {
+  min-width: 0;
 }
 
 .history-role {
@@ -2224,7 +2242,9 @@ html[data-motion-armed] [data-hero-tail] {
    so it reads at the size the roles beside it do and spaces like a sentence
    rather than like a row of buttons. */
 .history-link {
-  gap: 0.5em;
+  /* The mark is the word's first syllable, so all that separates it from the
+     "t" is the badge's own inside edge. */
+  gap: 0.04em;
   /* Clear of its own dot: butted up against the node it reads as a label on
      the line rather than as something to go and do. Margin rather than padding,
      so neither the hit area nor the focus ring reaches back over the node. */
@@ -2238,8 +2258,8 @@ html[data-motion-armed] [data-hero-tail] {
    than in rem, so it stays a word in the sentence at any width. */
 .history-link-mark {
   display: block;
-  width: 1.32em;
-  height: 1.32em;
+  width: 1.2em;
+  height: 1.2em;
   color: var(--accent-copper);
   transition: transform 260ms var(--ease-spring);
 }
@@ -4080,6 +4100,13 @@ body.is-photo-viewing {
      struck through, so it steps aside to where the roles start instead. */
   .craft-lead .history-summary {
     padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
+  }
+
+  /* Except the first, whose block sits above where the line starts and so has
+     nothing to clear. Indenting it would only break its alignment with the
+     name beside the crest. */
+  .history-list > .history-row:first-child .history-summary {
+    padding-left: 0;
   }
 
   /* One column each: the title needs the whole width before the copy gets a
