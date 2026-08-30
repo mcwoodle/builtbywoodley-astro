@@ -5,7 +5,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 import WaterlooMark from "../components/WaterlooMark.astro";
 import OrgLogo from "../components/OrgLogo.astro";
-import PlaceMark from "../components/PlaceMark.astro";
 
 const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -52,6 +51,14 @@ const monthYear = (value: string) => {
   const month = MONTHS[Number(value.slice(5, 7)) - 1];
   return month ? `${month[0]}${month.slice(1).toLowerCase()} ${value.slice(0, 4)}` : value;
 };
+// The city on its own. The province and the country are the same three or four
+// answers over and over down the list, and say nothing the city has not.
+const city = (location: string) =>
+  location
+    .split(" & ")
+    .map((part) => part.split(",")[0].trim())
+    .join(" & ");
+
 const span = (role: { start: string; end?: string }) =>
   `${monthYear(role.start)} — ${role.end ? monthYear(role.end) : "Present"}`;
 
@@ -174,8 +181,8 @@ const tenures = grouped.map((group, index) => {
       // A role's line carries how long it ran and where; the dates it ran
       // between are behind that, for whoever wants them.
       length: lengthOf(monthsBetween(role.start, role.end)),
-      // A role held in two places names both, and gets a mark for each.
-      places: role.location ? role.location.split(" & ") : [],
+      // A role held in two places names both.
+      place: role.location ? city(role.location) : "",
       range: span(role),
       bar: Math.round((monthsBetween(role.start, role.end) / longestRole) * 100),
       note: role.note,
@@ -502,13 +509,7 @@ const coopSpan = coops.length
                                   <span aria-hidden="true">{role.length}</span>
                                   <span class="sr-only">{role.range} · {role.length}</span>
                                 </span>
-                                {role.places.length > 0 && (
-                                  <span class="history-places">
-                                    {role.places.map((place) => (
-                                      <PlaceMark place={place} />
-                                    ))}
-                                  </span>
-                                )}
+                                {role.place && <> · {role.place}</>}
                               </p>
                               {!tenure.single && (
                                 <span class="history-bar" aria-hidden="true">
