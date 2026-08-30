@@ -422,9 +422,14 @@ function setupPage() {
       );
     }
 
-    // 3 · The ticker drifts on its own, then takes the page's speed and
-    //     direction from it — faster the harder you scroll, backwards when
-    //     you scroll back up, easing to a drift when you stop.
+    // 3 · The ticker drifts on its own and takes its pace from the page —
+    //     faster the harder you scroll, either way you scroll, easing back to
+    //     a drift when you stop. Always the same way round: scrolling up winds
+    //     it on rather than rewinding it, so it never runs back over ground it
+    //     has already covered or stalls against the start of its own loop.
+    //
+    //     It only turns while it is on screen. There is nothing to see in it
+    //     otherwise, and a tween left running is a frame's work every frame.
     const marqueeTrack = page.querySelector<HTMLElement>('[data-marquee-track]');
     let removeTick: (() => void) | undefined;
 
@@ -436,10 +441,13 @@ function setupPage() {
         repeat: -1,
       });
 
-      let direction = 1;
+      // Speed only — never a direction. A negative timeScale would run the
+      // tween backwards, and a repeating tween wound back to its own start has
+      // nowhere left to go: it sits there until the page moves forwards again.
+      let target = 1;
       let speed = 1;
       const tick = () => {
-        speed += (direction - speed) * 0.05;
+        speed += (target - speed) * 0.05;
         loop.timeScale(speed);
       };
       gsap.ticker.add(tick);
@@ -450,11 +458,27 @@ function setupPage() {
         start: 'top top',
         end: 'bottom bottom',
         onUpdate: (self) => {
-          const velocity = self.getVelocity();
-          direction = velocity < 0 ? -1 : 1;
-          speed = direction * gsap.utils.clamp(1, 6, 1 + Math.abs(velocity) / 900);
+          target = gsap.utils.clamp(1, 6, 1 + Math.abs(self.getVelocity()) / 900);
         },
       });
+
+      const marquee = page.querySelector<HTMLElement>('[data-marquee]');
+      if (marquee) {
+        const onScreen = ScrollTrigger.create({
+          trigger: marquee,
+          start: 'top bottom',
+          end: 'bottom top',
+          onToggle: (self) => {
+            if (self.isActive) loop.play();
+            else loop.pause();
+          },
+        });
+        // onToggle only fires on a change, so it says nothing about the state
+        // the page happens to load in. On a screen tall enough to show the
+        // ticker straight away, parking it first and waiting to be told would
+        // park it for good.
+        if (!onScreen.isActive) loop.pause();
+      }
     }
 
     // 4 · Section headings rise out of their masks.

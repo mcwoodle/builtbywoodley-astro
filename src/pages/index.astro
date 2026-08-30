@@ -11,20 +11,14 @@ const softwareEntries = (await getCollection("software")).sort(
 );
 
 // What the ticker runs. Kept by hand rather than pulled off the case studies'
-// stacks: half of these are not technologies, and the half that are earn their
-// place by being what the work is actually done in, which is not the same as
-// what happens to appear in a write-up.
+// stacks, because none of it is a stack: what is worth saying across the top of
+// the page is how the work is done, not what it is typed in.
 const ticker = [
   "Distributed Systems",
   "Engineering Processes",
   "Mentorship",
   "Product Vision",
-  "Whatever it takes",
-  "Agentic AI",
-  "TypeScript",
-  "Java",
-  "GraphQL",
-  "AWS",
+  "Collaboration",
 ];
 
 const [photoManifest] = await getCollection("photos");
