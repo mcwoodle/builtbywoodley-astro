@@ -1520,7 +1520,7 @@ html[data-motion-armed] [data-hero-tail] {
   width: 100%;
   overflow: hidden;
   border-block: 1px solid var(--color-border-subtle);
-  padding-block: clamp(16px, 2.4vw, 26px);
+  padding-block: clamp(12px, 1.6vw, 19px);
   user-select: none;
 }
 
@@ -1547,22 +1547,27 @@ html[data-motion-armed] [data-hero-tail] {
   align-items: center;
 }
 
+/* A strip that reads as an aside, not a headline: small enough that the
+   photograph above it and the chapter below keep the eye, with the spacing and
+   the dot brought down with it so it stays in proportion rather than becoming
+   small type rattling around in a tall band. */
 .marquee-item {
   display: inline-flex;
   align-items: center;
-  gap: clamp(20px, 3vw, 44px);
-  padding-right: clamp(20px, 3vw, 44px);
+  gap: clamp(15px, 2vw, 28px);
+  padding-right: clamp(15px, 2vw, 28px);
   color: var(--color-text-muted);
-  font-size: clamp(1.1rem, 2.2vw, 1.85rem);
+  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
   font-weight: 620;
-  letter-spacing: -0.045em;
+  /* The display tightening only suits display sizes. */
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .marquee-sep {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-signal);
 }
