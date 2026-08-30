@@ -4,6 +4,7 @@ import { Image } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 import WaterlooMark from "../components/WaterlooMark.astro";
+import OrgLogo from "../components/OrgLogo.astro";
 
 const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -409,6 +410,9 @@ const coopSpan = coops.length
 
                   <div class="craft-lead history-lead">
                     {tenure.mark === "uwaterloo" && <WaterlooMark />}
+                    {(tenure.mark === "sandvine" || tenure.mark === "amazon") && (
+                      <OrgLogo name={tenure.mark} />
+                    )}
                     <div class="history-lead-text">
                       {/* Wrapped in an inline-block so the line can be told how
                           wide the ink actually is. Where the line runs through
@@ -535,10 +539,6 @@ const coopSpan = coops.length
                       <span class="reveal-line"><span><span class="history-role-ink">???</span></span></span>
                     </h4>
                   </div>
-                  {/* Set where a role's own dates sit — hard against the left of
-                      the text column, so it reads off the line the same way
-                      every other line of small type on it does. */}
-                  <p class="history-summary history-coda-note" data-row-meta>Oysters</p>
 
                   <div
                     class="history-stint"

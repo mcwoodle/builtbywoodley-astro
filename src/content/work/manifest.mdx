@@ -17,7 +17,8 @@
 # level      - the rung: 0 student, 1 engineer, 2 engineer II, 3 senior,
 #              4 principal. A rise from one entry to the next is drawn as a
 #              step on the ladder and called out as a promotion.
-# mark       - names an inline logo component; only the degree carries one
+# mark       - names an inline logo component. Only the first entry of a run at
+#              one employer needs it; the tenure takes its mark from there.
 #
 # The section renders nothing at all while this list is empty.
 roles:
@@ -70,6 +71,7 @@ roles:
     end: 2011-05
     note: "More networking switch(-ish) stuff."
     level: 1
+    mark: sandvine
 
   - title: "Software Engineer I, Digital and Devices"
     company: "Amazon"
@@ -78,6 +80,7 @@ roles:
     end: 2013-10
     note: "Fire Phone stuff."
     level: 1
+    mark: amazon
 
   - title: "Software Engineer II, Digital and Devices"
     company: "Amazon"

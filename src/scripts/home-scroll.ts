@@ -101,6 +101,8 @@ function setupPage() {
   // than stopping at it.
   const CROSS_PAD = 3;
   const CROSS_FADE = 18;
+  // How far into something the line has to reach before it counts as crossing.
+  const CROSS_BITE = 4;
 
   const buildTrack = () => {
     if (!historyBody || !trackSvg || !trackBase || !trackLine) return;
@@ -153,12 +155,17 @@ function setupPage() {
     lastStopAt = vertices[lastStop].at;
     stops = points.map((point) => ({ y: point.y, year: point.year }));
 
-    // Which pieces of type the line actually runs through. In a two-column
-    // layout the heading is a whole column away from the line and never meets
-    // it; stacked, the line goes straight down the middle of the word. The last
-    // block is centred on the line on purpose and is crossed at every width.
-    // Testing the geometry rather than the breakpoint means the answer stays
-    // right in all three cases, and nothing is dissolved that is not in the way.
+    // Which pieces of a row the line actually runs through — its mark as much
+    // as its name. In a two-column layout they are a whole column away from the
+    // line and never meet it; stacked, the line goes straight down the middle
+    // of them. The last block is centred on the line on purpose and is crossed
+    // at every width. Testing the geometry rather than the breakpoint means the
+    // answer stays right in all three cases, and nothing is dissolved that is
+    // not in the way.
+    //
+    // It has to be a real overlap, not a shared edge: stacked, a heading starts
+    // within a pixel of where the line runs, and a band there would dissolve
+    // the line for a word it never touches.
     const lineLeft = Math.min(...vertices.map((v) => v.x));
     const lineRight = Math.max(...vertices.map((v) => v.x));
     const lineTop = vertices[0].y;
@@ -175,8 +182,8 @@ function setupPage() {
       const top = rest.top - frame.top - CROSS_PAD;
       const bottom = rest.top - frame.top + box.height + CROSS_PAD;
       if (
-        box.right - frame.left > lineLeft &&
-        box.left - frame.left < lineRight &&
+        box.right - frame.left > lineLeft + CROSS_BITE &&
+        box.left - frame.left < lineRight - CROSS_BITE &&
         top - CROSS_FADE > lineTop &&
         bottom + CROSS_FADE < lineBottom
       ) {
@@ -804,15 +811,17 @@ function setupPage() {
     });
 
     // The crest builds a layer at a time: the shape turns in, the chevrons run
-    // down behind it, and the lions land last.
-    const orgMark = page.querySelector<HTMLElement>('[data-org-mark]');
-    if (orgMark) {
+    // down behind it, and the lions land last. It is the only mark that is
+    // taken apart like this — the other two are the companies' own logos,
+    // shipped as images, and they arrive with the rest of the row.
+    const crest = page.querySelector<HTMLElement>('[data-org-mark="uwaterloo"]');
+    if (crest) {
       const layer = (name: string) =>
-        orgMark.querySelector<SVGGElement>(`[data-mark-layer="${name}"]`);
+        crest.querySelector<SVGGElement>(`[data-mark-layer="${name}"]`);
       const lions = layer('lions')?.children;
       const timeline = gsap.timeline({
         scrollTrigger: {
-          trigger: orgMark.closest<HTMLElement>('[data-tenure]') ?? orgMark,
+          trigger: crest.closest<HTMLElement>('[data-tenure]') ?? crest,
           start: 'top 88%',
           end: 'top 54%',
           scrub: true,
@@ -821,7 +830,7 @@ function setupPage() {
       });
 
       timeline.fromTo(
-        orgMark,
+        crest,
         { opacity: 0, scale: 0.66, rotate: -10 },
         { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: 'back.out(1.6)' },
         0,

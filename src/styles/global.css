@@ -1879,16 +1879,10 @@ html[data-motion-armed] [data-hero-tail] {
 .history-coda-mark {
   width: max-content;
   max-width: 100%;
-  margin-bottom: clamp(10px, 1.2vw, 15px);
+  margin-bottom: clamp(20px, 2.6vw, 32px);
   margin-left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
   transform: translateX(-50%);
   text-align: center;
-}
-
-/* Its note is not on the line but beside it, hard against the left of the text
-   column — the same edge every role's own dates start from. */
-.history-coda-note {
-  margin-bottom: clamp(20px, 2.6vw, 32px);
 }
 
 /* The mark, where a row has one, stands beside the name and its summary rather

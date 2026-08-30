@@ -100,14 +100,15 @@ const work = defineCollection({
           note: z.string().optional(),
           internship: z.boolean().default(false),
           // Schooling reads differently from a job: no duration bar, and it is
-          // the one entry that carries an institutional mark.
+          // the one entry that carries an institutional mark rather than an
+          // employer's.
           kind: z.enum(['role', 'education']).default('role'),
           // 0 student · 1 engineer · 2 engineer II · 3 senior · 4 principal.
           // A rise between consecutive entries is what the page calls out.
           level: z.number().int().min(0).max(4).default(1),
           // Named rather than a path: the marks are inline SVG components, so
           // their layers can be animated separately.
-          mark: z.enum(['uwaterloo']).optional(),
+          mark: z.enum(['uwaterloo', 'sandvine', 'amazon']).optional(),
         }),
       )
       .default([]),
