@@ -368,8 +368,15 @@ const coopSpan = coops.length
             <div class="history-body" data-history-body>
               <span class="history-track" aria-hidden="true" data-track>
                 <svg data-track-svg focusable="false">
-                  <path class="history-track-base" data-track-base></path>
-                  <path class="history-track-line" data-track-line></path>
+                  <defs data-track-defs>
+                    <mask id="history-track-mask" data-track-mask maskUnits="userSpaceOnUse">
+                      <rect data-mask-field fill="#fff"></rect>
+                    </mask>
+                  </defs>
+                  <g mask="url(#history-track-mask)">
+                    <path class="history-track-base" data-track-base></path>
+                    <path class="history-track-line" data-track-line></path>
+                  </g>
                 </svg>
               </span>
 
@@ -402,8 +409,14 @@ const coopSpan = coops.length
 
                   <div class="craft-lead">
                     {tenure.mark === "uwaterloo" && <WaterlooMark />}
+                    {/* Wrapped in an inline-block so the line can be told how
+                        wide the ink actually is. Where the line runs through the
+                        letters — which is every stacked layout, since the
+                        heading and the roles share a column there — it fades out
+                        into the word and back in underneath rather than being
+                        cut off at its edge. */}
                     <h4 class="history-role" data-row-title>
-                      <span class="reveal-line"><span>{tenure.company}</span></span>
+                      <span class="reveal-line"><span><span class="history-role-ink" data-role-ink>{tenure.company}</span></span></span>
                     </h4>
                     <p class="history-summary" data-row-meta>{tenure.summary}</p>
                   </div>

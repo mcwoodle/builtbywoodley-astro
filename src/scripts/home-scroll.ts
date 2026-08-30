@@ -75,12 +75,16 @@ function setupPage() {
   const trackSvg = page.querySelector<SVGSVGElement>('[data-track-svg]');
   const trackBase = page.querySelector<SVGPathElement>('[data-track-base]');
   const trackLine = page.querySelector<SVGPathElement>('[data-track-line]');
+  const trackDefs = page.querySelector<SVGDefsElement>('[data-track-defs]');
+  const trackMask = page.querySelector<SVGMaskElement>('[data-track-mask]');
+  const maskField = page.querySelector<SVGRectElement>('[data-mask-field]');
   const marker = page.querySelector<HTMLElement>('[data-marker]');
 
   // A promotion's jog outwards is drawn as a short diagonal rather than a right
   // angle. It reads as a climb, and — the reason it is here — it gives the step
   // a height, which is what lets a point on the line be found from a y alone.
   const STEP_RISE = 14;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
 
   /** A corner of the line, with how far along the line it is. */
   type Vertex = { x: number; y: number; at: number };
@@ -90,6 +94,13 @@ function setupPage() {
   let lineLength = 0;
   /** Where the last stop is, so the run on past it can be faded over. */
   let lastStopAt = 0;
+  /** A word the line runs through, and the stretch it is gone over. */
+  let crossings: { top: number; bottom: number }[] = [];
+  // How far outside the ink the line is gone entirely, and how far either side
+  // of that it takes to go: enough to read as dissolving into the word rather
+  // than stopping at it.
+  const CROSS_PAD = 3;
+  const CROSS_FADE = 18;
 
   const buildTrack = () => {
     if (!historyBody || !trackSvg || !trackBase || !trackLine) return;
@@ -133,6 +144,82 @@ function setupPage() {
     }
     lastStopAt = vertices[lastStop].at;
     stops = points.map((point) => ({ y: point.y, year: point.year }));
+
+    // Which tenure headings the line actually runs through. In a two-column
+    // layout the heading is a whole column away from the line and never meets
+    // it; stacked, the line goes straight down the middle of the word. Testing
+    // the geometry rather than the breakpoint means the answer stays right at
+    // any width, and nothing is dissolved where nothing is in the way.
+    const lineLeft = Math.min(...vertices.map((v) => v.x));
+    const lineRight = Math.max(...vertices.map((v) => v.x));
+    const lineTop = vertices[0].y;
+    const lineBottom = vertices[vertices.length - 1].y;
+    crossings = [];
+    historyBody.querySelectorAll<HTMLElement>('[data-role-ink]').forEach((ink) => {
+      const box = ink.getBoundingClientRect();
+      // The word rides up into place on a transform of its own, so where it is
+      // right now is not where it comes to rest. Its height and its horizontal
+      // reach are true either way; only the top has to be taken off the mask
+      // around it, which nothing moves. Measuring the word itself here would
+      // leave the gap wherever the reveal happened to be mid-flight.
+      const rest = (ink.closest('.reveal-line') ?? ink).getBoundingClientRect();
+      const top = rest.top - frame.top - CROSS_PAD;
+      const bottom = rest.top - frame.top + box.height + CROSS_PAD;
+      if (
+        box.right - frame.left > lineLeft &&
+        box.left - frame.left < lineRight &&
+        top - CROSS_FADE > lineTop &&
+        bottom + CROSS_FADE < lineBottom
+      ) {
+        crossings.push({ top, bottom });
+      }
+    });
+
+    // Painted into the mask as a soft-edged band each: white either side, black
+    // over the word, and a gradient between the two. The line thins away into
+    // the heading and thickens back up underneath rather than stopping dead at
+    // an edge it has no reason to stop at.
+    if (trackMask && maskField) {
+      maskField.setAttribute('width', String(frame.width));
+      maskField.setAttribute('height', String(frame.height));
+      trackMask.querySelectorAll('[data-mask-band]').forEach((band) => band.remove());
+      trackDefs?.querySelectorAll('[data-mask-veil]').forEach((veil) => veil.remove());
+      crossings.forEach((crossing, index) => {
+        const top = crossing.top - CROSS_FADE;
+        const height = crossing.bottom - crossing.top + CROSS_FADE * 2;
+        const edge = CROSS_FADE / height;
+        const id = `history-veil-${index}`;
+
+        const veil = document.createElementNS(SVG_NS, 'linearGradient');
+        veil.setAttribute('data-mask-veil', '');
+        veil.setAttribute('id', id);
+        veil.setAttribute('x1', '0');
+        veil.setAttribute('y1', '0');
+        veil.setAttribute('x2', '0');
+        veil.setAttribute('y2', '1');
+        [
+          ['0', '#fff'],
+          [String(edge), '#000'],
+          [String(1 - edge), '#000'],
+          ['1', '#fff'],
+        ].forEach(([offset, colour]) => {
+          const stop = document.createElementNS(SVG_NS, 'stop');
+          stop.setAttribute('offset', offset);
+          stop.setAttribute('stop-color', colour);
+          veil.appendChild(stop);
+        });
+        trackDefs?.appendChild(veil);
+
+        const band = document.createElementNS(SVG_NS, 'rect');
+        band.setAttribute('data-mask-band', '');
+        band.setAttribute('x', '0');
+        band.setAttribute('y', String(top));
+        band.setAttribute('width', String(frame.width));
+        band.setAttribute('height', String(height));
+        band.setAttribute('fill', `url(#${id})`);
+        trackMask.appendChild(band);
+      });
+    }
 
     const d = vertices
       .map((v, i) => `${i ? 'L' : 'M'}${v.x.toFixed(1)} ${v.y.toFixed(1)}`)
@@ -570,6 +657,20 @@ function setupPage() {
         trackLine.style.strokeDashoffset = String(lineLength - tip.at);
         rollTo(Math.round(yearAt(y)));
 
+        // Where the line dissolves into a word, so does its tip: a copper dot
+        // and a year sitting on top of the letters is the thing the fade is
+        // there to avoid. Same ramp as the mask uses, so the two go together.
+        let veiled = 0;
+        crossings.forEach((crossing) => {
+          veiled = Math.max(
+            veiled,
+            Math.min(
+              gsap.utils.clamp(0, 1, (y - crossing.top + CROSS_FADE) / CROSS_FADE),
+              gsap.utils.clamp(0, 1, (crossing.bottom + CROSS_FADE - y) / CROSS_FADE),
+            ),
+          );
+        });
+
         // On at the very top of the line, and off again over the run past the
         // last stop — the same distance the track's mask fades the line out
         // over, so the two go together.
@@ -577,10 +678,12 @@ function setupPage() {
         gsap.set(marker, {
           x: tip.x,
           y: tip.y,
-          opacity: Math.min(
-            gsap.utils.clamp(0, 1, tip.at / 30),
-            trail > 0 ? gsap.utils.clamp(0, 1, (lineLength - tip.at) / trail) : 1,
-          ),
+          opacity:
+            Math.min(
+              gsap.utils.clamp(0, 1, tip.at / 30),
+              trail > 0 ? gsap.utils.clamp(0, 1, (lineLength - tip.at) / trail) : 1,
+            ) *
+            (1 - veiled),
         });
       };
 

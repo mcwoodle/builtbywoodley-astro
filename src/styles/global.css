@@ -1876,6 +1876,12 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── The tenure's left column ── */
+/* Shrunk to the ink, so what the line's crossing is tested against is the
+   width of the word rather than the width of the column it sits in. */
+.history-role-ink {
+  display: inline-block;
+}
+
 .history-role {
   margin-bottom: 8px;
   font-size: clamp(1.7rem, 3.4vw, 2.7rem);
@@ -4065,6 +4071,14 @@ body.is-photo-viewing {
 
   .hero-title {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
+  }
+
+  /* Stacked, the line runs down the same column the tenure heading is in. It
+     dissolves into the heading and comes back underneath, which the big display
+     type carries; the summary under it is a short mono line that would just be
+     struck through, so it steps aside to where the roles start instead. */
+  .history-summary {
+    padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
   }
 
   /* One column each: the title needs the whole width before the copy gets a
