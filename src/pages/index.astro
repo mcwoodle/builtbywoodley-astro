@@ -10,9 +10,22 @@ const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
 );
 
-// The ticker is the union of every stack the case studies declare, so it stays
-// true to the work without a second list to maintain.
-const stack = [...new Set(softwareEntries.flatMap((entry) => entry.data.stack))];
+// What the ticker runs. Kept by hand rather than pulled off the case studies'
+// stacks: half of these are not technologies, and the half that are earn their
+// place by being what the work is actually done in, which is not the same as
+// what happens to appear in a write-up.
+const ticker = [
+  "Distributed Systems",
+  "Engineering Processes",
+  "Mentorship",
+  "Product Vision",
+  "Whatever it takes",
+  "Agentic AI",
+  "TypeScript",
+  "Java",
+  "GraphQL",
+  "AWS",
+];
 
 const [photoManifest] = await getCollection("photos");
 const photos = [...photoManifest.data.photos].sort(
@@ -272,7 +285,7 @@ const coopSpan = coops.length
       <div class="marquee-track" data-marquee-track>
         {[0, 1].map(() => (
           <div class="marquee-run">
-            {stack.map((item) => (
+            {ticker.map((item) => (
               <span class="marquee-item">
                 {item}
                 <span class="marquee-sep"></span>
