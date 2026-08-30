@@ -4136,21 +4136,6 @@ body.is-photo-viewing {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
   }
 
-  /* Stacked, the line runs down the same column the tenure heading is in. It
-     dissolves into the heading and comes back underneath, which the big display
-     type carries; the summary under it is a short mono line that would just be
-     struck through, so it steps aside to where the roles start instead. */
-  .craft-lead .history-summary {
-    padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
-  }
-
-  /* Except the first, whose block sits above where the line starts and so has
-     nothing to clear. Indenting it would only break its alignment with the
-     name beside the crest. */
-  .history-list > .history-row:first-child .history-summary {
-    padding-left: 0;
-  }
-
   /* Stacked, the line runs down the same column the mark is in, so the mark
      sits astride it: centred on the rung the line is at where the heading
      falls. The name then starts clear of the mark's outer half. */
@@ -4162,7 +4147,12 @@ body.is-photo-viewing {
     );
   }
 
-  .history-lead:has(> .org-mark, > .org-logo) {
+  /* The whole block steps clear, not just the name — so the summary stays
+     aligned under it — and every row steps, marked or not, since what it is
+     clearing is the line rather than the mark. Qualified by the row to match
+     the specificity of the `:has()` rule above, which would otherwise win on
+     that alone and pin every row to the same offset. */
+  .history-row .history-lead {
     padding-left: calc(
       var(--marker-gap) + var(--marker-w) + var(--lead-rung, 0) * var(--rung-gap) +
         var(--org-mark-w) / 2 + var(--org-mark-gap)
