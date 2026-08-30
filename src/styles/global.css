@@ -1777,8 +1777,8 @@ html[data-motion-armed] [data-hero-tail] {
   --marker-gap: clamp(8px, 0.9vw, 12px);
   --stint-gap: clamp(20px, 2.4vw, 30px);
   --node-y: 9px;
-  /* How far the line runs on past the last stop, and the distance it takes to
-     fade out over. The two are the same number: the run is the fade. */
+  /* How far the line runs on past the last stop. The run is the fade — the
+     script reads this off the body's padding and hands it to the mask. */
   --history-fade: clamp(74px, 8vw, 116px);
 
   margin-top: clamp(52px, 7vw, 96px);
@@ -1799,16 +1799,6 @@ html[data-motion-armed] [data-hero-tail] {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - var(--history-fade)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - var(--history-fade)),
-    transparent 100%
-  );
 }
 
 .history-track svg {
@@ -2033,20 +2023,10 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── Where the line ends up ──
-   The same grid as a tenure row, so its stop lands on the same rung the last
-   role did and the line runs straight down into it. */
+   Shaped like every tenure above it, since that is what it is. Nothing below
+   it but the run the mask fades out over, so it keeps none of its own. */
 .history-row--coda {
-  padding-block: clamp(20px, 2.6vw, 32px) 0;
-}
-
-.history-coda-label {
-  margin-bottom: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
-  font-weight: 630;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
+  padding-block-end: 0;
 }
 
 /* ── The rung a role sits on, in words ── */
@@ -2227,18 +2207,22 @@ html[data-motion-armed] [data-hero-tail] {
   }
 }
 
-/* The line has already faded out above this by the width of the body's bottom
-   padding, so the link needs far less air of its own than a chapter link
-   usually gets. */
+/* Sat on the ladder as the last stop rather than trailing after the section,
+   so it reads at the size the roles beside it do and spaces like a sentence
+   rather than like a row of buttons. */
 .history-link {
-  margin-top: clamp(4px, 1vw, 12px);
+  gap: 0.36em;
+  margin-bottom: 0;
+  font-size: clamp(1rem, 1.4vw, 1.14rem);
 }
 
-/* The same line-art mark the footer signs off with, standing in for the word. */
+/* The same line-art mark the footer signs off with, standing in for the word
+   "in" — which is what the mark says. Sized against the type around it rather
+   than in rem, so it stays a word in the sentence at any width. */
 .history-link-mark {
   display: block;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.32em;
+  height: 1.32em;
   color: var(--accent-copper);
   transition: transform 260ms var(--ease-spring);
 }

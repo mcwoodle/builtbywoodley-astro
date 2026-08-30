@@ -516,13 +516,23 @@ const coopSpan = coops.length
               ))}
               </ol>
 
-              {/* Where the line ends up. It is one more stop on the same
-                  ladder — same grid, same rung as the last role — so it takes
-                  the stint machinery whole and arrives with a motion of its
-                  own. Below it the path runs on into the body's bottom padding
-                  and the track's mask fades it away to nothing. */}
-              <div class="history-row history-row--coda">
-                <div class="craft-lead"></div>
+              {/* Where the line ends up: a last row shaped like every tenure
+                  above it, because that is what it is — the one nobody has
+                  written yet. The heading holds the left column like an
+                  employer's would, and the single stop under it on the ladder
+                  is the invitation, so the path runs into the link rather than
+                  petering out somewhere above it. Past that it carries on into
+                  the body's bottom padding, where the mask fades it away. */}
+              <div class="history-row history-row--coda" data-row>
+                <span class="craft-rule" aria-hidden="true" data-row-rule></span>
+
+                <div class="craft-lead">
+                  <h4 class="history-role" data-row-title>
+                    <span class="reveal-line"><span><span class="history-role-ink" data-role-ink>???</span></span></span>
+                  </h4>
+                  <p class="history-summary" data-row-meta>What&apos;s next</p>
+                </div>
+
                 <div class="history-coda-body">
                   <div
                     class="history-stint"
@@ -533,34 +543,36 @@ const coopSpan = coops.length
                   >
                     <span class="history-node history-node--coda" aria-hidden="true"></span>
                     <div class="history-stint-inner" data-stint-card>
-                      <p class="history-coda-label" data-stint-title>Endless Opportunity</p>
+                      {/* "Get in touch", where the "in" is the mark itself —
+                          the same line-art one the footer signs off with. The
+                          words are hidden from readers and the whole sentence
+                          given to the link, since the middle of it is a
+                          picture. */}
+                      <a
+                        class="chapter-link history-link"
+                        href="https://www.linkedin.com/in/mattwoodley"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Get in touch with Matt Woodley on LinkedIn — opens in a new tab"
+                        data-magnetic
+                      >
+                        <span aria-hidden="true">Get</span>
+                        <span class="history-link-mark" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                            <rect x="3" y="3" width="18" height="18" rx="4.5"></rect>
+                            <path d="M7.7 7.6h.01"></path>
+                            <path d="M7.7 10.8v5.6"></path>
+                            <path d="M11.9 16.4v-5.6"></path>
+                            <path d="M11.9 13.4a2.6 2.6 0 0 1 5.2 0v3"></path>
+                          </svg>
+                        </span>
+                        <span aria-hidden="true">touch</span>
+                      </a>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <a
-              class="chapter-link history-link"
-              href="https://www.linkedin.com/in/mattwoodley"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Say hi to Matt Woodley on LinkedIn — opens in a new tab"
-              data-reveal
-              data-magnetic
-            >
-              <span aria-hidden="true">Say hi on</span>
-              {/* The same line-art mark the footer signs off with. */}
-              <span class="history-link-mark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                  <rect x="3" y="3" width="18" height="18" rx="4.5"></rect>
-                  <path d="M7.7 7.6h.01"></path>
-                  <path d="M7.7 10.8v5.6"></path>
-                  <path d="M11.9 16.4v-5.6"></path>
-                  <path d="M11.9 13.4a2.6 2.6 0 0 1 5.2 0v3"></path>
-                </svg>
-              </span>
-            </a>
           </div>
         )}
       </div>

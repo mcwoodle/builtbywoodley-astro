@@ -132,8 +132,16 @@ function setupPage() {
       push(points[i].x, points[i].y);
     }
     const lastStop = vertices.length - 1;
-    // On past the last stop, into the padding the track's mask fades out over.
-    push(points[points.length - 1].x, frame.height);
+    const lastStopY = vertices[lastStop].y;
+    // On past the last stop by exactly the length it is faded out over, so the
+    // line dissolves from the moment it has delivered you to the link rather
+    // than running on down the page first. The body reserves that much padding
+    // underneath for it, which is where the number comes from.
+    const trailRun = Math.max(
+      40,
+      parseFloat(getComputedStyle(historyBody).paddingBottom) || 90,
+    );
+    push(points[points.length - 1].x, lastStopY + trailRun);
 
     lineLength = 0;
     for (let i = 1; i < vertices.length; i += 1) {
@@ -184,41 +192,61 @@ function setupPage() {
       maskField.setAttribute('height', String(frame.height));
       trackMask.querySelectorAll('[data-mask-band]').forEach((band) => band.remove());
       trackDefs?.querySelectorAll('[data-mask-veil]').forEach((veil) => veil.remove());
-      crossings.forEach((crossing, index) => {
-        const top = crossing.top - CROSS_FADE;
-        const height = crossing.bottom - crossing.top + CROSS_FADE * 2;
-        const edge = CROSS_FADE / height;
-        const id = `history-veil-${index}`;
 
-        const veil = document.createElementNS(SVG_NS, 'linearGradient');
-        veil.setAttribute('data-mask-veil', '');
-        veil.setAttribute('id', id);
-        veil.setAttribute('x1', '0');
-        veil.setAttribute('y1', '0');
-        veil.setAttribute('x2', '0');
-        veil.setAttribute('y2', '1');
-        [
-          ['0', '#fff'],
-          [String(edge), '#000'],
-          [String(1 - edge), '#000'],
-          ['1', '#fff'],
-        ].forEach(([offset, colour]) => {
+      const veil = (index: number, stops: [string, string][]) => {
+        const id = `history-veil-${index}`;
+        const gradient = document.createElementNS(SVG_NS, 'linearGradient');
+        gradient.setAttribute('data-mask-veil', '');
+        gradient.setAttribute('id', id);
+        gradient.setAttribute('x1', '0');
+        gradient.setAttribute('y1', '0');
+        gradient.setAttribute('x2', '0');
+        gradient.setAttribute('y2', '1');
+        stops.forEach(([offset, colour]) => {
           const stop = document.createElementNS(SVG_NS, 'stop');
           stop.setAttribute('offset', offset);
           stop.setAttribute('stop-color', colour);
-          veil.appendChild(stop);
+          gradient.appendChild(stop);
         });
-        trackDefs?.appendChild(veil);
+        trackDefs?.appendChild(gradient);
+        return `url(#${id})`;
+      };
 
-        const band = document.createElementNS(SVG_NS, 'rect');
-        band.setAttribute('data-mask-band', '');
-        band.setAttribute('x', '0');
-        band.setAttribute('y', String(top));
-        band.setAttribute('width', String(frame.width));
-        band.setAttribute('height', String(height));
-        band.setAttribute('fill', `url(#${id})`);
-        trackMask.appendChild(band);
+      const band = (y: number, height: number, fill: string) => {
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('data-mask-band', '');
+        rect.setAttribute('x', '0');
+        rect.setAttribute('y', String(y));
+        rect.setAttribute('width', String(frame.width));
+        rect.setAttribute('height', String(height));
+        rect.setAttribute('fill', fill);
+        trackMask.appendChild(rect);
+      };
+
+      crossings.forEach((crossing, index) => {
+        const height = crossing.bottom - crossing.top + CROSS_FADE * 2;
+        const edge = CROSS_FADE / height;
+        band(
+          crossing.top - CROSS_FADE,
+          height,
+          veil(index, [
+            ['0', '#fff'],
+            [String(edge), '#000'],
+            [String(1 - edge), '#000'],
+            ['1', '#fff'],
+          ]),
+        );
       });
+
+      // And the run past the last stop, which is nothing but its own fade.
+      band(
+        lastStopY,
+        trailRun,
+        veil(crossings.length, [
+          ['0', '#fff'],
+          ['1', '#000'],
+        ]),
+      );
     }
 
     const d = vertices
