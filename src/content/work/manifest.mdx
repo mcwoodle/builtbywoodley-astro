@@ -14,6 +14,8 @@
 # start      - YYYY or YYYY-MM
 # end        - YYYY or YYYY-MM; omit entirely for a role you still hold
 # note       - optional; one line shown under the role
+# months     - optional; how long it actually ran, when that is not the span
+#              between the dates — a co-op that came back for separate terms
 # internship - true folds the entry into the co-op terms under the degree
 # kind       - "education" for schooling; anything else is a job
 # level      - the rung: 0 student, 1 engineer, 2 engineer II, 3 senior,
@@ -36,15 +38,18 @@ roles:
 
   - title: "Programmer Analyst Co-op"
     company: "Emergis"
-    location: "Greater Toronto Area, Canada"
+    location: "Toronto, Ontario, Canada"
     start: 2006-05
     end: 2007-08
+    # Two terms, a year apart. The dates bracket both; this is the work.
+    months: 9
     note: "Health stuff."
     internship: true
     level: 0
 
   - title: "Software Development Engineer Co-op"
     company: "Amazon.com"
+    location: "Seattle, Washington, United States"
     start: 2008-05
     end: 2008-08
     note: "Event tracking stuff."
@@ -53,6 +58,7 @@ roles:
 
   - title: "Software Engineer Co-op"
     company: "Qualcomm"
+    location: "San Diego, California, United States"
     start: 2009-01
     end: 2009-04
     note: "Cellular network base station stuff."
@@ -61,6 +67,7 @@ roles:
 
   - title: "Software Engineer Co-op"
     company: "Arista Networks, Inc."
+    location: "Silicon Valley, California, United States"
     start: 2009-09
     end: 2009-12
     note: "Networking switch stuff."

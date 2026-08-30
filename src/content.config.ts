@@ -98,6 +98,10 @@ const work = defineCollection({
           start: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY or YYYY-MM.'),
           end: z.string().regex(/^\d{4}(-\d{2})?$/, 'Use YYYY or YYYY-MM.').optional(),
           note: z.string().optional(),
+          // How long the role actually ran, where that is not the span between
+          // start and end — a co-op that came back for separate terms sits
+          // between two dates it did not work all of.
+          months: z.number().int().positive().optional(),
           internship: z.boolean().default(false),
           // Schooling reads differently from a job: no duration bar, and it is
           // the one entry that carries an institutional mark rather than an
