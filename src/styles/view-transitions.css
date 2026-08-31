@@ -2,7 +2,7 @@
    navigation feels composed instead of behaving like a full-screen carousel. */
 
 ::view-transition {
-  background: var(--vt-bg, var(--color-bg));
+  background: var(--page-canvas, var(--vt-bg, var(--color-bg)));
 }
 
 ::view-transition-old(*),
@@ -10,13 +10,9 @@
   mix-blend-mode: normal;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  background: var(--vt-bg, var(--color-bg));
-}
-
 ::view-transition-group(page-backdrop) {
-  z-index: 0;
+  animation: none;
+  z-index: 15;
 }
 
 ::view-transition-old(page-backdrop),
@@ -27,13 +23,43 @@
   opacity: 1;
 }
 
-::view-transition-group(root) {
-  z-index: 10;
-  background: var(--vt-bg, var(--color-bg));
+::view-transition-group(viewport-edge) {
+  animation: none;
+  z-index: 90;
 }
 
-/* The navigation stays fixed while the destination settles underneath it. */
-.vt-top-nav {
+::view-transition-old(viewport-edge),
+::view-transition-new(viewport-edge) {
+  animation: none;
+  opacity: 1;
+}
+
+::view-transition-group(root) {
+  animation: none;
+  z-index: 10;
+}
+
+/* The viewport canvas never moves. Directional motion belongs to the page
+   content snapshot so translated pixels cannot expose a root edge. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  opacity: 1;
+}
+
+body > main {
+  view-transition-name: page-content;
+}
+
+::view-transition-group(page-content) {
+  z-index: 20;
+}
+
+/* Capture only the visible panel, not the full-width transparent sticky header.
+   That keeps the navigation fixed without cutting a viewport-wide hole out of
+   the moving root snapshot. The fixed page-backdrop remains visible through
+   every transparent part of the root transition. */
+.vt-top-nav .nav-panel {
   view-transition-name: top-nav;
 }
 
@@ -42,7 +68,16 @@
   z-index: 100;
 }
 
-::view-transition-old(top-nav),
+/* Only the destination's navigation is visible. Keep the old snapshot in the
+   transition tree so Chrome retains a continuous compositor surface; removing
+   it with `display: none` can intermittently expose the browser's white canvas
+   across the viewport. Making it transparent still avoids double-painting the
+   translucent panel and the original white band around the navigation. */
+::view-transition-old(top-nav) {
+  animation: none;
+  opacity: 0;
+}
+
 ::view-transition-new(top-nav) {
   animation: none;
   opacity: 1;
@@ -52,143 +87,121 @@ html[data-nav-about-edge] .vt-tagline {
   view-transition-name: tagline;
 }
 
-::view-transition-group(tagline),
-::view-transition-group(page-title) {
+::view-transition-group(tagline) {
   z-index: 50;
   animation-duration: 480ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-::view-transition-old(page-title) {
-  animation: 180ms ease-in both vt-title-out;
+/* Direction still reflects route relationships through a restrained offset.
+   Fade the outgoing content first so the two page snapshots do not double-paint
+   while the destination settles over the stationary canvas. */
+html[data-nav-direction='right']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-left;
 }
 
-::view-transition-new(page-title) {
-  animation: 480ms cubic-bezier(0.22, 1, 0.36, 1) both vt-title-in;
+html[data-nav-direction='right']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
 }
 
-/* Direction still reflects route relationships, expressed as a restrained
-   offset and fade rather than a full-width slide. */
-html[data-nav-direction='right']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-left;
+html[data-nav-direction='left']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-right;
 }
 
-html[data-nav-direction='right']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-right;
+html[data-nav-direction='left']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
 }
 
-html[data-nav-direction='left']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-right;
+html[data-nav-direction='down']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-up;
 }
 
-html[data-nav-direction='left']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-left;
+html[data-nav-direction='down']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
 }
 
-html[data-nav-direction='down']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-up;
+html[data-nav-direction='up']::view-transition-old(page-content) {
+  animation: 180ms ease-in both vt-out-down;
 }
 
-html[data-nav-direction='down']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-up;
+html[data-nav-direction='up']::view-transition-new(page-content) {
+  animation: 360ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
 }
 
-html[data-nav-direction='up']::view-transition-old(root) {
-  animation: 300ms ease-in both vt-out-down;
+html[data-nav-direction='neutral']::view-transition-old(page-content) {
+  animation: none;
 }
 
-html[data-nav-direction='up']::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-in-down;
-}
-
-html[data-nav-direction='neutral']::view-transition-old(root) {
-  animation: 180ms ease-in both vt-fade-out;
-}
-
-html[data-nav-direction='neutral']::view-transition-new(root) {
-  animation: 360ms ease-out both vt-fade-in;
+html[data-nav-direction='neutral']::view-transition-new(page-content) {
+  animation: none;
 }
 
 /* ClientRouter fallback mirrors the same visual language with shorter timing. */
-html[data-astro-transition-fallback='old'] body > :not(.top-nav, .vt-page-backdrop, script),
-html[data-astro-transition-fallback='new'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  background: var(--vt-bg, var(--color-bg));
+html[data-astro-transition-fallback='old'] body > main,
+html[data-astro-transition-fallback='new'] body > main {
   will-change: transform, opacity;
 }
 
-html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='right'] body > main {
   animation: 140ms ease-in both vt-out-left;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='right'] body > main {
   animation: 220ms ease-out both vt-in-right;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='left'] body > main {
   animation: 140ms ease-in both vt-out-right;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='left'] body > main {
   animation: 220ms ease-out both vt-in-left;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='down'] body > main {
   animation: 140ms ease-in both vt-out-up;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='down'] body > main {
   animation: 220ms ease-out both vt-in-up;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='old'][data-nav-direction='up'] body > main {
   animation: 140ms ease-in both vt-out-down;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > :not(.top-nav, .vt-page-backdrop, script) {
+html[data-astro-transition-fallback='new'][data-nav-direction='up'] body > main {
   animation: 220ms ease-out both vt-in-down;
 }
-html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 120ms ease-in both vt-fade-out;
+html[data-astro-transition-fallback='old'][data-nav-direction='neutral'] body > main {
+  animation: none;
 }
-html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > :not(.top-nav, .vt-page-backdrop, script) {
-  animation: 180ms ease-out both vt-fade-in;
+html[data-astro-transition-fallback='new'][data-nav-direction='neutral'] body > main {
+  animation: none;
 }
 
 @keyframes vt-out-left {
-  to { opacity: 0; transform: translateX(-18px) scale(0.992); }
+  to { transform: translateX(-18px); opacity: 0; }
 }
 @keyframes vt-in-right {
-  from { opacity: 0; transform: translateX(28px) scale(0.994); }
+  from { transform: translateX(28px); opacity: 0; }
 }
 @keyframes vt-out-right {
-  to { opacity: 0; transform: translateX(18px) scale(0.992); }
+  to { transform: translateX(18px); opacity: 0; }
 }
 @keyframes vt-in-left {
-  from { opacity: 0; transform: translateX(-28px) scale(0.994); }
+  from { transform: translateX(-28px); opacity: 0; }
 }
 @keyframes vt-out-up {
-  to { opacity: 0; transform: translateY(-16px) scale(0.992); }
+  to { transform: translateY(-16px); opacity: 0; }
 }
 @keyframes vt-in-up {
-  from { opacity: 0; transform: translateY(24px) scale(0.994); }
+  from { transform: translateY(24px); opacity: 0; }
 }
 @keyframes vt-out-down {
-  to { opacity: 0; transform: translateY(16px) scale(0.992); }
+  to { transform: translateY(16px); opacity: 0; }
 }
 @keyframes vt-in-down {
-  from { opacity: 0; transform: translateY(-24px) scale(0.994); }
+  from { transform: translateY(-24px); opacity: 0; }
 }
-@keyframes vt-fade-out {
-  to { opacity: 0; transform: scale(0.994); }
-}
-@keyframes vt-fade-in {
-  from { opacity: 0; transform: scale(0.994); }
-}
-@keyframes vt-title-out {
-  to { opacity: 0; transform: translateY(-8px); }
-}
-@keyframes vt-title-in {
-  from { opacity: 0; transform: translateY(16px); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*),
-  html[data-astro-transition-fallback] body > :not(.top-nav, .vt-page-backdrop, script) {
+  html[data-astro-transition-fallback] body > main {
     animation: none !important;
   }
 }
