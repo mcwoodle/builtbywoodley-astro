@@ -1896,6 +1896,18 @@ html[data-motion-armed] [data-hero-tail] {
    does — it stands on it, centred on the rung the last role reached, with the
    line running in at the top and out at the bottom. Shrunk to its content so
    the half it is pulled back by is half of the type, not half of the column. */
+/* The mask that plays the name in clips horizontally as well as vertically, and
+   this block is sized to its own text with nothing to spare. The heading's
+   negative tracking is applied after the last glyph as well as between them, so
+   the box lands a couple of pixels inside the painted "?" and the mask takes
+   the edge off it. Padding widens the clip; the negative margin hands the width
+   back, so the block still measures its text and stays centred on the line —
+   the same trick this file already uses to keep descenders out of the mask. */
+.history-coda-mark .reveal-line {
+  padding-right: 0.12em;
+  margin-right: -0.12em;
+}
+
 .history-coda-mark {
   width: max-content;
   max-width: 100%;
