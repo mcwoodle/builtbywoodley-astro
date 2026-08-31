@@ -18,7 +18,7 @@ const ticker = [
   "Engineering Processes",
   "Mentorship",
   "Product Vision",
-  "Collaboration",
+  "Agentic AI (where appropriate)",
 ];
 
 const [photoManifest] = await getCollection("photos");
@@ -244,21 +244,17 @@ const coopSpan = coops.length
           >
         </h1>
 
-        <div class="hero-foot">
-          <p class="hero-lead" data-hero-tail data-split-lead>
-            I invent, design, implement and mentor at the organizational IC
-            leadership level in Big Tech — and build things with my hands the
-            rest of the time.
-          </p>
-          <div
-            class="role-line vt-tagline"
-            data-hero-tail
-            aria-label="Leader, builder, father"
-          >
-            <span>Leader</span>
-            <span>Builder</span>
-            <span>Father</span>
-          </div>
+        <p class="hero-lead" data-hero-tail data-split-lead>
+          <!-- optional text below my name. -->
+        </p>
+        <div
+          class="role-line vt-tagline"
+          data-hero-tail
+          aria-label="Leader, builder, father"
+        >
+          <span>Leader</span>
+          <span>Builder</span>
+          <span>Father</span>
         </div>
       </div>
     </section>
@@ -312,14 +308,12 @@ const coopSpan = coops.length
       <div class="chapter-shell">
         <header class="chapter-head chapter-head--split">
           <div>
-            <p class="chapter-eyebrow" data-reveal>About me</p>
+            <p class="chapter-eyebrow" data-reveal>Aboot me</p>
             <h2 id="about-title" class="chapter-title" data-mask-title>
-              <span class="reveal-line"><span>A bit about myself.</span></span>
+              <span class="reveal-line"><span>A bit about me</span></span>
             </h2>
           </div>
           <p class="chapter-lead" data-reveal>
-            Three things, in roughly the order they matter — and then where the
-            third one has taken me.
           </p>
         </header>
 
@@ -329,7 +323,7 @@ const coopSpan = coops.length
             <span class="craft-glow" aria-hidden="true"></span>
             <div class="craft-lead">
               <p class="craft-index" data-row-meta>
-                <span class="craft-index-num">01</span>
+                <span class="craft-index-num">-</span>
                 <span class="craft-index-label">What matters</span>
               </p>
               <h3 class="craft-title" data-row-title>
@@ -338,8 +332,8 @@ const coopSpan = coops.length
             </div>
             <p class="craft-copy" data-split-copy>
               Above all else, my two kids, my partner, and our dog come first.
-              I’ve photographed the world, but my favourite place to be now is home
-              with my family.
+              I’ve photographed the world, but now my favourite place to be is home
+              with family.
             </p>
           </li>
 
@@ -348,7 +342,7 @@ const coopSpan = coops.length
             <span class="craft-glow" aria-hidden="true"></span>
             <div class="craft-lead">
               <p class="craft-index" data-row-meta>
-                <span class="craft-index-num">02</span>
+                <span class="craft-index-num">-</span>
                 <span class="craft-index-label">Elsewhere</span>
               </p>
               <h3 class="craft-title" data-row-title>
@@ -366,7 +360,7 @@ const coopSpan = coops.length
             <span class="craft-glow" aria-hidden="true"></span>
             <div class="craft-lead">
               <p class="craft-index" data-row-meta>
-                <span class="craft-index-num">03</span>
+                <span class="craft-index-num">-</span>
                 <span class="craft-index-label">At work</span>
               </p>
               <h3 class="craft-title" data-row-title>
@@ -385,13 +379,12 @@ const coopSpan = coops.length
         {(positions.length > 0 || coops.length > 0) && (
           <div class="history" id="history">
             <header class="history-head">
-              <p class="chapter-eyebrow" data-reveal>Work history</p>
+              <p class="chapter-eyebrow" data-reveal>Career</p>
               <h3 class="history-heading" data-mask-title>
                 <span class="reveal-line"><span>How I got here.</span></span>
               </h3>
               <p class="history-legend" data-reveal>
-                Forwards from the degree. One line, stepping out a rung at
-                every promotion, with the year riding its leading edge.
+                From school to career.
               </p>
             </header>
 
@@ -647,6 +640,7 @@ const coopSpan = coops.length
                 </div>
               </div>
             </div>
+            <HumanWrittenMark />
           </div>
         )}
       </div>
@@ -657,9 +651,9 @@ const coopSpan = coops.length
       <div class="chapter-shell">
         <header class="chapter-head chapter-head--split">
           <div>
-            <p class="chapter-eyebrow" data-reveal>Selected work</p>
+            <p class="chapter-eyebrow" data-reveal>Personal Projects</p>
             <h2 id="work-title" class="chapter-title" data-mask-title>
-              <span class="reveal-line"><span>Things I've built.</span></span>
+              <span class="reveal-line"><span>The summer of Matt</span></span>
             </h2>
           </div>
           <a class="chapter-link" href="/software" data-reveal data-magnetic>
@@ -707,7 +701,7 @@ const coopSpan = coops.length
             <div>
               <p class="chapter-eyebrow" data-reveal>Photography</p>
               <h2 id="archive-title" class="chapter-title" data-mask-title>
-                <span class="reveal-line"><span>An archive of places.</span></span>
+                <span class="reveal-line"><span>Shots Taken</span></span>
               </h2>
             </div>
             <a class="chapter-link" href="/photography" data-reveal data-magnetic>
@@ -750,7 +744,7 @@ const coopSpan = coops.length
     <!-- ── 7 · Close ── -->
     <section class="chapter chapter--contact" aria-labelledby="contact-title">
       <div class="chapter-shell">
-        <p class="chapter-eyebrow" data-reveal>Elsewhere</p>
+        <p class="chapter-eyebrow" data-reveal>That's all</p>
         <h2 id="contact-title" class="contact-title" data-mask-title>
           <span class="reveal-line"><span>Say hello.</span></span>
         </h2>
@@ -767,8 +761,6 @@ const coopSpan = coops.length
             Email me <span aria-hidden="true">↗</span>
           </a>
         </nav>
-
-        <HumanWrittenMark />
       </div>
     </section>
   </main>

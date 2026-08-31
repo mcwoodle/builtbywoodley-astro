@@ -24,6 +24,7 @@ debug.log*
 # AI assistant / MCP configs that can embed API tokens
 .mcp.json
 .pi.mcp.json
+.claude
 
 # macOS-specific files
 .DS_Store
