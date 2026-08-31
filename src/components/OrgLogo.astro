@@ -1,0 +1,51 @@
+---
+// An employer's own mark, shipped as an image rather than drawn inline. The
+// Waterloo crest is a component of its own because it is taken apart and built
+// a layer at a time; these two are just the companies' logos, so there is
+// nothing to take apart and nothing to animate — they are simply there.
+//
+// Deliberately not on `data-reveal` either: the line has to know where a mark
+// sits so it can stop short of it, and it measures that off the page. A mark
+// being slid into place at the moment of measuring puts the gap somewhere the
+// mark is not.
+//
+// See src/assets/logos/README.md for where each file came from.
+
+import sandvine from '../assets/logos/sandvine.svg';
+import amazon from '../assets/logos/amazon.svg';
+
+interface Props {
+  /** Which mark to show. Matches the `mark` field in the work manifest. */
+  name: 'sandvine' | 'amazon';
+}
+
+const { name } = Astro.props;
+const logo = { sandvine, amazon }[name];
+---
+
+<span
+  class="org-logo"
+  data-ink
+  aria-hidden="true"
+  style={`--mark-ratio:${(logo.height / logo.width).toFixed(4)}`}
+>
+  <img src={logo.src} alt="" width={logo.width} height={logo.height} loading="lazy" />
+</span>
+
+<style>
+  .org-logo {
+    display: block;
+    /* The same width the crest takes, so the three marks make a column. The
+       height comes from the file's own proportions rather than from the picture
+       once it has loaded, so the box is the right size before it arrives — and
+       so the layout can halve it to centre the mark. */
+    width: var(--org-mark-w, clamp(38px, 4.6vw, 54px));
+    aspect-ratio: 1 / var(--mark-ratio, 1);
+  }
+
+  .org-logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

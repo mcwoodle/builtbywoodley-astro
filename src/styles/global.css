@@ -1514,13 +1514,26 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── 3 · Ticker ──
-   Two identical runs so a -50% shift on the track loops seamlessly. */
+   Two identical runs, so wrapping the track by the width of one lands it back
+   where it started and the loop has no end to reach. */
 .marquee {
   width: 100%;
   overflow: hidden;
   border-block: 1px solid var(--color-border-subtle);
-  padding-block: clamp(16px, 2.4vw, 26px);
+  padding-block: clamp(12px, 1.6vw, 19px);
   user-select: none;
+}
+
+/* Set by the script once it has taken the track over, so nothing offers to be
+   dragged that cannot be. Vertical panning is left to the page — only the
+   sideways half of a gesture belongs to the ticker. */
+.marquee[data-grab] {
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.marquee[data-grab][data-dragging] {
+  cursor: grabbing;
 }
 
 .marquee-track {
@@ -1534,22 +1547,27 @@ html[data-motion-armed] [data-hero-tail] {
   align-items: center;
 }
 
+/* A strip that reads as an aside, not a headline: small enough that the
+   photograph above it and the chapter below keep the eye, with the spacing and
+   the dot brought down with it so it stays in proportion rather than becoming
+   small type rattling around in a tall band. */
 .marquee-item {
   display: inline-flex;
   align-items: center;
-  gap: clamp(20px, 3vw, 44px);
-  padding-right: clamp(20px, 3vw, 44px);
+  gap: clamp(15px, 2vw, 28px);
+  padding-right: clamp(15px, 2vw, 28px);
   color: var(--color-text-muted);
-  font-size: clamp(1.35rem, 2.9vw, 2.4rem);
+  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
   font-weight: 620;
-  letter-spacing: -0.045em;
+  /* The display tightening only suits display sizes. */
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .marquee-sep {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-signal);
 }
@@ -1758,13 +1776,85 @@ html[data-motion-armed] [data-hero-tail] {
    Picks up the ruled rhythm of the about rows directly above it, so the run
    from "At work" into the roles themselves reads as one movement.
 
-   Each tenure is one row: the employer and its span hold the left column and
-   stay put there, while the roles run down a spine on the right. The motion is
-   in src/scripts/home-scroll.ts — a year that climbs as the tenure scrolls, a
-   spine that fills, bars that draw, and siblings that step back from whichever
-   role you are pointing at. */
+   Each tenure is one row: the employer holds the left column and stays put
+   there, while the roles run down a ladder on the right. That ladder is a
+   single line for the whole history — one SVG path over every row rather than
+   a piece per role — and the only date on it is one year riding its leading
+   edge. Both are measured and driven in src/scripts/home-scroll.ts. */
 .history {
+  /* The ladder's whole geometry, in one place, on the ancestor both the rows
+     and the travelling year hang off. --ladder-left has to clear the widest
+     rung (four notches) with room left for the node; the year sits outside
+     that again, and reserves only what it is wide on screen — which on a phone
+     is its height, since it lies on its side there. */
+  --rung-gap: clamp(8px, 0.9vw, 12px);
+  --ladder-left: clamp(44px, 4.6vw, 60px);
+  --marker-box: clamp(30px, 3.2vw, 40px);
+  --marker-h: 14px;
+  --marker-w: var(--marker-box);
+  --marker-gap: clamp(8px, 0.9vw, 12px);
+  --org-mark-w: clamp(38px, 4.6vw, 54px);
+  --org-mark-gap: clamp(11px, 1.3vw, 17px);
+  --stint-gap: clamp(20px, 2.4vw, 30px);
+  --node-y: 9px;
+  /* How far the line runs on past the last stop. The run is the fade — the
+     script reads this off the body's padding and hands it to the mask. */
+  --history-fade: clamp(74px, 8vw, 116px);
+
   margin-top: clamp(52px, 7vw, 96px);
+}
+
+/* ── The line ──
+   Everything it runs through sits in here so it can be measured against one
+   box. The bottom padding is the run past the last stop that the track's mask
+   fades away over, which is what puts clear air between the line and the link
+   underneath it. */
+.history-body {
+  position: relative;
+  padding-bottom: var(--history-fade);
+}
+
+.history-track {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.history-track svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Both paths are drawn by the script: the base is the whole route, faint, so
+   where the line is going is visible before it gets there; the line itself is
+   revealed over it with a dash offset. With no script neither has a `d` and
+   the ladder simply is not there — it is decoration, and every date it carries
+   is also printed in the role's own meta line. */
+.history-track-base,
+.history-track-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.history-track-base {
+  stroke: var(--color-border-subtle);
+}
+
+.history-track-line {
+  stroke: var(--accent-copper);
+}
+
+/* The rows have to sit over the line so the nodes — which are opaque discs —
+   can punch their holes in it. */
+.history-list,
+.history-row--coda {
+  position: relative;
+  z-index: 1;
 }
 
 .history-head {
@@ -1779,6 +1869,16 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.02;
 }
 
+/* Says what the ladder to the left of the roles is, once, so the steps in it
+   read as meaning something rather than as decoration. */
+.history-legend {
+  max-width: 48ch;
+  margin: 14px 0 0;
+  color: var(--color-text-muted);
+  font-size: clamp(0.9rem, 1.2vw, 0.98rem);
+  line-height: 1.6;
+}
+
 .history-list {
   margin: 0;
   padding: 0;
@@ -1786,26 +1886,61 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 /* ── The tenure's left column ── */
-.history-year {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: clamp(8px, 1.2vw, 14px);
-  color: var(--color-signal);
-  font-family: var(--font-mono);
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
+/* Shrunk to the ink, so what the line's crossing is tested against is the
+   width of the word rather than the width of the column it sits in. */
+.history-role-ink {
+  display: inline-block;
 }
 
-.history-year-dash {
-  flex: 0 0 auto;
-  width: clamp(18px, 3vw, 38px);
-  height: 1px;
-  background: currentColor;
-  opacity: 0.5;
+/* The closing block does not stand beside the line the way an employer's name
+   does — it stands on it, centred on the rung the last role reached, with the
+   line running in at the top and out at the bottom. Shrunk to its content so
+   the half it is pulled back by is half of the type, not half of the column. */
+/* The mask that plays the name in clips horizontally as well as vertically, and
+   this block is sized to its own text with nothing to spare. The heading's
+   negative tracking is applied after the last glyph as well as between them, so
+   the box lands a couple of pixels inside the painted "?" and the mask takes
+   the edge off it. Padding widens the clip; the negative margin hands the width
+   back, so the block still measures its text and stays centred on the line —
+   the same trick this file already uses to keep descenders out of the mask. */
+.history-coda-mark .reveal-line {
+  padding-right: 0.12em;
+  margin-right: -0.12em;
+}
+
+.history-coda-mark {
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: clamp(20px, 2.6vw, 32px);
+  margin-left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left));
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+/* The mark, where a row has one, stands beside the name rather than over it,
+   and is centred on that name's own line — not on the block of name-plus-
+   summary, which would sit it low. Taken out of flow to do it: an em here is an
+   em of the heading, so half a line of the heading is where its middle goes. */
+.history-lead {
+  position: relative;
+}
+
+.history-lead:has(> .org-mark, > .org-logo) {
+  padding-left: calc(var(--org-mark-w) + var(--org-mark-gap));
+}
+
+.history-lead > .org-mark,
+.history-lead > .org-logo {
+  position: absolute;
+  top: 0.51em;
+  left: 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.7rem);
+  /* Offset rather than translated. These marks are animated, and GSAP takes
+     the whole transform — including `translate` — for itself, resolving any
+     percentage in it against a box it measured earlier. Half a mark's height
+     is a number the stylesheet already knows, so it is spent here where nothing
+     can overwrite it. */
+  top: calc(0.51em - var(--org-mark-w) * var(--mark-ratio, 1) / 2);
 }
 
 .history-role {
@@ -1825,51 +1960,204 @@ html[data-motion-armed] [data-hero-tail] {
   text-transform: uppercase;
 }
 
-/* ── The roles, running down a spine ── */
+/* ── The roles, climbing a ladder ──
+   The rungs are the seniority steps in RUNGS (index.astro): a role sits one
+   notch further out for every one it has climbed, so the shape of the career
+   is legible from the left edge alone. The line joining them is not drawn
+   here — it is one path over the whole history, measured off these nodes in
+   src/scripts/home-scroll.ts — but the gutter it runs down is. */
+.history-stints,
+.history-coda-body {
+  /* The gutter the line and its year share, measured back out of the text
+     column by everything positioned in it. */
+  padding-left: calc(var(--ladder-left) + var(--marker-gap) + var(--marker-w));
+}
+
 .history-stints {
   position: relative;
   display: grid;
-  gap: clamp(20px, 2.4vw, 30px);
+  gap: var(--stint-gap);
   margin: 0;
-  padding: 4px 0 0 clamp(22px, 2.6vw, 34px);
+  padding-top: 4px;
   list-style: none;
-}
-
-.history-spine {
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 0;
-  width: 1px;
-  background: var(--color-border-subtle);
-}
-
-.history-spine-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    var(--accent-copper),
-    color-mix(in srgb, var(--accent-copper) 35%, transparent)
-  );
-  transform: scaleY(0);
-  transform-origin: top center;
 }
 
 .history-stint {
   position: relative;
 }
 
+/* The stops the line is measured between. Opaque, so each one punches its own
+   hole in the line running behind it. */
 .history-node {
   position: absolute;
-  top: 7px;
-  left: calc(-1 * clamp(22px, 2.6vw, 34px) - 3.5px);
-  width: 8px;
-  height: 8px;
+  top: calc(var(--node-y) - 4.5px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 3.5px);
+  width: 9px;
+  height: 9px;
   border: 1px solid var(--accent-copper);
   border-radius: 50%;
   background: var(--color-bg);
+}
+
+/* The last stop is the one still ahead, so it is drawn open rather than as a
+   full stop: a ring with the page showing through it. */
+.history-node--coda {
+  width: 13px;
+  height: 13px;
+  top: calc(var(--node-y) - 6.5px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 5.5px);
+  border-style: dashed;
+}
+
+/* Rings out of the node when a role is a step up. Sized around the node, and
+   invisible until the script has something to say with it. */
+.history-halo {
+  position: absolute;
+  top: calc(var(--node-y) - 12px);
+  left: calc(var(--to, 0) * var(--rung-gap) - var(--ladder-left) - 11px);
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--accent-copper);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── The one year on the ladder ──
+   An anchor with no size of its own: the script parks it on the leading edge
+   of the line, wherever that has got to, and everything visible hangs off it.
+   It starts hidden and stays hidden without the script — a year parked at the
+   top of a line that never moves says the wrong thing, and every date it would
+   carry is printed in the roles' own meta lines anyway. */
+.history-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.history-marker-tip {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-copper);
+}
+
+/* Sat off the left of the tip and centred on it. */
+.history-marker-inner {
+  position: absolute;
+  top: 0;
+  right: var(--marker-gap);
+  width: var(--marker-box);
+  height: var(--marker-h);
+  transform: translateY(-50%);
+}
+
+.history-marker-year {
+  display: flex;
+  justify-content: flex-end;
+  height: var(--marker-h);
+  color: var(--accent-copper);
+  font-family: var(--font-mono);
+  font-size: clamp(0.62rem, 0.85vw, 0.74rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* One digit, one window, one reel of ten behind it. The resting offset is a
+   custom property so the year reads right before the script has said anything;
+   after that the script drives the reels itself. */
+.history-marker-digit {
+  display: block;
+  height: var(--marker-h);
+  overflow: hidden;
+}
+
+.history-marker-reel {
+  display: block;
+  transform: translateY(calc(var(--d, 0) * -10%));
+}
+
+.history-marker-reel > span {
+  display: block;
+  height: var(--marker-h);
+  line-height: var(--marker-h);
+  text-align: center;
+}
+
+/* ── Where the line ends up ──
+   Shaped like every tenure above it, since that is what it is. Nothing below
+   it but the run the mask fades out over, so it keeps none of its own. */
+.history-row--coda {
+  padding-block-end: 0;
+}
+
+/* ── The rung a role sits on, in words ── */
+.history-rung {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.history-rung-label {
+  color: var(--color-text-muted);
+}
+
+/* A promotion rolls: one line tall with the rung left behind stacked above the
+   one arrived at. It rests showing the new one, so with the script gone — or
+   for a reader who asked for stillness — the word on screen is still right. */
+.history-rung-roll {
+  display: block;
+  height: 1.15em;
+  overflow: hidden;
+  color: var(--accent-copper);
+}
+
+.history-rung-track {
+  display: block;
+  transform: translateY(-50%);
+}
+
+.history-rung-track > span {
+  display: block;
+  height: 1.15em;
+  line-height: 1.15em;
+}
+
+.history-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent-copper) 42%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-copper) 12%, transparent);
+  color: var(--accent-copper);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.history-flag::before {
+  content: "\2191";
+  /* Full size: below about 9px the arrow stops reading as an arrow. */
+  font-size: 1.05em;
+  line-height: 1;
 }
 
 /* The detail is clipped so it can be drawn downwards out from under the
@@ -1887,6 +2175,27 @@ html[data-motion-armed] [data-hero-tail] {
   font-weight: 620;
   letter-spacing: -0.02em;
   line-height: 1.25;
+}
+
+/* The dates carry a label with the months and the length in it, in the same
+   hand as the icon-only controls elsewhere. It hangs below, since a role's
+   line has its title directly above it. */
+.history-when {
+  position: relative;
+  border-bottom: 1px dotted color-mix(in srgb, currentColor 55%, transparent);
+  cursor: help;
+}
+
+.history-when::after {
+  top: calc(100% + 7px);
+  left: 0;
+  /* A term that came back three times spells all three out, which is far wider
+     than the card it hangs off. Labels are laid out whether they are showing
+     or not, so an unwrapped one reaches past a narrow window and takes the
+     document sideways with it. */
+  width: max-content;
+  max-width: min(15rem, 58vw);
+  white-space: normal;
 }
 
 .history-stint-meta {
@@ -1933,69 +2242,119 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1.65;
 }
 
-/* ── The bundled co-ops ──
-   A small two-up grid, where four full rows would have cost most of a screen.
-   Four abreast would leave each card too narrow for its title to sit on one
-   line at any width the right-hand column actually gets. */
-.history-bundle {
+/* ── The co-op terms ──
+   Hung off the degree rather than given four rows of their own: two abreast in
+   the space one role takes, small enough to skim and still say who and when.
+   Four abreast would leave each card too narrow for a company name to sit on
+   one line at any width the right-hand column actually gets. */
+.coop-strip {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(10px, 1.4vw, 16px);
-  margin: 0;
+  gap: clamp(8px, 1.1vw, 12px);
+  margin: clamp(12px, 1.6vw, 18px) 0 0;
   padding: 0;
   list-style: none;
+  /* The cards are dealt in on a tilt; without this they arrive flat. */
+  perspective: 900px;
 }
 
-.history-bundle-item {
-  padding: clamp(14px, 1.8vw, 20px);
+.coop-term {
+  padding: clamp(10px, 1.3vw, 15px);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface-raised) 60%, transparent);
   transition: border-color 260ms ease, background-color 260ms ease;
 }
 
-.history-bundle-company {
-  margin-bottom: 4px;
+.coop-term-company {
+  margin-bottom: 3px;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 640;
   letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
-.history-bundle-role {
-  margin-bottom: 8px;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.history-bundle-span {
+.coop-term-span {
   margin-bottom: 0;
   color: var(--color-signal);
   font-family: var(--font-mono);
-  font-size: 0.63rem;
+  font-size: 0.58rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
-.history-bundle-note {
-  margin-top: 8px;
-  margin-bottom: 0;
+.coop-term-note {
+  margin: 7px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .history-bundle-item:hover {
+  .coop-term:hover {
     border-color: color-mix(in srgb, var(--accent-copper) 55%, transparent);
     background: color-mix(in srgb, var(--bg-card) 92%, var(--accent-copper));
   }
 }
 
+/* Sat on the ladder as the last stop rather than trailing after the section,
+   so it reads at the size the roles beside it do and spaces like a sentence
+   rather than like a row of buttons. */
 .history-link {
-  margin-top: clamp(28px, 4vw, 44px);
+  /* The mark is the word's first syllable, so all that separates it from the
+     "t" is the badge's own inside edge. */
+  gap: 0.04em;
+  /* Clear of its own dot: butted up against the node it reads as a label on
+     the line rather than as something to go and do. Margin rather than padding,
+     so neither the hit area nor the focus ring reaches back over the node. */
+  margin-left: clamp(12px, 1.4vw, 20px);
+  margin-bottom: 0;
+  font-size: clamp(1rem, 1.4vw, 1.14rem);
+}
+
+/* The same line-art mark the footer signs off with, standing in for the word
+   "in" — which is what the mark says. Sized against the type around it rather
+   than in rem, so it stays a word in the sentence at any width. */
+.history-link-mark {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--accent-copper);
+  transition: transform 260ms var(--ease-spring);
+}
+
+.history-link-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  /* Heavier than the footer's version of this mark, which sits on its own. Here
+     it is a syllable in a word, so its strokes have to weigh what the letters
+     beside them weigh — measured against a stem of "troduce", not guessed. */
+  stroke-width: 2.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The arrow is what moves on hover. The mark does not: it is a syllable of the
+   word now, and a syllable that jumps out of its own word reads as a fault. */
+.history-link .chapter-link-arrow {
+  /* Clear of the sentence — the link's own gap is tuned for the join between
+     the mark and the "t", which is far too tight to part a word from an icon. */
+  margin-left: 0.5em;
+  /* Against the link's type rather than the root's, so it keeps its place in
+     the line at any width. */
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* This line is set heavier than the chapter links the arrow was drawn for, so
+   the arrow is drawn heavier to sit in it. Scoped: everywhere else it pairs
+   with lighter type and wants its own weight. */
+.history-link .chapter-link-arrow svg {
+  stroke-width: 2.8;
 }
 
 /* ── 5 · Selected work ── */
@@ -2180,9 +2539,25 @@ html[data-motion-armed] [data-hero-tail] {
   }
 
   .craft-rule,
-  .history-spine-fill,
   .history-bar-fill {
     transform: none;
+  }
+
+  /* The line is drawn in full rather than revealed, and the year that would
+     have ridden its leading edge has nowhere to be — the roles' own meta lines
+     carry every date it would have shown. */
+  .history-marker {
+    display: none;
+  }
+
+  /* The rung roll rests on the arrived-at word already, so only the outgoing
+     one has to go: left in place it would read as a second, wrong rung. */
+  .history-rung-track {
+    transform: none;
+  }
+
+  .history-rung-track > span:first-child {
+    display: none;
   }
 
   .showcase-media {
@@ -3797,6 +4172,29 @@ body.is-photo-viewing {
     font-size: clamp(4.3rem, 22vw, 7.2rem);
   }
 
+  /* Stacked, the line runs down the same column the mark is in, so the mark
+     sits astride it: centred on the rung the line is at where the heading
+     falls. The name then starts clear of the mark's outer half. */
+  .history-lead > .org-mark,
+  .history-lead > .org-logo {
+    left: calc(
+      var(--marker-gap) + var(--marker-w) + var(--lead-rung, 0) * var(--rung-gap) -
+        var(--org-mark-w) / 2
+    );
+  }
+
+  /* The whole block steps clear, not just the name — so the summary stays
+     aligned under it — and every row steps, marked or not, since what it is
+     clearing is the line rather than the mark. Qualified by the row to match
+     the specificity of the `:has()` rule above, which would otherwise win on
+     that alone and pin every row to the same offset. */
+  .history-row .history-lead {
+    padding-left: calc(
+      var(--marker-gap) + var(--marker-w) + var(--lead-rung, 0) * var(--rung-gap) +
+        var(--org-mark-w) / 2 + var(--org-mark-gap)
+    );
+  }
+
   /* One column each: the title needs the whole width before the copy gets a
      turn, and two work cards stop being readable side by side. */
   .craft-row,
@@ -3950,19 +4348,33 @@ body.is-photo-viewing {
     padding-inline: 0;
   }
 
-  /* Two 179px columns cannot hold "Software Development Engineer Co-op"
-     without shredding it, so the co-ops stack at this width. */
-  .history-bundle {
+  /* Two 179px columns cannot hold "Arista Networks, Inc." without shredding
+     it, so the co-op terms stack at this width. */
+  .coop-strip {
     grid-template-columns: 1fr;
   }
 
-  .history-bundle-item {
-    grid-template-columns: 1fr;
+  /* The ladder has to give back some of the gutter too, or the roles lose
+     more of a narrow column to it than they can spare. */
+  .history {
+    --rung-gap: 7px;
+    --ladder-left: 36px;
+    --marker-box: 30px;
+    --marker-h: 13px;
+    --marker-gap: 8px;
+    /* Turned on its side, the year is only as wide as it is tall, and the
+       gutter only has to reserve that much. */
+    --marker-w: var(--marker-h);
   }
 
-  .history-bundle-span {
-    grid-row: auto;
-    grid-column: 1;
+  /* Four digits laid across cost more than twice the width of the same four
+     stacked, and this is the width there is least of. Rotating rather than
+     restacking keeps the reels rolling along their own digits' up-and-down.
+     The translate re-centres the quarter-turn on the tip: rotating about the
+     box's middle would otherwise leave it hanging half a box too far left. */
+  .history-marker-inner {
+    transform: translate(calc((var(--marker-box) - var(--marker-h)) / 2), -50%)
+      rotate(90deg);
   }
 
   .craft-rule {

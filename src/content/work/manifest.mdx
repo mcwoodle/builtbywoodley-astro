@@ -1,94 +1,147 @@
 ---
 # The work history shown beneath the about section on the landing page.
 #
-# One entry per role, newest first is applied at render time so the order here
-# does not matter. Consecutive roles at the same employer are grouped under one
-# heading, the way LinkedIn groups them.
+# One entry per role. The page runs them oldest first, so the list reads as a
+# career from the degree forward, and the order here does not matter.
+# Consecutive roles at the same employer are grouped under one heading, the way
+# LinkedIn groups them.
 #
-# title      - the role
-# company    - the employer; consecutive matches are grouped
+# title      - the team or org the role sat in, or the degree for an education
+#              entry. Not the job title: the rung printed above it already says
+#              the level, and saying it twice is what a CV does, not a page.
+# company    - the employer or institution; consecutive matches are grouped
 # location   - optional; shown after the role's dates
 # start      - YYYY or YYYY-MM
 # end        - YYYY or YYYY-MM; omit entirely for a role you still hold
 # note       - optional; one line shown under the role
-# internship - true pulls the entry into the bundled row at the foot of the list
+# months     - optional; how long it actually ran, when that is not the span
+#              between the dates — a co-op that came back for separate terms
+# dates      - optional; how the dates read, when a range between start and end
+#              would not tell the truth
+# internship - true folds the entry into the co-op terms under the degree
+# kind       - "education" for schooling; anything else is a job
+# level      - the rung: 0 student, 1 engineer, 2 engineer II, 3 senior,
+#              4 principal. A rise from one entry to the next is drawn as a
+#              step on the ladder and called out as a promotion.
+# mark       - names an inline logo component. Only the first entry of a run at
+#              one employer needs it; the tenure takes its mark from there.
 #
 # The section renders nothing at all while this list is empty.
 roles:
-  - title: "Principal Software Engineer, Customer Service"
-    company: "Amazon"
-    location: "Newmarket, Ontario, Canada"
-    start: 2022-10
-    end: 2026-04
-    note: "Contact Center infrastructure management & large engineering org process stuff."
+  - title: "Bachelor of Software Engineering"
+    company: "University of Waterloo"
+    location: "Waterloo, Ontario, Canada"
+    start: 2005-09
+    end: 2010-04
+    note: "Five years of the co-op stream, with study terms braided through the work terms below."
+    kind: education
+    level: 0
+    mark: uwaterloo
 
-  - title: "Senior Software Engineer, Customer Service"
-    company: "Amazon"
-    location: "Newmarket, Ontario, Canada"
-    start: 2017-10
-    end: 2022-10
-    note: "Order and Account handling stuff."
-
-  - title: "Software Engineer II, Customer Service"
-    company: "Amazon"
+  - title: "Programmer Analyst Co-op"
+    company: "Emergis"
     location: "Toronto, Ontario, Canada"
-    start: 2016-02
-    end: 2017-10
-    note: "Workforce Management automation stuff."
-
-  - title: "Software Engineer II, Fulfillment Tech"
-    company: "Amazon"
-    location: "Toronto, Ontario, Canada"
-    start: 2015-03
-    end: 2016-02
-    note: "Robot picking stuff."
-
-  - title: "Software Engineer II, Digital and Devices"
-    company: "Amazon"
-    location: "Seattle, Washington, United States"
-    start: 2013-10
-    end: 2015-03
-    note: "More Fire Phone (RIP) stuff."
-
-  - title: "Software Engineer I, Digital and Devices"
-    company: "Amazon"
-    location: "Seattle, Washington, United States"
-    start: 2011-06
-    end: 2013-10
-    note: "Fire Phone stuff."
-
-  - title: "Software Engineer"
-    company: "Sandvine"
-    start: 2010-05
-    end: 2011-05
-    note: "More networking switch(-ish) stuff."
-
-  - title: "Software Engineer Co-op"
-    company: "Arista Networks, Inc."
-    start: 2009-09
-    end: 2009-12
-    note: "Networking switch stuff."
+    start: 2006-05
+    end: 2007-08
+    # Three terms across two years. The dates bracket all of them, so both the
+    # length and the reading of them are given rather than worked out.
+    months: 12
+    dates: "May - Aug 2006, Jan - Apr 2007, Aug - Dec 2007"
+    note: "Health stuff."
     internship: true
-
-  - title: "Software Engineer Co-op"
-    company: "Qualcomm"
-    start: 2009-01
-    end: 2009-04
-    note: "Cellular network base station stuff."
-    internship: true
+    level: 0
 
   - title: "Software Development Engineer Co-op"
     company: "Amazon.com"
+    location: "Seattle, Washington, United States"
     start: 2008-05
     end: 2008-08
     note: "Event tracking stuff."
     internship: true
+    level: 0
 
-  - title: "Programmer Analyst Co-op"
-    company: "Emergis"
-    location: "Greater Toronto Area, Canada"
-    start: 2006-05
-    end: 2007-08
-    note: "Health stuff."
+  - title: "Software Engineer Co-op"
+    company: "Qualcomm"
+    location: "San Diego, California, United States"
+    start: 2009-01
+    end: 2009-04
+    note: "Cellular network base station stuff."
     internship: true
+    level: 0
+
+  - title: "Software Engineer Co-op"
+    company: "Arista Networks, Inc."
+    location: "Silicon Valley, California, United States"
+    start: 2009-09
+    end: 2009-12
+    note: "Networking switch stuff."
+    internship: true
+    level: 0
+
+  - title: "Embedded Software"
+    company: "Sandvine"
+    location: "Waterloo, Ontario, Canada"
+    start: 2010-05
+    end: 2011-05
+    note: "Embedded software for enterprise network switches, built and debugged alongside the support engineering team."
+    level: 1
+    mark: sandvine
+
+  - title: "Digital Products & Devices"
+    company: "Amazon"
+    location: "Seattle, Washington, United States"
+    start: 2011-06
+    end: 2013-10
+    note: "Backend services and the on-device history store behind the Fire Phone's Firefly app."
+    level: 1
+    mark: amazon
+
+  - title: "Digital Products & Devices"
+    company: "Amazon"
+    location: "Seattle, Washington, United States"
+    start: 2013-10
+    end: 2015-03
+    note: "Real-time audio identification for Firefly, and the Instant Video catalogue into Shazam's ingestion pipeline."
+    level: 2
+
+  - title: "Fulfillment Tech"
+    company: "Amazon"
+    location: "Toronto, Ontario, Canada"
+    start: 2015-03
+    end: 2016-02
+    note: "Kiva robotics into the picking software, on site for the first international Kiva warehouse launch."
+    level: 2
+
+  - title: "CS Workforce Management"
+    company: "Amazon"
+    location: "Toronto, Ontario, Canada"
+    start: 2016-02
+    end: 2017-10
+    note: "Allocated associates against real-time demand automatically, replacing a manual Excel routing process."
+    level: 2
+
+  - title: "CS Contact Handling Experience"
+    company: "Amazon"
+    location: "Toronto, Ontario, Canada & Remote"
+    start: 2017-10
+    end: 2022-10
+    note: "Set the vision and architecture for a distributed GraphQL schema across Customer Service: 50+ federated sub-schemas at 10,000+ peak TPS."
+    level: 3
+
+  - title: "CS Contact Handling Experience"
+    company: "Amazon"
+    location: "Remote"
+    start: 2022-10
+    end: 2023-09
+    note: "Took the bureaucracy out of GraphQL schema governance for 100+ developers, then handed the project to its next leaders."
+    level: 4
+
+  - title: "CS Contact Center Infrastructure Management"
+    company: "Amazon"
+    location: "Remote"
+    start: 2023-09
+    end: 2026-04
+    note: "Led the org's three-year architecture plan: an L2 construct SDK, an ML routing model, and $2MM a year off the Connect bill."
+    level: 4
+
 ---
