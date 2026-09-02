@@ -1,120 +1,150 @@
 # Photography image delivery
 
-Cloudflare limits verified against their documentation on 2026-08-24. Build
-figures measured from `npm run build` on 2026-09-01, against the six-photograph
-archive on `mainline`.
+Cloudflare limits re-verified against Cloudflare's documentation on 2026-09-01.
+Build figures measured from `npm run build` on 2026-09-01, against the archive
+on `feat/high-fidelity-images`, whose showcase frame is a 20 MP master. GitHub
+figures are that platform's published limits, not re-verified here.
 
 ## Recommendation for this site
 
-Keep the portfolio on **Workers Static Assets**. The site already deploys
-`dist/` that way, static asset requests are free and unlimited, and Cloudflare
-does not add a storage charge for Assets.
+Keep the portfolio on **Workers Static Assets**, and keep committed masters at
+**2560px on the long edge**. The first half of that is unchanged and not close
+to any limit. The second half is the new part: a 20 MP master costs far more in
+the repository and in CI than it returns on the page, because nothing the site
+serves is ever wider than 2560px.
 
 `public/_headers` gives `/_astro/*` a one-year immutable browser cache. The
 filenames contain a content hash, so replacing a photograph creates new URLs
-and cannot leave visitors with a stale image. Cloudflare's Workers asset tier
-also caches these files across its network.
+and cannot leave visitors with a stale image.
 
-Current Free-plan limits relevant to this deployment:
+Cloudflare limits relevant to this deployment:
 
-- 20,000 static asset files per Worker version.
-- 25 MiB maximum for any one deployed static asset.
-- No additional charge for Assets storage.
-- Static asset requests are free and unlimited.
+| Limit | Workers Free | Workers Paid |
+| --- | ---: | ---: |
+| Static asset files per Worker version | 20,000 | 100,000 |
+| Individual static asset file size | 25 MiB | 25 MiB |
+| `_headers` rules | 100 | 100 |
+| Static asset requests | free, unmetered | free, unmetered |
+
+The 100,000-file tier is Paid-only and needs Wrangler 4.34.0 or newer; the
+deploy workflow pins `wranglerVersion: "4"`, so it would pick that up, but the
+site is on Free and the 20,000 limit applies. There is no documented cap on
+total asset bytes per deployment.
 
 Sources: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/),
 [Static Assets billing](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/),
 and [custom response headers](https://developers.cloudflare.com/workers/static-assets/headers/).
 
-## What the build actually emits
+## What the build emits per photograph
 
-A photograph is requested at three different call sites, and Astro generates a
-separate set of derivatives for each:
+A photograph is requested at four call sites, each with its own width ladder:
 
-| Call site | Widths requested | Format |
-| --- | --- | --- |
-| `PhotoTile.astro` (grid) | 360, 480, 720, 960 | WebP (default) |
-| `photography/index.astro` → `getImage` (viewer) | 640, 960, 1280, 1600, 1840 | WebP (explicit) |
-| `ContentCarousel.astro` / landing page | 420, 840 / 420, 720 | WebP (default) |
+| Call site | Widths | `src` fallback |
+| --- | --- | ---: |
+| `index.astro` showcase (hero) | 960, 1440, 1920, 2560 | 2560 |
+| `index.astro` gallery strip | 420, 720 | 720 |
+| `PhotoTile.astro` (grid) | 360, 480, 720, 960 | 960 |
+| `photography/index.astro` viewer | 640, 960, 1280, 1600, 1840 | 1840 |
 
-Astro also emits a full-width WebP as the `src` fallback and copies the
-original JPEG into `/_astro/`. The net result for the current archive is
-**11–12 files per photograph**, not four:
+Every call site now passes an explicit `width`. Without one, Astro points the
+`src` fallback at a **full-resolution** render of the master — for the 20 MP
+showcase file that was a single 1.4 MB WebP, referenced three times (hero, grid
+tile, and the viewer's base image, which is what the lightbox loads first).
+Capping the fallbacks removed it. Nothing in `dist/` is now rendered above
+2560px. **Leave those `width` props in place**: they are the only thing
+stopping a high-resolution master from shipping a multi-megabyte fallback.
 
-- Widths observed across the six photographs: 360, 420, 480, 640, 720, 900,
-  960, 1280, 1400, 1600, 1840, plus each original at ~1842–1845px.
-- Largest WebP derivative per photograph: **53–309 KiB** (`fort-amherst` is the
-  heaviest at 309 KiB).
-- Original JPEGs shipped alongside: 217–673 KiB each, ~2.7 MB for the six.
-- All photograph derivatives together: **7.9 MB**.
-- Whole `dist/`: **233 files**, well under the 20,000 file limit.
+Measured for the 20 MP master (5483x3655, 2.25 MB source):
 
-No `quality` is set at any call site, so every derivative uses Astro's default.
-The effective ceiling is the original's own width (~1840px), not a fixed 1600px.
+- **12 files, 4.1 MB total** — 1.9 MB of WebP derivatives plus a 2.25 MB copy
+  of the original JPEG.
+- That JPEG copy is **referenced by nothing**. Astro emits the original
+  alongside the derivatives for any asset a content collection imports, so it
+  is deployed and never requested. At 20 MP it is 55% of the photograph's
+  entire footprint.
+- Largest served render: 464 KB (2560px, hero only). The grid and viewer top
+  out at 284 KB.
+- Cold image generation: **1.77s** for this one master (11 renders).
 
-## Portfolio size budgets
+A non-showcase photograph at the same resolution skips the hero ladder and
+costs roughly **10 files and 3.2 MB**, of which 2.25 MB is again the dead
+original.
 
-The 25 MiB limit is **per generated file**, not a storage pool divided among the
-photographs. At ~11.5 files per photograph, the file-count budget is roughly
-three times what a naive four-variant estimate suggests, and still nowhere near
-the ceiling.
+## Scaling to 10-40 photographs at 20 MP
 
-| Portfolio | Generated files (~11.5 each) | Hard limit per file | Target for the largest WebP | Full-archive upper target |
-| ---: | ---: | ---: | ---: | ---: |
-| 5 photos | ~58 | 25 MiB | 1.5 MiB | 7.5 MiB |
-| 10 photos | ~115 | 25 MiB | 1 MiB | 10 MiB |
-| 50 photos | ~575 | 25 MiB | 600 KiB | ~30 MiB |
-| 100 photos | ~1,150 | 25 MiB | 400 KiB | ~40 MiB |
+### Cloudflare: not the constraint
 
-The size columns are quality/performance targets, not Cloudflare limits. The
-current archive is comfortably inside them. Only the first few tiles are
-requested eagerly (`EAGER_TILES`); the rest use native lazy loading, and the
-viewer's large sources are handed over as data so only an opened frame
-downloads.
+| Portfolio | Photo files | Share of 20,000 | Deployed photo bytes |
+| ---: | ---: | ---: | ---: |
+| 10 photos | ~102 | 0.5% | ~33 MB |
+| 20 photos | ~202 | 1.0% | ~65 MB |
+| 40 photos | ~402 | 2.0% | ~129 MB |
 
-For replacements, retain full-resolution masters outside the repository and
-export a high-quality JPEG or PNG source for the site. Because the pipeline
-caps at the source's own width, a source much wider than ~1840px only inflates
-the copied original without improving any derivative. Aim for a source under
-about 10 MiB to keep Git and CI builds pleasant; this is an operational target,
-not a Cloudflare limit.
+Every figure is far inside the free tier, no single file approaches 25 MiB, and
+asset requests stay free and unmetered. **Cloudflare does not care.** The one
+file anywhere near the per-file ceiling remains `dist/viz/gta-crime-map.html`
+at 21.75 MiB (87% of 25 MiB); it inlines its dataset and is the only asset that
+can realistically fail a deploy.
 
-At 50–100 photos, loading behavior and navigation matter before storage does.
-Keep the single `/photography` route, but consider a later "load more"
-boundary or filters so visitors do not traverse the entire archive at once.
+### GitHub: where it actually costs
 
-## The file actually near the 25 MiB limit
+| Portfolio | Masters in the tree | Repo after (pack is 73.6 MiB today) |
+| ---: | ---: | ---: |
+| 10 photos | 22.5 MB | ~96 MB |
+| 20 photos | 45 MB | ~119 MB |
+| 40 photos | 90 MB | ~164 MB |
 
-No photograph is close to the per-file ceiling. The two largest deployed assets
-are the GTA map pages:
+No hard limit is breached — GitHub blocks individual files over 100 MB, and a
+2.25 MB JPEG is nowhere near that. The repository stays well under GitHub's
+1 GB recommendation. Two softer costs matter more:
 
-| File | Size | Share of 25 MiB |
-| --- | ---: | ---: |
-| `dist/viz/gta-crime-map.html` | 21.75 MiB | 87% |
-| `dist/viz/gta-crime-map-lite.html` | 12.92 MiB | 52% |
+1. **JPEGs do not delta-compress.** Every re-export of a photograph adds
+   another full copy to history, permanently. Re-exporting 40 masters once adds
+   another ~90 MB that `git gc` cannot reclaim. This is the cost that does not
+   go away.
+2. **CI image generation is cold on every deploy.** The workflow caches npm but
+   not `node_modules/.astro`, so all renders are regenerated each run. At
+   1.77s per 20 MP master on this machine, 40 masters is ~71s here and
+   plausibly 2.5-5 minutes on a 2-vCPU GitHub runner. Checkout is unaffected —
+   `actions/checkout` fetches shallow by default, so history length does not
+   slow the build.
 
-`gta-crime-map.html` inlines its dataset, so it grows whenever the data does.
-It is the one asset that can realistically breach the limit and fail a deploy.
-Watch it, and if it grows further, split the dataset out as a separate fetched
-file rather than trimming photographs.
+### What 2560px masters change
 
-## Tuning levers, if delivery ever needs trimming
+Downscaling masters before committing costs nothing visible, because 2560px is
+already the widest render the site produces:
 
-1. Set an explicit `quality` (82 is a reasonable target) at the tile, viewer and
-   carousel call sites. Nothing sets one today.
-2. Add `fetchpriority="high"` to the eager tiles in `PhotoTile.astro`. It
-   currently sets `loading` and `decoding` but not `fetchpriority`, so the LCP
-   image competes with everything else in the queue.
-3. Narrow the width ladders. Three call sites requesting overlapping-but-unequal
-   widths is what produces 11–12 files per photograph; aligning them would cut
-   the count materially.
+| Master long edge | JPEG size | 40-photo tree | 40-photo deploy |
+| ---: | ---: | ---: | ---: |
+| 5483px (as shot) | 2.25 MB | 90 MB | ~129 MB |
+| 3200px | 1.1 MB | 44 MB | ~85 MB |
+| **2560px** | **768 KB** | **30 MB** | **~68 MB** |
+| 1920px | 472 KB | 19 MB | — (starves the 2560 hero) |
+
+2560px is the sweet spot: it feeds every ladder exactly, cuts repository growth
+by two thirds and deployed bytes by roughly half, and shrinks the dead original
+copy from 2.25 MB to 768 KB. 1920px would force the hero's top rung to upscale.
+
+### Verdict
+
+- **10-20 photographs at full 20 MP:** fine on both platforms. Ship it.
+- **40 photographs:** still inside every hard limit, but the repository roughly
+  doubles and CI image generation runs into minutes. Downscale to 2560px.
+- **Either way**, downscaling to 2560px is free in quality terms. The only
+  reason to keep 20 MP masters in Git is if the repository is also the archive
+  of record — and if that is the goal, R2 is the better home for it.
+
+Two cheap follow-ups, neither required: cache `node_modules/.astro` in the
+deploy workflow to skip regeneration, and set an explicit `quality` (82 is a
+reasonable target) at the four call sites, since none is set today.
 
 ## When to move photographs to R2
 
-R2 is useful later if the portfolio needs downloadable originals, frequent
-uploads independent of site deploys, or enough media that keeping it in Git is
-awkward. R2's Free tier currently includes 10 GB-month of Standard storage,
-1 million Class A operations, 10 million Class B operations, and free egress.
+R2 becomes the right answer if the portfolio needs downloadable originals,
+uploads decoupled from site deploys, or an archive of record that should not
+live in Git history. R2's Free tier includes 10 GB-month of Standard storage,
+1 million Class A operations, 10 million Class B operations, and free egress —
+40 masters at 2.25 MB is 90 MB, about 1% of that allowance.
 
 If that move happens:
 
@@ -124,15 +154,13 @@ If that move happens:
 3. Send `Cache-Control: public, max-age=31536000, immutable` on versioned files.
 4. Use Cloudflare Image Transformations for a small fixed set of widths instead
    of serving originals. The Images Free plan includes 5,000 unique
-   transformations per month. Note that the current three-call-site ladder would
-   consume ~1,150 unique transformations for 100 photographs, so aligning the
-   widths first (lever 3 above) matters more under Images than it does today.
+   transformations per month. The current four ladders produce 9-11 unique
+   widths per photograph, so 40 photographs is ~400 transformations — inside
+   the allowance, but aligning the ladders first would roughly halve it.
 
-The raw 10 GB R2 allowance would divide to 2 GB, 1 GB, 200 MB, or 100 MB per
-original at 5, 10, 50, or 100 photos respectively. Those are theoretical
-storage ceilings, not sensible web sizes: remote Image Transformations accept
-source images up to 100 MB, and Cloudflare's Free-plan CDN cache limit is
-512 MB per file. Normal photographic masters should remain far below either.
+Remote Image Transformations accept source images up to 100 MB, and
+Cloudflare's Free-plan CDN cache limit is 512 MB per file; normal photographic
+masters stay far below either.
 
 Sources: [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
 [R2 custom-domain caching](https://developers.cloudflare.com/cache/interaction-cloudflare-products/r2/),
