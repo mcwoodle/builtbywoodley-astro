@@ -43,8 +43,9 @@ Every responsive width ladder lives in `src/config/image-ladders.mjs` — plain
 fallback is derived from the widths, so it can never be forgotten. The `sizes`
 attribute stays at each call site next to the CSS it mirrors — if you change a
 breakpoint in `global.css`, change `sizes` with it and re-run
-`measure:images --self-test`. For real timings on a real device, build with the
-runtime probe: `PUBLIC_IMAGE_PERF=1 npm run build && npm run preview`. See
+`measure:images --self-test`. For real timings on a real device, add
+`?stats=true` to any URL — it works in production and costs a normal visitor
+1.8 KB, because the probe itself is a lazily imported chunk. See
 `docs/photography-image-delivery.md`.
 
 Photography masters are committed under their archival export names and deployed

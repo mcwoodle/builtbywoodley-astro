@@ -19,9 +19,9 @@
 // state and image decode, so treat them as a floor and a way to compare builds
 // against each other, not as a prediction of what a visitor experiences.
 //
-// For ground truth on a real device, build with the runtime probe instead:
-//   PUBLIC_IMAGE_PERF=1 npm run build && npm run preview
-// and read the table it logs to the console. See src/components/ImagePerfProbe.astro.
+// For ground truth on a real device, use the runtime probe instead: add
+// ?stats=true to any URL, in any environment, and read the table it logs to the
+// console. See src/components/ImagePerfProbe.astro and src/scripts/image-perf.ts.
 //
 //   node scripts/measure-image-delivery.mjs              the standard report
 //   node scripts/measure-image-delivery.mjs --detail     every image, per rung

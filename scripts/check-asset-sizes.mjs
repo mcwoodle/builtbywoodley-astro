@@ -25,13 +25,15 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(ROOT, 'dist');
 
-// Markers that only exist in src/components/ImagePerfProbe.astro. If any of
-// them reaches a build that did not ask for the probe, the build is wrong: the
-// probe is a debugging tool and must never ship. PUBLIC_IMAGE_PERF arrives as a
-// string, and the set below must match the one BaseLayout.astro tests against.
-const PROBE_MARKERS = ['image-perf-hud', 'data-image-perf', '__imagePerfBound'];
-const IMAGE_PERF_ON = new Set(['1', 'true', 'yes', 'on']);
-const probeExpected = IMAGE_PERF_ON.has(String(process.env.PUBLIC_IMAGE_PERF ?? '').toLowerCase());
+// The image probe is reachable in production with ?stats=true, so it is
+// expected in the build — but only as a separate chunk. These markers belong to
+// src/scripts/image-perf.ts, and finding them in an HTML file means the probe
+// has been inlined onto the critical path of every page instead of being
+// lazily imported. That is roughly 4 KB x 36 pages of debugging code a normal
+// visitor would download and never use.
+const PROBE_INTERNALS = ['image-perf-hud', '__imagePerfBound'];
+// The loader in ImagePerfProbe.astro is what SHOULD be in every page.
+const PROBE_LOADER = '__imagePerfLoader';
 
 const MIB = 1024 * 1024;
 const FAIL_BYTES = 25 * MIB;
@@ -108,30 +110,61 @@ if (failures.length > 0) {
 
 if (files.length > MAX_FILES) process.exit(1);
 
-// ── The probe must not be in a production build ─────────────────────────────
-const TEXT = new Set(['.html', '.js', '.mjs', '.css', '.json', '.txt', '.xml', '.webmanifest']);
-const carriers = [];
+// ── The probe must stay off the critical path ───────────────────────────────
+// It is meant to be in the build — ?stats=true turns it on in production — but
+// only as a chunk something has to go and fetch.
+const inlined = [];
+let chunk = null;
 for (const file of files) {
   const dot = file.path.lastIndexOf('.');
-  if (dot === -1 || !TEXT.has(file.path.slice(dot).toLowerCase())) continue;
+  const extension = dot === -1 ? '' : file.path.slice(dot).toLowerCase();
+  if (extension !== '.html' && extension !== '.js') continue;
   const text = await readFile(file.path, 'utf8').catch(() => '');
-  if (PROBE_MARKERS.some((marker) => text.includes(marker))) carriers.push(file.path);
+  if (!PROBE_INTERNALS.some((marker) => text.includes(marker))) continue;
+  if (extension === '.html') inlined.push(file.path);
+  else chunk ??= file.path;
 }
 
-if (probeExpected) {
-  console.log(
-    `\n  ⚑ PUBLIC_IMAGE_PERF is set — the image probe is in this build` +
-      ` (${carriers.length} file(s)). Do not deploy it.\n`,
-  );
-} else if (carriers.length > 0) {
-  console.error(`\n  ✗ The image probe leaked into a production build — ${carriers.length} file(s):`);
-  for (const path of carriers.slice(0, 10)) console.error(`      ${relative(DIST, path)}`);
+if (inlined.length > 0) {
+  console.error(`\n  ✗ The image probe is inlined into ${inlined.length} HTML file(s):`);
+  for (const path of inlined.slice(0, 5)) console.error(`      ${relative(DIST, path)}`);
   console.error(
-    '\n  It is a debugging tool and must never ship. Astro collects a component\'s\n' +
-      '  scoped styles from the import graph even when the component never renders,\n' +
-      '  so its <style> and <script> both have to stay is:inline.\n',
+    '\n  It should be a lazily imported chunk, not markup on every page. Check that\n' +
+      '  ImagePerfProbe.astro still reaches it through a dynamic import().\n',
   );
   process.exit(1);
 }
 
-console.log(`\n  ✓ Every file is under ${mib(FAIL_BYTES)}${probeExpected ? '' : ', and the probe is absent'}.\n`);
+if (!chunk) {
+  console.error('\n  ✗ The image probe chunk is missing — ?stats=true would do nothing.\n');
+  process.exit(1);
+}
+
+// The loader is its own small chunk rather than inline script, so the pages
+// that carry the probe are the ones referencing that chunk by name.
+let loaderPath = null;
+for (const file of files.filter((entry) => entry.path.endsWith('.js'))) {
+  const text = await readFile(file.path, 'utf8').catch(() => '');
+  if (text.includes(PROBE_LOADER)) {
+    loaderPath = file.path;
+    break;
+  }
+}
+if (!loaderPath) {
+  console.error('\n  ✗ The image probe loader is missing — ?stats=true would do nothing.\n');
+  process.exit(1);
+}
+
+const loaderName = loaderPath.slice(loaderPath.lastIndexOf('/') + 1);
+let loaderPages = 0;
+for (const file of files.filter((entry) => entry.path.endsWith('.html'))) {
+  const text = await readFile(file.path, 'utf8').catch(() => '');
+  if (text.includes(loaderName)) loaderPages += 1;
+}
+
+const sizeOf = (path) => files.find((entry) => entry.path === path).bytes;
+console.log(
+  `\n  ✓ Every file is under ${mib(FAIL_BYTES)}.` +
+    `\n    Image probe: ${(sizeOf(loaderPath) / 1024).toFixed(1)} KB loader on ${loaderPages} page(s), ` +
+    `${(sizeOf(chunk) / 1024).toFixed(1)} KB fetched only for ?stats=true.\n`,
+);

@@ -410,15 +410,31 @@ ever becomes something worth defending.
 
 **The runtime probe** answers "but what does my phone actually do". It reads
 `currentSrc` — the rung the browser really chose — plus resource timing and LCP,
-and logs a table per page. It is a build-time switch, so no markup, script or
-style from it reaches a production build:
+and logs a table per page with a small panel in the corner. Add `?stats=true` to
+any URL, on any environment, production included:
 
-    PUBLIC_IMAGE_PERF=1 npm run build && npm run preview
+    https://builtbywoodley.ca/photography/?stats=true
 
-It is also on in `astro dev`. Reload with the cache disabled for transfer
-numbers that mean anything: `transferSize` is 0 on a cache hit, and the probe
-marks those rows `cached` rather than reporting them as free. Shift+P re-runs
-it, which is how to see the viewer's higher-resolution frame after opening one.
+It stays on for the rest of the browsing session, so it survives moving around
+the site, and `?stats=false` turns it off. `astro dev` has it on already.
+
+**What that costs a visitor who never asks for it: 1.8 KB.** The panel, its
+styles and every line of measurement code live in `src/scripts/image-perf.ts`,
+which Vite splits into its own 4.6 KB chunk that is fetched only when the flag
+is set. What every page carries is the loader in `ImagePerfProbe.astro` — one
+`sessionStorage` read, one `URLSearchParams` check and a dynamic `import()` —
+and because that is a shared chunk rather than inline script, it is fetched once
+and cached across the whole site. Inlining the probe instead would have put
+roughly 4 KB of debugging on the critical path of all 36 pages;
+`check-asset-sizes.mjs` fails the build if it ever ends up there.
+
+The HTML is byte-identical with and without the parameter — the gate is entirely
+client-side — so a CDN still caches one copy of every page.
+
+Reload with the cache disabled for transfer numbers that mean anything:
+`transferSize` is 0 on a cache hit, and the probe marks those rows `cached`
+rather than reporting them as free. Shift+P re-runs it, which is how to see the
+viewer's higher-resolution frame after opening one.
 
 ### Where it stands today
 
