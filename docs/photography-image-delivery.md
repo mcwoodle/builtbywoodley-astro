@@ -2,7 +2,7 @@
 
 Cloudflare limits re-verified against Cloudflare's documentation on 2026-09-01.
 Build figures measured from `npm run build` on 2026-09-01, against the archive
-on `feat/high-fidelity-images`, whose showcase frame is a 20 MP master. GitHub
+on `feat/high-fidelity-images`, whose showcase frame is a 24 MP master. GitHub
 figures are that platform's published limits, not re-verified here.
 
 ## Recommendation for this site
@@ -54,9 +54,9 @@ Capping the fallbacks removed it. Nothing in `dist/` is now rendered above
 2560px. **Leave those `width` props in place**: they are the only thing
 stopping a high-resolution master from shipping a multi-megabyte fallback.
 
-Measured for the 20 MP master (5483x3655, 2.25 MB source):
+Measured for the 24 MP master (6000x4000, 1.38 MB source):
 
-- **12 files, 4.1 MB total** — 1.9 MB of WebP derivatives plus a 2.25 MB copy
+- **12 files, 2.6 MB total** — 1.2 MB of WebP derivatives plus a 1.4 MB copy
   of the original JPEG.
 - That JPEG copy is **referenced by nothing**, and this is structural rather
   than specific to photographs. Astro's content layer generates
@@ -76,13 +76,21 @@ Measured for the 20 MP master (5483x3655, 2.25 MB source):
   committed master's dimensions are the only control over it — which is the
   second reason the 2560px recommendation below pays off. At 20 MP it is 55%
   of the photograph's entire footprint.
-- Largest served render: 464 KB (2560px, hero only). The grid and viewer top
-  out at 284 KB.
-- Cold image generation: **1.77s** for this one master (11 renders).
+- Largest served render: 300 KB (2560px, hero only). The grid and viewer top
+  out at 180 KB.
+- Cold image generation: **1.67s** for this one master (11 renders).
 
 A non-showcase photograph at the same resolution skips the hero ladder and
-costs roughly **10 files and 3.2 MB**, of which 2.25 MB is again the dead
+costs roughly **10 files and 2.0 MB**, of which 1.4 MB is again the dead
 original.
+
+**Pixel count is not the cost driver — tonal content is.** This 24 MP night
+frame is materially cheaper than the 20 MP dusk edit it replaced (2.6 MB
+against 4.1 MB deployed, 1.38 MB against 2.25 MB in the repository), because
+large dark low-contrast regions compress far better than a bright graduated
+sky. Treat the projections below as the shape of the cost, not a constant: a
+bright, detailed frame can run 50-60% heavier than a dark one at the same
+resolution.
 
 ## Scaling to 10-40 photographs at 20 MP
 
@@ -90,9 +98,12 @@ original.
 
 | Portfolio | Photo files | Share of 20,000 | Deployed photo bytes |
 | ---: | ---: | ---: | ---: |
-| 10 photos | ~102 | 0.5% | ~33 MB |
-| 20 photos | ~202 | 1.0% | ~65 MB |
-| 40 photos | ~402 | 2.0% | ~129 MB |
+| 10 photos | ~102 | 0.5% | ~21-33 MB |
+| 20 photos | ~202 | 1.0% | ~41-65 MB |
+| 40 photos | ~402 | 2.0% | ~81-129 MB |
+
+Ranges span a dark frame like the current showcase to a bright one like the
+dusk edit it replaced.
 
 Every figure is far inside the free tier, no single file approaches 25 MiB, and
 asset requests stay free and unmetered. **Cloudflare does not care.** The one
@@ -104,9 +115,9 @@ can realistically fail a deploy.
 
 | Portfolio | Masters in the tree | Repo after (pack is 73.6 MiB today) |
 | ---: | ---: | ---: |
-| 10 photos | 22.5 MB | ~96 MB |
-| 20 photos | 45 MB | ~119 MB |
-| 40 photos | 90 MB | ~164 MB |
+| 10 photos | 14-23 MB | ~88-96 MB |
+| 20 photos | 28-45 MB | ~101-119 MB |
+| 40 photos | 55-90 MB | ~129-164 MB |
 
 No hard limit is breached — GitHub blocks individual files over 100 MB, and a
 2.25 MB JPEG is nowhere near that. The repository stays well under GitHub's
@@ -114,11 +125,12 @@ No hard limit is breached — GitHub blocks individual files over 100 MB, and a
 
 1. **JPEGs do not delta-compress.** Every re-export of a photograph adds
    another full copy to history, permanently. Re-exporting 40 masters once adds
-   another ~90 MB that `git gc` cannot reclaim. This is the cost that does not
-   go away.
+   another 55-90 MB that `git gc` cannot reclaim. This is the cost that does
+   not go away, and it is already visible here: the showcase frame has been
+   replaced twice on this branch, so all three versions are in history.
 2. **CI image generation is cold on every deploy.** The workflow caches npm but
    not `node_modules/.astro`, so all renders are regenerated each run. At
-   1.77s per 20 MP master on this machine, 40 masters is ~71s here and
+   ~1.7s per 24 MP master on this machine, 40 masters is ~68s here and
    plausibly 2.5-5 minutes on a 2-vCPU GitHub runner. Checkout is unaffected —
    `actions/checkout` fetches shallow by default, so history length does not
    slow the build.
@@ -128,22 +140,24 @@ No hard limit is breached — GitHub blocks individual files over 100 MB, and a
 Downscaling masters before committing costs nothing visible, because 2560px is
 already the widest render the site produces:
 
+Measured on the current showcase frame:
+
 | Master long edge | JPEG size | 40-photo tree | 40-photo deploy |
 | ---: | ---: | ---: | ---: |
-| 5483px (as shot) | 2.25 MB | 90 MB | ~129 MB |
-| 3200px | 1.1 MB | 44 MB | ~85 MB |
-| **2560px** | **768 KB** | **30 MB** | **~68 MB** |
-| 1920px | 472 KB | 19 MB | — (starves the 2560 hero) |
+| 6000px (as shot) | 1.38 MB | 55 MB | ~81 MB |
+| 3200px | 772 KB | 31 MB | ~57 MB |
+| **2560px** | **536 KB** | **21 MB** | **~48 MB** |
+| 1920px | 332 KB | 13 MB | — (starves the 2560 hero) |
 
 2560px is the sweet spot: it feeds every ladder exactly, cuts repository growth
-by two thirds and deployed bytes by roughly half, and shrinks the dead original
-copy from 2.25 MB to 768 KB. 1920px would force the hero's top rung to upscale.
+by around 60% and deployed bytes by 40%, and shrinks the dead original copy
+from 1.4 MB to 536 KB. 1920px would force the hero's top rung to upscale.
 
 ### Verdict
 
-- **10-20 photographs at full 20 MP:** fine on both platforms. Ship it.
-- **40 photographs:** still inside every hard limit, but the repository roughly
-  doubles and CI image generation runs into minutes. Downscale to 2560px.
+- **10-20 photographs at full resolution:** fine on both platforms. Ship it.
+- **40 photographs:** still inside every hard limit, but the repository grows
+  by 55-90 MB and CI image generation runs into minutes. Downscale to 2560px.
 - **Either way**, downscaling to 2560px is free in quality terms. The only
   reason to keep 20 MP masters in Git is if the repository is also the archive
   of record — and if that is the goal, R2 is the better home for it.
@@ -158,7 +172,7 @@ R2 becomes the right answer if the portfolio needs downloadable originals,
 uploads decoupled from site deploys, or an archive of record that should not
 live in Git history. R2's Free tier includes 10 GB-month of Standard storage,
 1 million Class A operations, 10 million Class B operations, and free egress —
-40 masters at 2.25 MB is 90 MB, about 1% of that allowance.
+40 masters at 1.4 MB is around 55 MB, well under 1% of that allowance.
 
 If that move happens:
 
