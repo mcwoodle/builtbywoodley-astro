@@ -2,7 +2,14 @@
 # The photography archive. One entry per photo, newest first is applied at
 # render time so the order here does not matter.
 #
-# src      - relative to this file; resolved into Astro's asset pipeline
+# master   - the archival file under ./images/, committed exactly as exported.
+#            Its name carries the capture date and the camera's frame number,
+#            which is why it is worth keeping and why it is not what ships.
+# src      - relative to this file; resolved into Astro's asset pipeline.
+#            With a master, this is the SHORT name the photograph deploys
+#            under: ./_deploy/<name>.jpg, generated before every build by
+#            src/integrations/stage-photo-masters.mjs. _deploy/ is gitignored.
+#            Without a master it points straight at ./images/.
 # alt      - describes the image for screen readers; never repeat the title
 # note     - one short line of context shown in the viewer
 photos:
@@ -13,35 +20,40 @@ photos:
     location: Riverdale Park, Toronto
     note: The city switching its lights on, seen from the top of the hill.
 
-  - src: ./images/kinkaku-ji.jpg
+  - master: "2015-08-31 - Kyoto Kinkaku-ji - IMG_20150831_005755.jpg"
+    src: ./_deploy/kinkaku-ji.jpg
     title: Kinkaku-ji
     alt: The Golden Pavilion of Kinkaku-ji reflected in still green water, framed by pines and a small rock island.
     date: 2015-08-31
     location: Kyoto, Japan
     note: Still water, no wind — so the pavilion got to sit there twice.
 
-  - src: ./images/perseid-over-the-barn.jpg
+  - master: "2015-08-13 - Perseid Meteor - IMG_20150813_070819.jpg"
+    src: ./_deploy/perseid-over-the-barn.jpg
     title: Perseid
     alt: A meteor with a green and white tail streaking across a dense field of stars, above the dark silhouette of a barn roof.
     date: 2015-08-13
     location: Rural Ontario
     note: The shower peaked overnight. This one came in green.
 
-  - src: ./images/allium.jpg
+  - master: "2015-06-17 - Allium - IMG_20150617_134550.jpg"
+    src: ./_deploy/allium.jpg
     title: Allium, backlit
     alt: A purple allium flower head in silhouette against a bright overcast sky, its individual florets picked out by the light behind.
     date: 2015-08-03
     location: In the garden
     note: Shot straight into the light to get the whole head to glow.
 
-  - src: ./images/fort-amherst.jpg
+  - master: "2015-06-28 - Newfoundland Signal Hill Ship - IMG_20150628_073632.jpg"
+    src: ./_deploy/fort-amherst.jpg
     title: The Narrows
     alt: A red and white supply vessel entering a narrow harbour channel below steep green headlands, with a white lighthouse on the rocks.
     date: 2015-06-28
     location: St. John's, Newfoundland
     note: Green hills, cold water, and a supply boat heading out past the light.
 
-  - src: ./images/space-needle-sunset.jpg
+  - master: "2014-10-19 - Space Needle Plane - DSC04448_spaceneedle_seattle_plane_sunset (1).jpg"
+    src: ./_deploy/space-needle-sunset.jpg
     title: Needle at last light
     alt: The Space Needle in full silhouette against a burning orange sunset sky, with a distant airliner passing at upper left.
     date: 2014-10-20

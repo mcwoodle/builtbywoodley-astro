@@ -64,6 +64,13 @@ const photos = defineCollection({
       photos: z
         .array(
           z.object({
+            // The archival filename under ./images/, carrying the capture date
+            // and the camera frame number. Optional: a photograph whose name is
+            // already short can point src straight at ./images/ instead.
+            // When present, src is the SHORT name it is staged under, and the
+            // stage-photo-masters integration materialises that file before
+            // this schema resolves. See src/integrations/stage-photo-masters.mjs.
+            master: z.string().optional(),
             src: image(),
             title: z.string().max(100, 'Title cannot exceed 100 characters.'),
             alt: z.string(),

@@ -25,7 +25,16 @@
 //   --in-place         overwrite the input
 //   --quality=<1-100>  JPEG quality (default 88 — a master, not a delivery file)
 //   --keep-metadata    preserve EXIF/IPTC/XMP instead of stripping it
+//   --strip-only       remove metadata WITHOUT re-encoding; no --max-long-edge
 //   --dry-run          report what would happen, write nothing
+//
+// --strip-only exists because stripping and resizing are different jobs. A
+// photograph already at a sensible size still should not ship its EXIF: the
+// full-size original is deployed and publicly reachable (see the note in
+// docs/photography-image-delivery.md), and phone JPEGs carry GPS. Re-encoding
+// to drop a few kilobytes of metadata would throw away image quality for no
+// reason, so this mode edits the JPEG's segment structure and leaves every byte
+// of compressed image data exactly as it was.
 
 import { stat } from 'node:fs/promises';
 import { basename, dirname, extname, join, resolve } from 'node:path';
@@ -50,6 +59,7 @@ const option = (name) => {
 };
 
 const inputs = args.filter((arg) => !arg.startsWith('--'));
+const stripOnly = flag('strip-only');
 const maxLongEdge = Number(option('max-long-edge'));
 const quality = Number(option('quality') ?? 88);
 const outPath = option('out');
@@ -57,12 +67,65 @@ const inPlace = flag('in-place');
 const keepMetadata = flag('keep-metadata');
 const dryRun = flag('dry-run');
 
-if (inputs.length === 0 || !Number.isFinite(maxLongEdge) || maxLongEdge <= 0) {
+if (inputs.length === 0 || (!stripOnly && (!Number.isFinite(maxLongEdge) || maxLongEdge <= 0))) {
   console.error(
     'usage: node scripts/prepare-master.mjs --max-long-edge=<px> [options] <image>...\n' +
-      '       --max-long-edge is required; see the notes at the top of this script.',
+      '       node scripts/prepare-master.mjs --strip-only [options] <image>...\n' +
+      '       --max-long-edge is required unless --strip-only; see the notes above.',
   );
   process.exit(1);
+}
+if (stripOnly && keepMetadata) {
+  console.error('prepare-master: --strip-only and --keep-metadata contradict each other.');
+  process.exit(1);
+}
+
+/**
+ * Remove EXIF, XMP and IPTC from a JPEG without touching the image data.
+ *
+ * A JPEG is SOI, then a run of marker segments, then the compressed scan. Only
+ * the segments are rewritten here: APP1 carries EXIF and XMP, APP13 carries the
+ * Photoshop/IPTC block. APP0 (JFIF) and APP2 (ICC colour profile) are kept —
+ * dropping the profile would shift the colours. Everything from SOS onward is
+ * copied verbatim, so the pixels are bit-identical to the input.
+ */
+function stripJpegMetadata(buffer) {
+  if (buffer.readUInt16BE(0) !== 0xffd8) {
+    throw new Error('not a JPEG (no SOI marker)');
+  }
+  const kept = [buffer.subarray(0, 2)];
+  let offset = 2;
+  let removed = 0;
+
+  while (offset < buffer.length - 1) {
+    if (buffer[offset] !== 0xff) break; // Not a marker; stop and copy the rest.
+    const marker = buffer[offset + 1];
+
+    // Start of scan, or end of image: the remainder is entropy-coded data.
+    if (marker === 0xda || marker === 0xd9) break;
+
+    // Standalone markers carry no length field.
+    if (marker >= 0xd0 && marker <= 0xd8) {
+      kept.push(buffer.subarray(offset, offset + 2));
+      offset += 2;
+      continue;
+    }
+
+    const length = buffer.readUInt16BE(offset + 2);
+    const end = offset + 2 + length;
+    const isExifOrXmp = marker === 0xe1;
+    const isPhotoshopIptc = marker === 0xed;
+
+    if (isExifOrXmp || isPhotoshopIptc) {
+      removed += end - offset;
+    } else {
+      kept.push(buffer.subarray(offset, end));
+    }
+    offset = end;
+  }
+
+  kept.push(buffer.subarray(offset)); // The scan, untouched.
+  return { data: Buffer.concat(kept), removed };
 }
 if (outPath && inputs.length > 1) {
   console.error('prepare-master: --out takes a single input.');
@@ -81,6 +144,34 @@ for (const input of inputs) {
   if (!before) {
     console.error(`prepare-master: ${input} does not exist.`);
     process.exitCode = 1;
+    continue;
+  }
+
+  if (stripOnly) {
+    const { readFile, writeFile } = await import('node:fs/promises');
+    const original = await readFile(source);
+    const { data, removed } = stripJpegMetadata(original);
+    const meta = await sharp(source).metadata();
+    const target = outPath ? resolve(outPath) : inPlace ? source : `${source}.stripped.jpg`;
+
+    console.log(`\n  ${basename(source)}`);
+    console.log(`    ${meta.width}x${meta.height}  ${kb(before.size)} -> ${kb(data.length)}`);
+    console.log(`    ${kb(removed)} of EXIF/XMP/IPTC removed; image data untouched`);
+
+    if (dryRun) {
+      console.log(`    dry run — nothing written (would be ${target})`);
+    } else {
+      await writeFile(target, data);
+      // Prove the claim rather than asserting it: same pixels, no metadata.
+      const after = await sharp(target).metadata();
+      if (after.exif || after.xmp || after.iptc) {
+        throw new Error(`${basename(target)} still carries metadata after stripping`);
+      }
+      if (after.width !== meta.width || after.height !== meta.height) {
+        throw new Error(`${basename(target)} changed size while stripping`);
+      }
+      console.log(`    -> ${target}`);
+    }
     continue;
   }
 

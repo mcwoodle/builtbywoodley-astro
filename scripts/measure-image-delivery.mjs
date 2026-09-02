@@ -233,9 +233,32 @@ function chooseRung(rungs, requiredPixels) {
 // definition and no second parser to drift from it.
 
 const ladders = Object.values(imageLadders);
+/**
+ * Which ladder produced this srcset.
+ *
+ * An exact width match is the normal case. A ladder can also come out SHORT:
+ * Astro will not upscale, so a master narrower than the top rung truncates the
+ * ladder and caps its last entry at the master's width. That is worth naming
+ * rather than reporting as unknown — a capped ladder is the signal that a
+ * photograph is not feeding the sizes the site is asking for.
+ */
 const ladderFor = (rungs) => {
-  const key = rungs.map((rung) => rung.width).join(',');
-  return ladders.find((ladder) => ladder.widths.join(',') === key)?.id ?? null;
+  const widths = rungs.map((rung) => rung.width);
+  const key = widths.join(',');
+
+  const exact = ladders.find((ladder) => ladder.widths.join(',') === key);
+  if (exact) return exact.id;
+
+  const capped = ladders.find((ladder) => {
+    if (widths.length > ladder.widths.length) return false;
+    // Every rung but the last matches the ladder position for position.
+    for (let index = 0; index < widths.length - 1; index += 1) {
+      if (widths[index] !== ladder.widths[index]) return false;
+    }
+    // The last one is the master's own width, at or below the rung it replaced.
+    return widths[widths.length - 1] <= ladder.widths[widths.length - 1];
+  });
+  return capped ? `${capped.id} (capped by master)` : null;
 };
 
 // ── Self-test ───────────────────────────────────────────────────────────────

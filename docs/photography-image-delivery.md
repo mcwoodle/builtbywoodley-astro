@@ -253,24 +253,35 @@ quality 82 the ladders now set:
   and is publicly reachable, regardless of the repository being private. The
   content hash in the filename is obscurity, not access control.
 
-  **This document previously recorded that all six committed masters carry zero
-  EXIF tags. That is no longer true.** Re-checked on 2026-09-02 with sharp:
-  five masters are still clean, but `toronto-skyline.jpg` — the 24 MP frame
-  committed on this branch — carries **5,218 bytes of EXIF plus XMP**, naming
-  the camera body (ILCE-6000), the Lightroom version that exported it and two
-  capture timestamps. There is **no GPS IFD**, so no coordinates are exposed,
-  and that full-size original is live at `/_astro/toronto-skyline.<hash>.jpg`.
-  It is metadata rather than location, so this is a tidiness problem rather than
-  an urgent one — but it is the exact leak the old paragraph claimed could not
-  happen, and it arrived the moment a master was committed straight from an
-  export.
+  **This nearly went wrong.** Four of the five replacement masters arrived off a
+  phone carrying a populated **GPS IFD** — real coordinates, decoded before
+  anything was committed:
 
-  The five higher-resolution masters staged for import are worse: four of them
-  carry a **GPS IFD**, because they came off a phone. Stripping is therefore the
-  default in `scripts/prepare-master.mjs` rather than an option, and
-  `--keep-metadata` is the deliberate opt-out. `exiftool -all= -overwrite_original`
-  does the same job by hand. Note that downscaling alone does not strip EXIF —
-  only an explicit strip does.
+  | Frame | Coordinates | What they point at |
+  | --- | --- | --- |
+  | Allium | 42.3538N 71.0709W | a private garden — the manifest even says "In the garden" |
+  | Perseid | 43.9972N 78.4297W | a rural property |
+  | The Narrows | 47.5721N 52.6801W | a public landmark |
+  | Kinkaku-ji | 35.0391N 135.7289E | a public landmark |
+
+  Because the full-size original is deployed, committing those as exported would
+  have published two private locations at a stable URL. All five were run through
+  `npm run photo:master -- --strip-only --in-place` on the way in, which removes
+  the APP1 (EXIF/XMP) and APP13 (IPTC) segments **without re-encoding** — the
+  compressed image data is bit-identical, so nothing is paid in quality to drop
+  the metadata. Verified after writing: no EXIF, no XMP, no IPTC, same
+  dimensions.
+
+  `toronto-skyline.jpg` is the one master that still carries metadata — 5,218
+  bytes of EXIF plus XMP, naming the camera body (ILCE-6000), the Lightroom
+  version and two timestamps. It has **no GPS**, and it is deliberately left
+  alone: stripping it would add another 1.4 MB blob to history forever to remove
+  a camera model, which is exactly the trade this document argues against
+  everywhere else. Strip it the next time that file is re-exported for some other
+  reason.
+
+  Keep the strip in the import step for anything new. Downscaling alone does not
+  remove EXIF; only an explicit strip does.
 - Largest served render: 327 KB — the 2560px hero, and only on a 2x laptop.
   The viewer's top rung reaches 333 KB on the heaviest frame; the grid tops out
   at 159 KB. Every one of these figures comes from `npm run measure:images`.
@@ -286,6 +297,58 @@ large dark low-contrast regions compress far better than a bright graduated
 sky. Treat the projections below as the shape of the cost, not a constant: a
 bright, detailed frame can run 50-60% heavier than a dark one at the same
 resolution.
+
+## Archival names in Git, short names on the web
+
+The masters are committed under the names they were exported with:
+
+    src/content/photos/images/2015-06-17 - Allium - IMG_20150617_134550.jpg
+
+That name is worth keeping. It carries the capture date and the camera's own
+frame number, which is the provenance a photograph archive is *for* — rename it
+to `allium.jpg` and the only remaining record of when the shutter actually
+fired is a manifest field someone can mistype.
+
+It is not, however, worth deploying. Astro derives every emitted asset name from
+the source file's basename, so committing that file directly produced eleven
+derivatives all called:
+
+    /_astro/2015-06-17%20-%20Allium%20-%20IMG_20150617_134550.O8sh2kp3_JQpDB.webp
+
+Forty characters of percent-encoded noise, repeated for every rung of every
+`srcset`, on every page the photograph appears on. It also broke the
+unreferenced-original audit, which matches asset basenames against the text of
+the built site: the filename on disk has literal spaces and the URL in the HTML
+has `%20`, so 45 live files were reported as orphans.
+
+So the two names are separated. `src/integrations/stage-photo-masters.mjs` runs
+on `astro:config:setup` — before the content collection is read, and in `dev`,
+`build` and `check` alike — and copies each master to the short name the site
+deploys under:
+
+| Manifest field | Example | Where it lives |
+| --- | --- | --- |
+| `master` | `2015-06-17 - Allium - IMG_20150617_134550.jpg` | `images/`, committed |
+| `src` | `./_deploy/allium.jpg` | `_deploy/`, generated, gitignored |
+
+The result is `/_astro/allium.O8sh2kp3_Z2bXeI9.webp` — and the audit works again.
+
+`_deploy/` is rebuilt from scratch on every run, so a photograph removed from
+the manifest cannot leave a stale file behind for Astro to emit. A photograph
+whose name is already short can skip the indirection entirely and point `src`
+straight at `./images/`; `toronto-skyline.jpg` still does.
+
+The integration fails the build rather than guessing:
+
+- a `src` basename that is not lowercase-hyphenated (it becomes a public URL,
+  and anything else has to be percent-encoded — the problem this exists to solve)
+- two photographs deploying under the same name
+- a `master` that is not in `images/`
+- a `src` that is not under `_deploy/` when a master is declared
+
+and it warns about masters in `images/` that no manifest entry references, since
+the usual cause is an edit that forgot one and the cost is a file committed
+forever for nothing.
 
 ## Changing a ladder, and measuring what it costs
 
@@ -391,19 +454,36 @@ at the same moment the masters do, and the report will say so.
 Measured on 2026-09-02 — six photographs committed, five of them at roughly
 1842x1834 (3.4 MP) and one 24 MP showcase frame:
 
-| Photograph | Files | Bytes in `dist/` |
-| --- | ---: | ---: |
-| `toronto-skyline` (24 MP, showcase) | 12 | 2.72 MB |
-| `fort-amherst` | 10 | 1.99 MB |
-| `kinkaku-ji` | 10 | 1.37 MB |
-| `allium` | 10 | 1.20 MB |
-| `perseid-over-the-barn` | 10 | 1.01 MB |
-| `space-needle-sunset` | 10 | 0.43 MB |
-| **Total** | **62** | **8.72 MB** |
+Re-measured after the five 2015-era masters were replaced with the higher
+resolution exports:
 
-Up 3% on the 8.45 MB recorded here before the ladders set an explicit quality —
-Astro's default is 80, and 82 is what the four now ask for. The file count is
-unchanged, which is the point of the shared `QUALITY` constant discussed below.
+| Photograph | Master | Files | Bytes in `dist/` |
+| --- | ---: | ---: | ---: |
+| `toronto-skyline` (showcase) | 6000x4000 | 12 | 2.78 MB |
+| `fort-amherst` | 2285x2285 | 10 | 3.61 MB |
+| `kinkaku-ji` | 3472x2676 | 10 | 2.83 MB |
+| `perseid-over-the-barn` | 1488x1488 | 10 | 2.21 MB |
+| `allium` | 2561x2561 | 10 | 1.84 MB |
+| `space-needle-sunset` | 3805x2537 | 10 | 0.62 MB |
+| **Total** | | **62** | **13.89 MB** |
+
+The file count did not move — the ladders are the same and the shared `QUALITY`
+constant keeps overlapping widths deduplicated — but deployed photo bytes went
+from 8.72 MB to **13.89 MB**, a 59% rise, because every ladder now has enough
+master to fill its top rungs. That is the cost of the resolution, not a
+regression: the viewer's heaviest frame went from 333 KB to 637 KB on a 2x
+laptop, and it is a genuinely bigger picture.
+
+**One master is now the constraint rather than the ladder.**
+`perseid-over-the-barn` is 1488x1488, *smaller* than the 1845x1851 file it
+replaced, so Astro truncates its viewer ladder at 1488px and drops the 1600 and
+1840 rungs. On a tablet or a 2x laptop the browser upscales it, and it will read
+softer than its neighbours. `npm run measure:images` names this explicitly:
+
+    /photography/ viewer (capped by master) on Laptop 2x: wants 2360px,
+      ladder tops out at 1488px
+
+Re-export that frame at 2560px on the long edge and the line disappears.
 
 Extending that to ten photographs at the observed range gives **~102 files and
 13-22 MB** — 0.5% of the 20,000-file limit, with the largest single file at 6%

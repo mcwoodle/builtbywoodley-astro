@@ -34,6 +34,7 @@ npm run measure:images              # bytes per page, by screen size
 npm run measure:images -- --self-test
 npm run audit:assets                # -- --prune shows, -- --prune --confirm deletes
 npm run photo:master -- --max-long-edge=2560 --dry-run shot.jpg
+npm run photo:master -- --strip-only --in-place shot.jpg   # EXIF/GPS, losslessly
 ```
 
 Every responsive width ladder lives in `src/config/image-ladders.mjs` — plain
@@ -45,6 +46,12 @@ breakpoint in `global.css`, change `sizes` with it and re-run
 `measure:images --self-test`. For real timings on a real device, build with the
 runtime probe: `PUBLIC_IMAGE_PERF=1 npm run build && npm run preview`. See
 `docs/photography-image-delivery.md`.
+
+Photography masters are committed under their archival export names and deployed
+under short ones: `master` in `src/content/photos/manifest.mdx` names the file in
+`images/`, `src` names what it ships as, and `src/integrations/stage-photo-masters.mjs`
+copies one to the other before the content collection is read. Always strip EXIF
+on import — phone exports carry GPS, and the full-size original is deployed.
 
 ## Security & CI
 
