@@ -1,6 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import type { CollectionEntry } from "astro:content";
+import { ladderAttrs } from "../config/image-ladders.mjs";
 
 type Photo = CollectionEntry<"photos">["data"]["photos"][number];
 
@@ -21,16 +22,19 @@ const { photo, anchor, eager = false } = Astro.props;
     everyone — which is also what gives the link its accessible name. */}
 <li class="photo-tile" id={anchor}>
   <a class="photo-tile-link" href={`#${anchor}`} data-photo-open>
+    {/* Ladder from src/config/image-ladders.mjs. `sizes` tracks .photo-gallery
+        and .photo-shell in global.css, and the breakpoints must stay in step
+        with them: one column at 520px and under (the shell is 100% - 22px, so
+        the tile is ~95vw), two columns up to 960px (~48vw), and three in a
+        1120px shell above that (~360px). */}
     <Image
       src={photo.src}
       alt=""
       class="photo-tile-image"
-      widths={[360, 480, 720, 960]}
-      {/* Caps the `src` fallback at the top of the ladder; see index.astro. */}
-      width={960}
-      sizes="(max-width: 560px) 92vw, (max-width: 900px) 46vw, 360px"
+      sizes="(max-width: 520px) 95vw, (max-width: 960px) 48vw, 360px"
       loading={eager ? "eager" : "lazy"}
       decoding={eager ? "auto" : "async"}
+      {...ladderAttrs("photoTile")}
     />
     <span class="photo-tile-label">
       <span class="photo-tile-title">{photo.title}</span>

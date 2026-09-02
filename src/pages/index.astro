@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
+import { ladderAttrs } from "../config/image-ladders.mjs";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 import WaterlooMark from "../components/WaterlooMark.astro";
@@ -265,18 +266,18 @@ const coopSpan = coops.length
     <section class="showcase" aria-labelledby="showcase-caption-title">
       <figure class="showcase-frame">
         <div class="showcase-media">
+          {/* Widths, quality and the `src` fallback cap come from the
+              showcase ladder in src/config/image-ladders.mjs. `sizes` stays
+              here because it describes this section's layout: the frame is
+              full-bleed, so it is always the width of the viewport. */}
           <Image
             class="showcase-image"
             src={showcase.src}
             alt={showcase.alt}
-            widths={[960, 1440, 1920, 2560]}
-            {/* Caps the `src` fallback. Without it Astro points src at a
-                full-resolution render of the master — 1.4 MB for a 20 MP
-                file — which any client that ignores srcset will download. */}
-            width={2560}
             sizes="100vw"
             loading="eager"
             fetchpriority="high"
+            {...ladderAttrs("showcase")}
           />
         </div>
         <figcaption class="showcase-caption">
@@ -724,14 +725,18 @@ const coopSpan = coops.length
             {strip.map((photo) => (
               <figure class="gallery-item">
                 <div class="gallery-media">
+                  {/* Ladder from src/config/image-ladders.mjs. `sizes` restates
+                      .gallery-item's flex basis in global.css —
+                      clamp(230px, 29vw, 400px) — as breakpoints, because a
+                      clamp() inside sizes is not safe in every browser and a
+                      value it cannot parse falls back to 100vw. 29vw crosses
+                      230px at 795px and 400px at 1380px. */}
                   <Image
                     src={photo.src}
                     alt={photo.alt}
-                    widths={[420, 720]}
-                    {/* Caps the `src` fallback; see the showcase above. */}
-                    width={720}
-                    sizes="(max-width: 760px) 74vw, 34vw"
+                    sizes="(max-width: 795px) 232px, (max-width: 1380px) 29vw, 400px"
                     loading="lazy"
+                    {...ladderAttrs("galleryStrip")}
                   />
                 </div>
                 <figcaption class="gallery-caption">

@@ -5,6 +5,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../../components/HumanWrittenMark.astro";
 import PhotoTile from "../../components/PhotoTile.astro";
 import PhotoViewer, { type ViewerFrame } from "../../components/PhotoViewer.astro";
+import { ladderAttrs } from "../../config/image-ladders.mjs";
 
 const [manifest] = await getCollection("photos");
 const photos = [...manifest.data.photos].sort(
@@ -41,12 +42,10 @@ const viewerFrames: ViewerFrame[] = await Promise.all(
   frames.map(async ({ photo, anchor }) => {
     const large = await getImage({
       src: photo.src,
-      widths: [640, 960, 1280, 1600, 1840],
-      // Without an explicit width the returned `src` is a full-resolution
-      // render of the master, and that is what the panel loads first.
-      width: 1840,
       sizes: VIEWER_SIZES,
-      format: "webp",
+      // Spread last: the ladder owns widths, the fallback width, quality and
+      // format, and nothing above may quietly override them.
+      ...ladderAttrs("viewer"),
     });
     return {
       anchor,
