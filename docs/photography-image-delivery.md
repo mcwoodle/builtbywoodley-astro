@@ -13,6 +13,11 @@ to any limit. The second half is the new part: a 20 MP master costs far more in
 the repository and in CI than it returns on the page, because nothing the site
 serves is ever wider than 2560px.
 
+Not yet applied on this branch. `toronto-skyline.jpg` is still the master as
+shot — 6000x4000, 24.0 MP, 1.38 MiB — so the showcase is currently paying the
+full cost this document argues against. Downscaling it is the one outstanding
+action here.
+
 `public/_headers` gives `/_astro/*` a one-year immutable browser cache. The
 filenames contain a content hash, so replacing a photograph creates new URLs
 and cannot leave visitors with a stale image.
@@ -30,6 +35,14 @@ The 100,000-file tier is Paid-only and needs Wrangler 4.34.0 or newer; the
 deploy workflow pins `wranglerVersion: "4"`, so it would pick that up, but the
 site is on Free and the 20,000 limit applies. There is no documented cap on
 total asset bytes per deployment.
+
+One question is open: whether Wrangler skips unchanged assets on redeploy or
+re-uploads the whole set. Cloudflare does not document it and it has not been
+measured here. It bounds what the deploy path costs as the portfolio grows,
+though not by much at these sizes — against 81-129 MB of deployed photo bytes
+and no total-bytes cap, a full re-upload is slow rather than fatal. Replacing
+one photograph and reading the deploy log would settle it; worth doing before
+the portfolio reaches 40.
 
 Sources: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/),
 [Static Assets billing](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/),
@@ -109,7 +122,8 @@ Every figure is far inside the free tier, no single file approaches 25 MiB, and
 asset requests stay free and unmetered. **Cloudflare does not care.** The one
 file anywhere near the per-file ceiling remains `dist/viz/gta-crime-map.html`
 at 21.75 MiB (87% of 25 MiB); it inlines its dataset and is the only asset that
-can realistically fail a deploy.
+can realistically fail a deploy. Its `-lite` companion is second at 12.92 MiB
+(51%), and nothing else is close.
 
 ### GitHub: where it actually costs
 
@@ -177,10 +191,15 @@ live in Git history. R2's Free tier includes 10 GB-month of Standard storage,
 If that move happens:
 
 1. Store originals in R2 using versioned/immutable object keys.
-2. Attach a custom domain such as `media.builtbywoodley.ca`; the `r2.dev`
+2. Keep a `manifest.json` in the repository recording each object's key,
+   SHA-256, dimensions and capture date. R2 holds the bytes, Git holds the
+   index and the integrity record. Without it the bucket is an archive with no
+   way to show its contents are what was uploaded, which is most of what
+   "archive of record" is meant to buy.
+3. Attach a custom domain such as `media.builtbywoodley.ca`; the `r2.dev`
    development URL does not support Cloudflare Cache.
-3. Send `Cache-Control: public, max-age=31536000, immutable` on versioned files.
-4. Use Cloudflare Image Transformations for a small fixed set of widths instead
+4. Send `Cache-Control: public, max-age=31536000, immutable` on versioned files.
+5. Use Cloudflare Image Transformations for a small fixed set of widths instead
    of serving originals. The Images Free plan includes 5,000 unique
    transformations per month. The current four ladders produce 9-11 unique
    widths per photograph, so 40 photographs is ~400 transformations — inside
