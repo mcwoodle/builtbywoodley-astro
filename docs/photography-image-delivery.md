@@ -58,10 +58,24 @@ Measured for the 20 MP master (5483x3655, 2.25 MB source):
 
 - **12 files, 4.1 MB total** — 1.9 MB of WebP derivatives plus a 2.25 MB copy
   of the original JPEG.
-- That JPEG copy is **referenced by nothing**. Astro emits the original
-  alongside the derivatives for any asset a content collection imports, so it
-  is deployed and never requested. At 20 MP it is 55% of the photograph's
-  entire footprint.
+- That JPEG copy is **referenced by nothing**, and this is structural rather
+  than specific to photographs. Astro's content layer generates
+  `.astro/content-assets.mjs` with an unconditional static import for every
+  `image()` field in every collection (32 of them today). Vite's asset pipeline
+  emits each original into `/_astro/` with a content hash and returns its URL,
+  which becomes `ImageMetadata.src` — the same value `<Image>` uses as the
+  `src` fallback when no `width` is given. `<Image>` then builds its ladder
+  from the source file on disk and references only those renders, leaving the
+  already-emitted original with nothing pointing at it.
+
+  Site-wide that is **20.65 MB across 31 files, 29% of `dist/`**, deployed and
+  never requested. The mocked-project cover PNGs are ~17 MB of it. Astro 7
+  exposes no way to suppress this: `image` config offers only `endpoint`,
+  `service`, `domains`, `remotePatterns`, `layout`, `objectFit`, `breakpoints`
+  and `responsiveStyles`. Since the orphan is emitted **at source size**, the
+  committed master's dimensions are the only control over it — which is the
+  second reason the 2560px recommendation below pays off. At 20 MP it is 55%
+  of the photograph's entire footprint.
 - Largest served render: 464 KB (2560px, hero only). The grid and viewer top
   out at 284 KB.
 - Cold image generation: **1.77s** for this one master (11 renders).
