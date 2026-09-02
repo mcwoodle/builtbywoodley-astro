@@ -1459,37 +1459,60 @@ html[data-motion-armed] [data-hero-tail] {
 .showcase {
   position: relative;
   width: 100%;
+
+  /* The widest crop this photograph survives. `cover` on a wider frame trims
+     height off both ends, and past roughly 1.82:1 the treeline and its lights
+     drop out of the bottom while the spire crowds the top. The frame height
+     and the picture's own width cap are both derived from it, so the crop is
+     the one number to change if the photograph is replaced. */
+  --showcase-crop: 1.82;
+  --showcase-h: min(86svh, 820px);
 }
 
 .showcase-frame {
   position: relative;
-  height: min(86svh, 820px);
+  height: var(--showcase-h);
   margin: 0;
   overflow: hidden;
 }
 
+/* The picture is capped at the crop and centred, so once a viewport is wider
+   than the crop allows it gains margins rather than losing the trees. The
+   caption is anchored to the 1180px column, which is narrower than the picture
+   at every width, so it stays over the photograph. */
 .showcase-media {
   position: absolute;
   inset: 0;
+  margin-inline: auto;
+  max-width: calc(var(--showcase-h) * var(--showcase-crop));
   overflow: hidden;
   clip-path: inset(0% 18% 0% 18% round 26px);
+}
+
+/* On a wide screen the frame grows tall enough to carry the whole crop at full
+   width, rather than staying short and slicing the photograph into a letterbox
+   slot. Once that would cost most of the viewport the height stops at 88svh
+   and the picture centres inside it — which is what an ultrawide gets. */
+@media (min-width: 1000px) {
+  .showcase {
+    --showcase-h: min(88svh, calc(100vw / var(--showcase-crop)));
+  }
 }
 
 /* The spire is 9.8% down the frame, so the top of the picture is the part that
    must survive every crop. Two things eat into it: `cover` trimming the height
    on wide viewports, and the scroll zoom in home-scroll.ts. Anchoring the
-   transform at the top edge keeps the zoom from taking any sky at all, and the
-   8% object-position leaves the tip clear at every frame ratio the page can
-   produce — from a phone's tall 0.7:1 window out to a 6.2:1 ultrawide, where
-   `cover` shows only the middle 24% of the file's height. The ceiling is 11%;
-   past that, or with a re-widened zoom in home-scroll.ts, the tower goes. Both
-   numbers are tied to this frame — remeasure the spire if the photo changes. */
+   transform at the top edge keeps the zoom from taking any sky at all. With
+   --showcase-crop holding the frame at 1.82:1 or narrower, at least 82% of the
+   file's height is always in view, so 2% here lands the visible band at roughly
+   0.3%-83% — the spire clear of the top, the lit treeline clear of the bottom.
+   Both numbers are tied to this frame; remeasure if the photograph changes. */
 .showcase-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 8%;
+  object-position: 50% 2%;
   transform-origin: 50% 0%;
   will-change: transform;
 }
@@ -4228,8 +4251,8 @@ body.is-photo-viewing {
 
   /* The photograph has no room to open sideways on a phone, so it arrives
      already full width and simply gets shorter. */
-  .showcase-frame {
-    height: min(70svh, 560px);
+  .showcase {
+    --showcase-h: min(70svh, 560px);
   }
 
   .portfolio-card,
