@@ -269,7 +269,11 @@ const coopSpan = coops.length
             class="showcase-image"
             src={showcase.src}
             alt={showcase.alt}
-            widths={[900, 1400, 1845]}
+            widths={[960, 1440, 1920, 2560]}
+            {/* Caps the `src` fallback. Without it Astro points src at a
+                full-resolution render of the master — 1.4 MB for a 20 MP
+                file — which any client that ignores srcset will download. */}
+            width={2560}
             sizes="100vw"
             loading="eager"
             fetchpriority="high"

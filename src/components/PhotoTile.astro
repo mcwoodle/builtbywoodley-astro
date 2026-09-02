@@ -26,6 +26,8 @@ const { photo, anchor, eager = false } = Astro.props;
       alt=""
       class="photo-tile-image"
       widths={[360, 480, 720, 960]}
+      {/* Caps the `src` fallback at the top of the ladder; see index.astro. */}
+      width={960}
       sizes="(max-width: 560px) 92vw, (max-width: 900px) 46vw, 360px"
       loading={eager ? "eager" : "lazy"}
       decoding={eager ? "auto" : "async"}

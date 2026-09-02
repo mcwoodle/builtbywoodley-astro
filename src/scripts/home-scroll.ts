@@ -448,12 +448,18 @@ function setupPage() {
     }
 
     if (frame && showcaseImage) {
+      // Drifts down against the crop as the frame goes by. The range is bounded
+      // by the CN Tower: with transform-origin at the top edge (global.css), the
+      // zoom only ever takes from the bottom, and holding yPercent at or below 0
+      // keeps the image covering the frame. The old -7/+7 with a 1.18 zoom about
+      // the centre cut ~13% off the top on the way in, which took the spire with
+      // it. Keep yPercent <= 0 and scale - |yPercent/100| >= 1.
       gsap.fromTo(
         showcaseImage,
-        { yPercent: -7, scale: 1.18 },
+        { yPercent: -3, scale: 1.14 },
         {
-          yPercent: 7,
-          scale: 1.02,
+          yPercent: 0,
+          scale: 1.06,
           ease: 'none',
           scrollTrigger: {
             trigger: frame,

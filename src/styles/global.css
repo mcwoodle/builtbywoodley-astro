@@ -1475,11 +1475,21 @@ html[data-motion-armed] [data-hero-tail] {
   clip-path: inset(0% 18% 0% 18% round 26px);
 }
 
+/* The spire is 5.2% down the frame, so the top of the picture is the part that
+   must survive every crop. Two things eat into it: `cover` trimming the height
+   on wide viewports, and the scroll zoom in home-scroll.ts. Anchoring the
+   transform at the top edge keeps the zoom from taking any sky at all, and the
+   4% object-position leaves the tip clear at every frame ratio the page can
+   produce — from a phone's tall 0.7:1 window out to a 4.2:1 ultrawide, where
+   `cover` shows only the middle 36% of the file's height. Raising that 4% or
+   re-widening the zoom in home-scroll.ts will cut the tower off. */
 .showcase-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 4%;
+  transform-origin: 50% 0%;
   will-change: transform;
 }
 
