@@ -5,8 +5,12 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "astro build",
+    "postbuild": "node scripts/check-asset-sizes.mjs && node scripts/audit-astro-assets.mjs --quiet",
     "preview": "astro preview",
     "astro": "astro",
+    "measure:images": "node scripts/measure-image-delivery.mjs",
+    "audit:assets": "node scripts/audit-astro-assets.mjs",
+    "photo:master": "node scripts/prepare-master.mjs",
     "prepare": "node scripts/setup-hooks.mjs"
   },
   "devDependencies": {

@@ -23,10 +23,31 @@ you commit sets what every future re-crop and re-grade of that photograph costs
 megabytes saved today are incidental; the ones not spent in five years are the
 point.
 
-Not yet applied on this branch. `toronto-skyline.jpg` is still the master as
-shot — 6000x4000, 24.0 MP, 1.38 MiB — so the showcase is currently paying the
-full cost this document argues against. Downscaling it is the one outstanding
-action here.
+**Applied as a tool, not as an edit.** `scripts/prepare-master.mjs` normalises a
+photograph on the way in — long-edge cap, EXIF stripped, mozjpeg — and
+`--max-long-edge` has no default, so the cap is stated each time rather than
+inherited. `toronto-skyline.jpg` is deliberately left as shot at 6000x4000,
+24.0 MP, 1.38 MiB.
+
+Three reasons the existing file stays put, where an earlier draft of this
+document called downscaling it the one outstanding action:
+
+1. **It reclaims nothing.** The argument above is about Git history, and history
+   already holds all three versions of this path. Downscaling now adds a
+   *fourth* blob; it does not shrink the three that exist. The cost this
+   document warns about was paid the moment the file was committed.
+2. **It is a lossy re-encode of a source asset**, and the only thing gained is
+   already-spent bytes.
+3. **It contradicts where the archive is going.** The masters are due to be
+   replaced with higher-resolution versions, so the cap belongs on the *import*
+   of those, which is precisely what the tool is for.
+
+The saving is real when it is applied at the right moment — a dry run on this
+frame turns 6000x4000 / 1410 KB into 2560x1707 / **509 KB, 64% smaller**, which
+lands close to the 536 KB the table further down measured independently. Run it
+on the next master, not on this one:
+
+    npm run photo:master -- --max-long-edge=2560 --dry-run path/to/shot.jpg
 
 `public/_headers` gives `/_astro/*` a one-year immutable browser cache. The
 filenames contain a content hash, so replacing a photograph creates new URLs
@@ -83,13 +104,11 @@ of `gta-crime-map.html` at 21.2-21.75 MiB and seven of the `-lite` companion at
 12.9-13.2 MiB; the three versions of `toronto-skyline.jpg` total about 4 MB
 between them. The photography archive is not what made the pack 73.6 MiB.
 
-### Planned: a build-time size guard
+### Implemented: a build-time size guard
 
-**Not implemented.** The intent is to fail the build loudly when an asset
-approaches the per-file ceiling, rather than discovering it as a failed deploy
-after a merge to `mainline`.
-
-Shape of it:
+`scripts/check-asset-sizes.mjs`, run from `postbuild`. It fails the build when
+an asset approaches the per-file ceiling, rather than letting it surface as a
+failed deploy after a merge to `mainline`. What it does:
 
 - A script run after `astro build` — `scripts/check-asset-sizes.mjs`, invoked
   from a `postbuild` npm script rather than a workflow step, so one change
@@ -106,12 +125,29 @@ Shape of it:
 - Exit non-zero on the fail threshold only. Warnings stay advisory so a
   legitimate dataset refresh does not block work.
 
-One question to settle before writing it: whether `gta-crime-map.html` should
-be excluded and tracked on its own. It is the only file the guard would ever
-fire on, and a guard that only ever fires for one known file tends to get
-muted. The counter-argument is that if a refresh does push it past 25 MiB, the
-answer is to stop inlining the dataset — not to raise the threshold — and the
-guard is what forces that conversation at the right moment.
+The open question was whether `gta-crime-map.html` should be excluded and
+tracked on its own, since it is the only file the guard will ever fire on and a
+guard that fires for one known file tends to get muted. It is **not** excluded.
+If a data refresh pushes it past 25 MiB the answer is to stop inlining the
+dataset rather than to raise the threshold, and the guard is what forces that
+conversation at the right moment. Today it prints:
+
+    ⚠ 1 file(s) over 20.00 MiB — advisory, the build continues:
+        viz/gta-crime-map.html — 21.75 MiB, 3.25 MiB of headroom left
+
+A second postbuild step, `scripts/audit-astro-assets.mjs`, reports the
+unreferenced originals described below. It **reports and does not delete**. A
+reference scan can only see URLs that appear literally in a built file, so it
+cannot prove that nothing assembles one at runtime; the failure mode would be a
+404 on a deployed image, found by a visitor rather than by a build. Against
+bytes that are free, unmetered and uncapped, carrying dead weight is the cheaper
+mistake. `npm run audit:assets -- --prune` prints exactly what it would remove
+and stops; adding `--confirm` is what actually unlinks. Before deleting anything
+it re-checks each candidate: a regular file (never a symlink), resolving inside
+`dist/_astro/`, and carrying a content hash in its name, so a file the asset
+pipeline did not emit is left alone. Tested against a throwaway copy of `dist`
+containing a symlink, an unhashed file and an asset referenced only from the
+viewer's JSON island — all three survived, and the 31 real orphans went.
 
 ## What Git holds, and what Cloudflare gets
 
@@ -148,26 +184,52 @@ costs another full copy each time, and since JPEGs do not delta-compress,
 
 ## What the build emits per photograph
 
-A photograph is requested at four call sites, each with its own width ladder:
+A photograph is requested at four call sites, each with its own width ladder.
+All four now live in **`src/config/image-ladders.mjs`**:
 
-| Call site | Widths | `src` fallback |
-| --- | --- | ---: |
-| `index.astro` showcase (hero) | 960, 1440, 1920, 2560 | 2560 |
-| `index.astro` gallery strip | 420, 720 | 720 |
-| `PhotoTile.astro` (grid) | 360, 480, 720, 960 | 960 |
-| `photography/index.astro` viewer | 640, 960, 1280, 1600, 1840 | 1840 |
+| Ladder | Widths | `src` fallback | Call site |
+| --- | --- | ---: | --- |
+| `showcase` | 960, 1440, 1920, 2560 | 2560 | `index.astro` hero |
+| `gallery-strip` | 420, 720 | 720 | `index.astro` strip |
+| `photo-tile` | 360, 480, 720, 960 | 960 | `PhotoTile.astro` |
+| `viewer` | 640, 960, 1280, 1600, 1840 | 1840 | `photography/index.astro` |
 
-Every call site now passes an explicit `width`. Without one, Astro points the
-`src` fallback at a **full-resolution** render of the master — for the 20 MP
-showcase file that was a single 1.4 MB WebP, referenced three times (hero, grid
-tile, and the viewer's base image, which is what the lightbox loads first).
-Capping the fallbacks removed it. Nothing in `dist/` is now rendered above
-2560px. **Leave those `width` props in place**: they are the only thing
-stopping a high-resolution master from shipping a multi-megabyte fallback.
+**The `src` fallback is no longer written down anywhere.** It used to be an
+explicit `width` prop at each call site, and it had to be: without one, Astro
+points the fallback at a *full-resolution* render of the master — for the 20 MP
+showcase file that was a single 1.4 MB WebP, referenced three times. But a prop
+that must never be forgotten is a bug waiting for the next call site, so
+`ladderAttrs()` derives it as `Math.max(...widths)`. The failure mode is now
+unreachable rather than merely documented, which matters more the higher the
+masters go. Nothing in `dist/` is rendered above 2560px.
 
-Measured for the 24 MP master (6000x4000, 1.38 MB source):
+What stays at the call site is `sizes`, deliberately. `sizes` is a restatement
+of a component's CSS breakpoints; moving it into the config would not remove
+that coupling, only split it across two files where a breakpoint change is
+easier to miss. It sits next to the component it describes, with a comment
+naming the rules in `global.css` it tracks.
 
-- **12 files, 2.67 MB total** — 1.2 MB of WebP derivatives plus a 1.44 MB copy
+That coupling had already slipped. Two of the three `sizes` strings disagreed
+with the CSS they were meant to mirror:
+
+| Ladder | Was | What the CSS does | Now |
+| --- | --- | --- | --- |
+| `photo-tile` | breaks at 560 / 900px | `.photo-gallery` breaks at 520 / 960px | 520 / 960px |
+| `gallery-strip` | `74vw` then `34vw` | `.gallery-item` is `clamp(230px, 29vw, 400px)` | 232px / 29vw / 400px |
+
+The tile was **under**-declaring between 901 and 960px, where the grid is still
+two columns, so those screens fetched a rung too small and the browser upscaled
+it. The strip was **over**-declaring almost everywhere: at 1920px it asked for
+34vw — 653px — for a slot that is never wider than 400px, and so fetched the
+720px rung instead of the 420px one. Correcting it takes the five strip images
+from **294 KB to 124 KB on any 1x screen at 1440px or wider**, a 58% cut with
+no visible change, and it is why the landing page's deferred total now reads
+137 KB there against 307 KB on a 2x phone.
+
+Measured for the 24 MP master (6000x4000, 1.38 MB source), at the explicit
+quality 82 the ladders now set:
+
+- **12 files, 2.72 MB total** — 1.28 MB of WebP derivatives plus a 1.44 MB copy
   of the original JPEG.
 - That JPEG copy is **referenced by nothing**, and this is structural rather
   than specific to photographs. Astro's content layer generates
@@ -189,14 +251,29 @@ Measured for the 24 MP master (6000x4000, 1.38 MB source):
   of the photograph's entire footprint.
 - Because that orphan is deployed, whatever the master carries travels with it
   and is publicly reachable, regardless of the repository being private. The
-  content hash in the filename is obscurity, not access control. Checked on
-  2026-09-02: all six committed masters carry **zero EXIF tags**, so no GPS
-  coordinates, camera serials or embedded thumbnails are exposed today. Keep
-  EXIF stripping in the export step for new photographs —
-  `exiftool -all= -overwrite_original` covers it if the export path ever stops
-  doing it. Note that downscaling alone does not necessarily strip EXIF.
-- Largest served render: 300 KB (2560px, hero only). The grid and viewer top
-  out at 180 KB.
+  content hash in the filename is obscurity, not access control.
+
+  **This document previously recorded that all six committed masters carry zero
+  EXIF tags. That is no longer true.** Re-checked on 2026-09-02 with sharp:
+  five masters are still clean, but `toronto-skyline.jpg` — the 24 MP frame
+  committed on this branch — carries **5,218 bytes of EXIF plus XMP**, naming
+  the camera body (ILCE-6000), the Lightroom version that exported it and two
+  capture timestamps. There is **no GPS IFD**, so no coordinates are exposed,
+  and that full-size original is live at `/_astro/toronto-skyline.<hash>.jpg`.
+  It is metadata rather than location, so this is a tidiness problem rather than
+  an urgent one — but it is the exact leak the old paragraph claimed could not
+  happen, and it arrived the moment a master was committed straight from an
+  export.
+
+  The five higher-resolution masters staged for import are worse: four of them
+  carry a **GPS IFD**, because they came off a phone. Stripping is therefore the
+  default in `scripts/prepare-master.mjs` rather than an option, and
+  `--keep-metadata` is the deliberate opt-out. `exiftool -all= -overwrite_original`
+  does the same job by hand. Note that downscaling alone does not strip EXIF —
+  only an explicit strip does.
+- Largest served render: 327 KB — the 2560px hero, and only on a 2x laptop.
+  The viewer's top rung reaches 333 KB on the heaviest frame; the grid tops out
+  at 159 KB. Every one of these figures comes from `npm run measure:images`.
 
 A non-showcase photograph at the same resolution skips the hero ladder and
 costs roughly **10 files and 2.2 MB**, of which 1.4 MB is again the dead
@@ -210,6 +287,103 @@ sky. Treat the projections below as the shape of the cost, not a constant: a
 bright, detailed frame can run 50-60% heavier than a dark one at the same
 resolution.
 
+## Changing a ladder, and measuring what it costs
+
+### Changing one
+
+`src/config/image-ladders.mjs` is the only file to edit. A ladder is its widths,
+its quality and its format; the `src` fallback follows from the widths and the
+`sizes` string stays with the component. Bad edits fail the build rather than
+producing a quietly wrong ladder — the module asserts, at load, that widths are
+ascending, unique and positive, and that quality is within 1-100, and
+`ladderAttrs()` throws on a ladder name that does not exist.
+
+It is plain `.mjs` rather than `.ts` because both the Astro components and the
+Node measuring script import it. An earlier version kept it in TypeScript and had
+the script read the file as *text*; that broke the first time a literal quality
+became a named constant — a second parser drifting from the thing it parsed,
+which is the failure this config exists to prevent. JSDoc carries the types.
+
+Spread it **last** at a call site —
+`<Image src alt sizes {...ladderAttrs("photoTile")} />`. Spread first, a stray
+`width` or `quality` after it would silently win, which is the very override the
+derived fallback exists to make impossible.
+
+Adding a rung for higher-resolution masters is therefore a one-line change. The
+report below already names the three places today's ladders top out below what a
+screen asks for, which is where a rung would go first.
+
+### Measuring it
+
+Two tools, because they answer different questions.
+
+**`npm run measure:images`** reads the built site — every `<img>` in `dist/`
+plus the JSON island the viewer ships — and works out, for each screen in its
+table, which rung a browser picks and what that file weighs. Reading the build
+rather than the config is deliberate: a `sizes` string that has drifted from its
+CSS, or a lost fallback cap, shows up as a payload jump instead of hiding. It is
+what caught the two desynced `sizes` strings above.
+
+It is a **byte-payload projection, not a load time**. It models the rule current
+browsers use — smallest rung at or above CSS px x DPR — but that is a heuristic,
+not a guarantee: Chrome also weighs the connection, Save-Data and whether a
+larger rung is already cached. The millisecond columns are bytes over bandwidth
+and nothing else, excluding DNS, TLS, slow-start, multiplexing, Cloudflare cache
+state and decode. Treat them as a floor and as a way to compare builds.
+
+    npm run measure:images                    the standard report
+    npm run measure:images -- --detail        every image, rung by rung
+    npm run measure:images -- --json          machine-readable
+    npm run measure:images -- --all           every route, not the heaviest few
+    npm run measure:images -- --self-test     check the sizes evaluator
+    npm run measure:images -- --max-initial-kb=400   a budget; exits 1 over
+
+`--self-test` pins `resolveSizes()` against every `sizes` string the site ships,
+both branches of the viewer's `min()`, and `clamp()`. That function is the one
+piece here that can be wrong without looking wrong — it returns a plausible
+number and every figure inherits the error — so run it after touching any
+`sizes` attribute. `--max-initial-kb` is the hook for CI, if the initial payload
+ever becomes something worth defending.
+
+**The runtime probe** answers "but what does my phone actually do". It reads
+`currentSrc` — the rung the browser really chose — plus resource timing and LCP,
+and logs a table per page. It is a build-time switch, so no markup, script or
+style from it reaches a production build:
+
+    PUBLIC_IMAGE_PERF=1 npm run build && npm run preview
+
+It is also on in `astro dev`. Reload with the cache disabled for transfer
+numbers that mean anything: `transferSize` is 0 on a cache hit, and the probe
+marks those rows `cached` rather than reporting them as free. Shift+P re-runs
+it, which is how to see the viewer's higher-resolution frame after opening one.
+
+### Where it stands today
+
+Initial page images — what a visitor fetches before touching anything:
+
+| | Phone 2x | Phone 3x | Tablet 2x | Laptop 1x | Laptop 2x | Desktop 1x |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` (the hero) | 67 KB | 134 KB | 210 KB | 134 KB | **327 KB** | 210 KB |
+| `/photography/` (3 tiles) | 145 KB | 233 KB | 233 KB | 41 KB | 145 KB | 41 KB |
+
+The landing page's cost is one photograph — the full-bleed hero — and it is the
+only image on the site on the critical path. A 2x laptop pulling the 2560px rung
+is the worst case at 327 KB, which models to 1.7s on Slow 4G and 0.3s on Fast 4G.
+
+Higher-resolution versions, fetched only when someone opens the viewer:
+
+| | Phone 2x | Phone 3x | Tablet 2x | Laptop 1x | Laptop 2x | Desktop 1x |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| rung chosen | 960px | 1280px | 1600px | 1280px | 1840px | 1280px |
+| average frame | 84 KB | 122 KB | 163 KB | 122 KB | 193 KB | 122 KB |
+
+Three ladders top out below what a 2x or 3x screen asks for: the tile on a 3x
+phone (wants 1112px, has 960px), the viewer on a 2x laptop (2360px against
+1840px) and the hero on the same screen (2880px against 2560px). None is a bug
+today — five of the six masters are only 1842px on the long edge, so a wider
+rung would upscale from the source and buy nothing. They become worth revisiting
+at the same moment the masters do, and the report will say so.
+
 ## Scaling to 10-40 photographs at 20 MP
 
 ### Where the archive actually stands
@@ -219,13 +393,17 @@ Measured on 2026-09-02 — six photographs committed, five of them at roughly
 
 | Photograph | Files | Bytes in `dist/` |
 | --- | ---: | ---: |
-| `toronto-skyline` (24 MP, showcase) | 12 | 2.67 MB |
-| `fort-amherst` | 10 | 1.92 MB |
-| `kinkaku-ji` | 10 | 1.33 MB |
-| `allium` | 10 | 1.17 MB |
-| `perseid-over-the-barn` | 10 | 0.94 MB |
-| `space-needle-sunset` | 10 | 0.42 MB |
-| **Total** | **62** | **8.45 MB** |
+| `toronto-skyline` (24 MP, showcase) | 12 | 2.72 MB |
+| `fort-amherst` | 10 | 1.99 MB |
+| `kinkaku-ji` | 10 | 1.37 MB |
+| `allium` | 10 | 1.20 MB |
+| `perseid-over-the-barn` | 10 | 1.01 MB |
+| `space-needle-sunset` | 10 | 0.43 MB |
+| **Total** | **62** | **8.72 MB** |
+
+Up 3% on the 8.45 MB recorded here before the ladders set an explicit quality —
+Astro's default is 80, and 82 is what the four now ask for. The file count is
+unchanged, which is the point of the shared `QUALITY` constant discussed below.
 
 Extending that to ten photographs at the observed range gives **~102 files and
 13-22 MB** — 0.5% of the 20,000-file limit, with the largest single file at 6%
@@ -317,11 +495,19 @@ from 1.4 MB to 536 KB. 1920px would force the hero's top rung to upscale.
   The only reason to keep 20 MP masters in Git is if the repository is also the
   archive of record — and if that is the goal, R2 is the better home for it.
 
-One cheap follow-up, not required: set an explicit `quality` (82 is a
-reasonable target) at the four call sites, since none is set today. Caching
-`node_modules/.astro` in the deploy workflow was previously suggested here and
-is no longer worth doing — regeneration costs 2.76s, so a cache would save less
-than it costs to restore.
+The `quality` follow-up suggested here is done: all four ladders set 82, from a
+single `QUALITY` constant in `src/config/image-ladders.mjs`. Sharing one value
+is a measured saving rather than a missing knob. Astro keys its render cache on
+`(source, width, format, quality)`, and the ladders overlap — 960px appears in
+three of them, 720px in two — so identical widths at the same quality collapse
+into one file every call site shares. Giving each ladder its own quality split
+them apart again: **7 extra files and about 1.0 MB per build**, for a difference
+nobody can see. The field is still per-ladder, so vary it when something is
+worth that price.
+
+Caching `node_modules/.astro` in the deploy workflow was previously suggested
+here and is no longer worth doing — regeneration costs 2.9s, so a cache would
+save less than it costs to restore.
 
 ## When to move photographs to R2
 

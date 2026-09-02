@@ -3,6 +3,7 @@ import NavigationTransitionHead from '../components/NavigationTransitionHead.ast
 import AiSlopMark from '../components/AiSlopMark.astro';
 import TopNav from '../components/TopNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import ImagePerfProbe from '../components/ImagePerfProbe.astro';
 import '../styles/global.css';
 import '../styles/view-transitions.css';
 
@@ -16,6 +17,20 @@ interface Props {
   title?: string;
   description?: string;
 }
+
+// The image probe reports what each <img> on the page actually cost this
+// browser on this screen. It is a build-time switch rather than a runtime one,
+// so nothing about it — markup, script or style — reaches a production build:
+//   PUBLIC_IMAGE_PERF=1 npm run build && npm run preview
+//
+// Matched against explicit on-values rather than Boolean(): the variable comes
+// through as a string, so Boolean('0') and Boolean('false') are both true and
+// would have shipped the probe to production for anyone who set it to an
+// off-looking value. scripts/check-asset-sizes.mjs asserts the build is clean.
+const IMAGE_PERF_ON = new Set(['1', 'true', 'yes', 'on']);
+const showImageProbe =
+  import.meta.env.DEV ||
+  IMAGE_PERF_ON.has(String(import.meta.env.PUBLIC_IMAGE_PERF ?? '').toLowerCase());
 
 const {
   hideNav = false,
@@ -130,6 +145,7 @@ const {
     {aiSlop && <AiSlopMark floating={hideNav} />}
     <slot />
     {!hideFooter && <SiteFooter clearAiMark={aiSlop && hideNav} />}
+    {showImageProbe && <ImagePerfProbe />}
     <script>
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';
