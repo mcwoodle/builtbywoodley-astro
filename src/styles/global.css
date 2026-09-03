@@ -2494,20 +2494,49 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 .gallery-track {
+  /* One statement of each number, so the width the frames actually occupy can
+     be worked out from the same values that lay them out.
+
+     The count is set inline by the template. The 1 here is the standalone
+     fallback: it makes --strip-frames small enough that the gutter below is
+     the full column inset, which is what this rule did before it knew how many
+     frames there were. */
+  --strip-count: 1;
+  --strip-item: clamp(230px, 29vw, 400px);
+  --strip-gap: clamp(14px, 2vw, 26px);
+  --strip-frames: calc(
+    var(--strip-count) * var(--strip-item) + (var(--strip-count) - 1) * var(--strip-gap)
+  );
+
   display: flex;
-  gap: clamp(14px, 2vw, 26px);
+  gap: var(--strip-gap);
   width: max-content;
   /* Centred when the whole archive fits the rail. Auto margins split the free
      space, and resolve to zero the moment there is none — so an overflowing
      strip still starts hard against the left edge, where it can be scrolled
      from, rather than being centred into an unreachable overhang. */
   margin-inline: auto;
-  padding-inline: var(--shell-gutter);
+  /*
+   * A scrolling strip is inset to the shared column, so it starts under the
+   * heading. That inset is --shell-gutter, which on a wide monitor is enormous
+   * — 690px a side at 2560px — and the frames themselves are far narrower than
+   * the screen. Padding alone was then the entire reason the strip scrolled.
+   *
+   * So: the column inset, but never more than the room going spare once the
+   * frames are laid out. The 12px comes off each side so the result still
+   * clears a vertical scrollbar, which 100vw counts and the rail does not.
+   * When the frames genuinely overflow, both terms collapse to the 20px edge
+   * and the strip scrolls, which is the case the inset was never about.
+   */
+  padding-inline: min(
+    var(--shell-gutter),
+    max(20px, calc((100vw - var(--strip-frames)) / 2 - 12px))
+  );
   will-change: transform;
 }
 
 .gallery-item {
-  flex: 0 0 clamp(230px, 29vw, 400px);
+  flex: 0 0 var(--strip-item);
   margin: 0;
   scroll-snap-align: start;
 }

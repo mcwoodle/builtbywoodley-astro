@@ -722,7 +722,10 @@ const coopSpan = coops.length
         </div>
 
         <div class="gallery" data-gallery>
-          <div class="gallery-track" data-gallery-track>
+          {/* The stylesheet works out how much of the shell gutter there is
+              room for from the width of the frames, which it can only do if it
+              knows how many there are. */}
+          <div class="gallery-track" data-gallery-track style={`--strip-count: ${strip.length}`}>
             {strip.map(({ photo, anchor }) => (
               <figure class="gallery-item">
                 <a class="gallery-link" href={`#${anchor}`} data-photo-open>
