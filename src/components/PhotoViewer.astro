@@ -3,29 +3,8 @@
 // and the script below fills the panel from the manifest it ships with. Because
 // the open photo lives in the URL, Back closes the panel and a link to a single
 // photograph works.
-export type ViewerFrame = {
-  anchor: string;
-  alt: string;
-  title: string;
-  note: string;
-  stamp: string;
-  datetime: string;
-  place: string;
-  src: string;
-  srcset: string;
-  sizes: string;
-  /**
-   * The master at its own size, for the 1:1 view. This is the full-resolution
-   * original Astro emits for every image() field and then references from
-   * nowhere — see docs/photography-image-delivery.md. It is already deployed
-   * whether or not anything points at it, so using it here costs no bytes at
-   * all and turns dead weight into the one thing it is actually good for.
-   */
-  full: string;
-  /** Intrinsic size, so the panel reserves the frame's shape before it loads. */
-  width: number;
-  height: number;
-};
+import type { ViewerFrame } from "../lib/photo-frames";
+export type { ViewerFrame };
 
 type Props = { frames: ViewerFrame[] };
 
@@ -104,11 +83,10 @@ const { frames } = Astro.props;
   <div class="photo-zoom" data-photo-zoom hidden>
     <img class="photo-zoom-image" data-photo-zoom-image alt="" draggable="false" />
 
-    <p class="photo-zoom-loading" data-photo-zoom-loading>Loading full resolution…</p>
-
-    {/* The tap that opened this closes it again, but a tap-to-dismiss with no
-        visible control is a thing people have to discover. This is the
-        affordance. */}
+    {/* The click that opened this closes it again, but a click-to-dismiss with
+        no visible control is a thing people have to discover. This is the
+        affordance — and it is hidden under a held press, where letting go is
+        the exit and there is no free hand to reach for it. */}
     <button
       type="button"
       class="photo-viewer-button photo-zoom-close"
