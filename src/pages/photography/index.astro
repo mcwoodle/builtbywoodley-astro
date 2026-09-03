@@ -58,6 +58,8 @@ const viewerFrames: ViewerFrame[] = await Promise.all(
       src: large.src,
       srcset: large.srcSet.attribute,
       sizes: VIEWER_SIZES,
+      // The untouched master, for the 1:1 view. Astro has already emitted it.
+      full: photo.src.src,
       width: photo.src.width,
       height: photo.src.height,
     };

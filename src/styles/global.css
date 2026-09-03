@@ -3185,6 +3185,99 @@ body.is-photo-viewing {
   height: auto;
   max-width: 100%;
   max-height: 100%;
+  /* The picture is the control: a tap on it opens the 1:1 view. */
+  cursor: zoom-in;
+}
+
+.photo-viewer-image:focus-visible {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 3px;
+}
+
+/* The 1:1 view ───────────────────────────────────
+   A layer of its own rather than a transform on .photo-viewer-image, because
+   the swipe and the reveal already own that element's transform and the two
+   would fight. Fixed to the window on every screen: at one image pixel per CSS
+   pixel a smaller frame only shows less picture, and on a phone the window is
+   the only space worth inspecting a negative in. */
+.photo-zoom {
+  position: fixed;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  background: var(--viewer-ground);
+  /* Every gesture in here is a pan, and the script does the panning. */
+  touch-action: none;
+  overscroll-behavior: contain;
+  cursor: zoom-out;
+}
+
+.photo-zoom[hidden] {
+  display: none;
+}
+
+/* Natural size, moved by transform alone. The reset at the top of this file
+   caps every image at the width of its box, which is the one thing that must
+   not happen here. */
+.photo-zoom-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  max-height: none;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* A master runs to several megabytes. Say it is coming rather than holding an
+   empty ground while it decodes. */
+.photo-zoom[data-loading] .photo-zoom-image {
+  opacity: 0;
+}
+
+.photo-zoom-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-bottom: 0;
+  translate: -50% -50%;
+  color: var(--viewer-ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.photo-zoom:not([data-loading]) .photo-zoom-loading {
+  display: none;
+}
+
+/* Tapping anywhere closes the layer, but a dismissal with nothing to look at
+   is a thing people have to guess. This is the affordance: clear of the notch,
+   and larger than the panel's own controls because it is the only chrome here. */
+.photo-zoom-close {
+  position: absolute;
+  z-index: 1;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
+  width: 46px;
+  height: 46px;
+  border-color: rgba(242, 239, 232, 0.34);
+  background: rgba(11, 14, 16, 0.62);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.photo-zoom-close:hover:not(:disabled) {
+  background: rgba(11, 14, 16, 0.84);
+}
+
+.photo-zoom-close svg {
+  width: 19px;
+  height: 19px;
 }
 
 /* A steady footer across the panel: the metadata sits in the same place from

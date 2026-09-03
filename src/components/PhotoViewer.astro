@@ -14,6 +14,14 @@ export type ViewerFrame = {
   src: string;
   srcset: string;
   sizes: string;
+  /**
+   * The master at its own size, for the 1:1 view. This is the full-resolution
+   * original Astro emits for every image() field and then references from
+   * nowhere — see docs/photography-image-delivery.md. It is already deployed
+   * whether or not anything points at it, so using it here costs no bytes at
+   * all and turns dead weight into the one thing it is actually good for.
+   */
+  full: string;
   /** Intrinsic size, so the panel reserves the frame's shape before it loads. */
   width: number;
   height: number;
@@ -25,7 +33,7 @@ const { frames } = Astro.props;
 ---
 
 <dialog class="photo-viewer" aria-label="Photograph">
-  <div class="photo-viewer-bar">
+  <div class="photo-viewer-bar" data-photo-panel>
     <p class="photo-viewer-count" data-photo-count aria-live="polite"></p>
 
     <button
@@ -40,7 +48,7 @@ const { frames } = Astro.props;
     </button>
   </div>
 
-  <figure class="photo-viewer-figure">
+  <figure class="photo-viewer-figure" data-photo-panel>
     {/* The steps flank the picture itself. On a touch screen they turn to point
         up and down, matching the swipe. */}
     <div class="photo-viewer-stage" data-photo-swipe>
@@ -55,7 +63,15 @@ const { frames } = Astro.props;
         </svg>
       </button>
 
-      <img class="photo-viewer-image" data-photo-image alt="" />
+      {/* Tapping the picture opens the 1:1 view; the cursor says so. It is in
+          the tab order too, so Enter reaches the same view a tap does. */}
+      <img
+        class="photo-viewer-image"
+        data-photo-image
+        data-photo-zoom-open
+        tabindex="0"
+        alt=""
+      />
 
       <button
         type="button"
@@ -79,6 +95,31 @@ const { frames } = Astro.props;
       </p>
     </figcaption>
   </figure>
+
+  {/* The 1:1 view. A separate layer rather than a transform on the picture
+      above, because that element is driven by the swipe and the reveal and the
+      two would fight over its transform. Full-bleed on every screen: at one
+      image pixel per CSS pixel there is nothing to gain from a smaller window,
+      and on a phone it is the only way the frame is worth inspecting. */}
+  <div class="photo-zoom" data-photo-zoom hidden>
+    <img class="photo-zoom-image" data-photo-zoom-image alt="" draggable="false" />
+
+    <p class="photo-zoom-loading" data-photo-zoom-loading>Loading full resolution…</p>
+
+    {/* The tap that opened this closes it again, but a tap-to-dismiss with no
+        visible control is a thing people have to discover. This is the
+        affordance. */}
+    <button
+      type="button"
+      class="photo-viewer-button photo-zoom-close"
+      data-photo-zoom-close
+      aria-label="Close full-resolution view"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m6 6 12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+  </div>
 </dialog>
 
 <script type="application/json" data-photo-frames is:inline set:html={JSON.stringify(frames)}

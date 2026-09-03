@@ -17,6 +17,8 @@ type Frame = {
   src: string;
   srcset: string;
   sizes: string;
+  /** The master at its own size, shown at 1:1 in the zoom view. */
+  full: string;
   width: number;
   height: number;
 };
@@ -55,6 +57,26 @@ function start() {
   const ENTER_SHIFT = 96;
   const STEP_EXIT_SHIFT = 72;
 
+  // ── The 1:1 view ──
+  // A separate layer over the panel, showing the master at one image pixel per
+  // CSS pixel. A fine pointer drives it by position — the right edge of the
+  // window shows the right edge of the frame — and a finger drags it directly,
+  // which is the gesture that matches each input.
+  let zoomed = false;
+  /** Where the picture sits, in CSS px, top-left relative to the window. */
+  let zoomX = 0;
+  let zoomY = 0;
+  /** The master's own size. */
+  let zoomW = 0;
+  let zoomH = 0;
+  let zoomDragging = false;
+  let zoomDragX = 0;
+  let zoomDragY = 0;
+  /** A drag ends in a click, which must not read as the tap that closes. */
+  let zoomMoved = false;
+  /** Invalidates a full-resolution load the reader has already moved past. */
+  let zoomToken = 0;
+
   let dragging = false;
   let dragStartX = 0;
   let dragStartY = 0;
@@ -79,6 +101,144 @@ function start() {
     document.querySelector<T>(selector);
 
   const image = () => el<HTMLImageElement>("[data-photo-image]");
+  const zoomLayer = () => el<HTMLElement>("[data-photo-zoom]");
+  /** The panel behind the 1:1 layer, held out of reach while it is up. */
+  const panelRegions = () =>
+    document.querySelectorAll<HTMLElement>("[data-photo-panel]");
+  const zoomImage = () => el<HTMLImageElement>("[data-photo-zoom-image]");
+
+  /** Only a mouse gets to steer by hovering; a finger drags instead. */
+  const finePointer = () =>
+    window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false;
+
+  /**
+   * Keep the picture covering the window. On an axis the master does not fill
+   * there is nothing to pan, so it is centred instead of pinned to a corner.
+   */
+  function clampZoom(x: number, y: number) {
+    const spareX = zoomW - window.innerWidth;
+    const spareY = zoomH - window.innerHeight;
+    return {
+      x: spareX <= 0 ? (window.innerWidth - zoomW) / 2 : Math.min(0, Math.max(-spareX, x)),
+      y: spareY <= 0 ? (window.innerHeight - zoomH) / 2 : Math.min(0, Math.max(-spareY, y)),
+    };
+  }
+
+  function paintZoom() {
+    const picture = zoomImage();
+    if (!picture) return;
+    const clamped = clampZoom(zoomX, zoomY);
+    zoomX = clamped.x;
+    zoomY = clamped.y;
+    picture.style.transform = `translate3d(${zoomX}px, ${zoomY}px, 0)`;
+  }
+
+  /** Map the pointer across the window onto the same fraction of the frame. */
+  function panToPointer(clientX: number, clientY: number) {
+    const spareX = Math.max(0, zoomW - window.innerWidth);
+    const spareY = Math.max(0, zoomH - window.innerHeight);
+    zoomX = -spareX * (clientX / Math.max(1, window.innerWidth));
+    zoomY = -spareY * (clientY / Math.max(1, window.innerHeight));
+    paintZoom();
+  }
+
+  function openZoom(atX?: number, atY?: number) {
+    const frame = frames[openIndex];
+    const layer = zoomLayer();
+    const picture = zoomImage();
+    if (zoomed || !frame || !layer || !picture) return;
+
+    zoomed = true;
+    zoomMoved = false;
+    zoomW = frame.width;
+    zoomH = frame.height;
+    const token = ++zoomToken;
+
+    picture.width = frame.width;
+    picture.height = frame.height;
+    picture.alt = frame.alt;
+    // Keyed by anchor rather than by comparing src, which the browser has
+    // already resolved to an absolute URL by the time it can be read back.
+    if (picture.dataset.frame !== frame.anchor) {
+      picture.dataset.frame = frame.anchor;
+      picture.src = frame.full;
+    }
+
+    layer.hidden = false;
+    layer.dataset.loading = "true";
+
+    // Open on the spot the pointer opened it from, so the part of the frame
+    // under the cursor is the part that appears. A finger gets it centred and
+    // drags from there.
+    if (atX === undefined || atY === undefined) {
+      zoomX = (window.innerWidth - zoomW) / 2;
+      zoomY = (window.innerHeight - zoomH) / 2;
+      paintZoom();
+    } else {
+      panToPointer(atX, atY);
+    }
+
+    const ready = picture.decode
+      ? picture.decode().catch(() => {})
+      : new Promise<void>((resolve) => {
+          if (picture.complete) resolve();
+          else picture.addEventListener("load", () => resolve(), { once: true });
+        });
+
+    void ready.then(() => {
+      if (token !== zoomToken) return;
+      layer.removeAttribute("data-loading");
+      paintZoom();
+    });
+
+    // Nothing behind the layer is reachable while it is up.
+    panelRegions().forEach((region) => {
+      region.inert = true;
+    });
+
+    // The X is the affordance; put the keyboard on it too.
+    el<HTMLButtonElement>("[data-photo-zoom-close]")?.focus();
+  }
+
+  function closeZoom(restoreFocus = true) {
+    if (!zoomed) return;
+    const layer = zoomLayer();
+    zoomed = false;
+    zoomToken += 1;
+    zoomDragging = false;
+    zoomMoved = false;
+    if (layer) {
+      layer.hidden = true;
+      layer.removeAttribute("data-loading");
+    }
+    panelRegions().forEach((region) => {
+      region.inert = false;
+    });
+    // Focus was inside a layer that has just gone; put it back on the panel —
+    // unless the panel is going too, in which case the dialog restores it.
+    if (restoreFocus) el<HTMLButtonElement>("[data-photo-close]")?.focus();
+  }
+
+  function startZoomDrag(event: TouchEvent) {
+    if (event.touches.length !== 1) return;
+    zoomDragging = true;
+    zoomMoved = false;
+    zoomDragX = event.touches[0].clientX;
+    zoomDragY = event.touches[0].clientY;
+  }
+
+  function moveZoomDrag(event: TouchEvent) {
+    if (!zoomDragging || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - zoomDragX;
+    const deltaY = touch.clientY - zoomDragY;
+    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) zoomMoved = true;
+    zoomDragX = touch.clientX;
+    zoomDragY = touch.clientY;
+    zoomX += deltaX;
+    zoomY += deltaY;
+    paintZoom();
+  }
 
   function panel() {
     const dialog = el<HTMLDialogElement>(".photo-viewer");
@@ -87,6 +247,11 @@ function start() {
       dialog.dataset.photoBound = "true";
       dialog.addEventListener("cancel", (event) => {
         event.preventDefault();
+        // Escape peels off one layer at a time.
+        if (zoomed) {
+          closeZoom();
+          return;
+        }
         requestClose();
       });
     }
@@ -258,6 +423,7 @@ function start() {
 
     const changed = shownAnchor !== frame.anchor;
     const opening = !dialog.open;
+    if (changed) closeZoom();
     openIndex = index;
     shownAnchor = frame.anchor;
 
@@ -304,6 +470,7 @@ function start() {
 
   function close() {
     const dialog = panel();
+    closeZoom(false);
     if (dialog?.open) dialog.close();
     openIndex = -1;
     shownAnchor = "";
@@ -381,6 +548,10 @@ function start() {
   }
 
   function onTouchStart(event: TouchEvent) {
+    if (zoomed) {
+      startZoomDrag(event);
+      return;
+    }
     if (openIndex < 0 || event.touches.length !== 1) return;
     const target = event.target instanceof Element ? event.target : null;
     const stage = el(".photo-viewer-stage");
@@ -396,6 +567,10 @@ function start() {
   }
 
   function onTouchMove(event: TouchEvent) {
+    if (zoomed) {
+      moveZoomDrag(event);
+      return;
+    }
     if (!dragging || event.touches.length !== 1) return;
 
     const deltaY = event.touches[0].clientY - dragStartY;
@@ -443,6 +618,39 @@ function start() {
         return;
       }
 
+      // The X, then a tap anywhere on the frame. Both leave the 1:1 view.
+      if (target.closest("[data-photo-zoom-close]")) {
+        event.preventDefault();
+        closeZoom();
+        return;
+      }
+
+      if (zoomed && target.closest("[data-photo-zoom]")) {
+        event.preventDefault();
+        // A pan ends in a click. That was a drag, not a tap.
+        if (zoomMoved) {
+          zoomMoved = false;
+          return;
+        }
+        closeZoom();
+        return;
+      }
+
+      // Tapping the picture opens it at 1:1 rather than dismissing the panel,
+      // so this has to come before the dismiss branch at the end.
+      if (!zoomed && target.closest("[data-photo-zoom-open]") && isPlainClick(event)) {
+        event.preventDefault();
+        // The click that trails a swipe was a gesture, not a tap — and this
+        // branch runs ahead of the dismiss branch that would have eaten it.
+        if (swallowClick) {
+          swallowClick = false;
+          return;
+        }
+        if (finePointer()) openZoom(event.clientX, event.clientY);
+        else openZoom();
+        return;
+      }
+
       const stepper = target.closest<HTMLElement>("[data-photo-step]");
       if (stepper) {
         event.preventDefault();
@@ -472,7 +680,14 @@ function start() {
   );
 
   document.addEventListener("keydown", (event) => {
-    if (openIndex < 0) return;
+    if (openIndex < 0 || zoomed) return;
+    if (event.key === "Enter" || event.key === " ") {
+      if (document.activeElement?.closest("[data-photo-zoom-open]")) {
+        event.preventDefault();
+        openZoom();
+      }
+      return;
+    }
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
       advance(-1);
@@ -484,8 +699,31 @@ function start() {
 
   document.addEventListener("touchstart", onTouchStart, { passive: true });
   document.addEventListener("touchmove", onTouchMove, { passive: true });
-  document.addEventListener("touchend", () => endDrag(false));
-  document.addEventListener("touchcancel", () => endDrag(true));
+  document.addEventListener("touchend", () => {
+    if (zoomed) {
+      zoomDragging = false;
+      return;
+    }
+    endDrag(false);
+  });
+  document.addEventListener("touchcancel", () => {
+    if (zoomed) {
+      zoomDragging = false;
+      return;
+    }
+    endDrag(true);
+  });
+
+  // A mouse steers the 1:1 view by where it is, rather than by dragging.
+  document.addEventListener("mousemove", (event) => {
+    if (!zoomed || !finePointer()) return;
+    panToPointer(event.clientX, event.clientY);
+  });
+
+  // The window changing size changes what "covering it" means.
+  window.addEventListener("resize", () => {
+    if (zoomed) paintZoom();
+  });
 
   // Astro's router settles a same-page hash link with pushState and a synthetic
   // popstate, which means no hashchange fires for a tile click — both events are
