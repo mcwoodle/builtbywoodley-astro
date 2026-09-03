@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "cross-env": "^10.1.0",
-    "lefthook": "^2.1.10"
+    "lefthook": "^2.1.12"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",
