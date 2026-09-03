@@ -1,10 +1,13 @@
 ---
 import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
+import { ladderAttrs } from "../config/image-ladders.mjs";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 import WaterlooMark from "../components/WaterlooMark.astro";
 import OrgLogo from "../components/OrgLogo.astro";
+import PhotoViewer from "../components/PhotoViewer.astro";
+import { buildViewerFrames, sortPhotos, stampFor, withAnchors } from "../lib/photo-frames";
 
 const softwareEntries = (await getCollection("software")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -22,11 +25,14 @@ const ticker = [
 ];
 
 const [photoManifest] = await getCollection("photos");
-const photos = [...photoManifest.data.photos].sort(
-  (a, b) => b.date.getTime() - a.date.getTime(),
-);
+const photoFrames = withAnchors(sortPhotos(photoManifest.data.photos));
+// The panel carries the whole archive even though the hero is not a way into
+// it, so stepping back off the first strip frame reaches the photograph above
+// rather than stopping at a wall.
+const viewerFrames = await buildViewerFrames(photoFrames);
 // The newest frame anchors the fold; the rest ride the horizontal strip.
-const [showcase, ...strip] = photos;
+const [showcaseFrame, ...strip] = photoFrames;
+const showcase = showcaseFrame.photo;
 
 const [workManifest] = await getCollection("work");
 // Oldest first. The history reads forwards from the degree, so the ladder it
@@ -40,10 +46,6 @@ const positions = roles.filter((role) => !role.internship);
 const coops = roles.filter((role) => role.internship);
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-// UTC accessors: the manifest's dates parse as UTC midnight, so local getters
-// would shift them back a day for anyone west of Greenwich.
-const stampFor = (date: Date) =>
-  `${String(date.getUTCDate()).padStart(2, "0")} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 
 // "2019-06" reads as "Jun 2019"; a bare year stays a bare year.
 const monthYear = (value: string) => {
@@ -265,14 +267,18 @@ const coopSpan = coops.length
     <section class="showcase" aria-labelledby="showcase-caption-title">
       <figure class="showcase-frame">
         <div class="showcase-media">
+          {/* Widths, quality and the `src` fallback cap come from the
+              showcase ladder in src/config/image-ladders.mjs. `sizes` stays
+              here because it describes this section's layout: the frame is
+              full-bleed, so it is always the width of the viewport. */}
           <Image
             class="showcase-image"
             src={showcase.src}
             alt={showcase.alt}
-            widths={[900, 1400, 1845]}
             sizes="100vw"
             loading="eager"
             fetchpriority="high"
+            {...ladderAttrs("showcase")}
           />
         </div>
         <figcaption class="showcase-caption">
@@ -716,24 +722,35 @@ const coopSpan = coops.length
         </div>
 
         <div class="gallery" data-gallery>
-          <div class="gallery-track" data-gallery-track>
-            {strip.map((photo) => (
+          {/* The stylesheet works out how much of the shell gutter there is
+              room for from the width of the frames, which it can only do if it
+              knows how many there are. */}
+          <div class="gallery-track" data-gallery-track style={`--strip-count: ${strip.length}`}>
+            {strip.map(({ photo, anchor }) => (
               <figure class="gallery-item">
-                <div class="gallery-media">
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt}
-                    widths={[420, 720]}
-                    sizes="(max-width: 760px) 74vw, 34vw"
-                    loading="lazy"
-                  />
-                </div>
-                <figcaption class="gallery-caption">
-                  <span class="gallery-caption-title">{photo.title}</span>
-                  <span class="gallery-caption-meta">
-                    {photo.location} · {stampFor(photo.date)}
-                  </span>
-                </figcaption>
+                <a class="gallery-link" href={`#${anchor}`} data-photo-open>
+                  <div class="gallery-media">
+                  {/* Ladder from src/config/image-ladders.mjs. `sizes` restates
+                      .gallery-item's flex basis in global.css —
+                      clamp(230px, 29vw, 400px) — as breakpoints, because a
+                      clamp() inside sizes is not safe in every browser and a
+                      value it cannot parse falls back to 100vw. 29vw crosses
+                      230px at 795px and 400px at 1380px. */}
+                    <Image
+                      src={photo.src}
+                      alt={photo.alt}
+                      sizes="(max-width: 795px) 232px, (max-width: 1380px) 29vw, 400px"
+                      loading="lazy"
+                      {...ladderAttrs("galleryStrip")}
+                    />
+                  </div>
+                  <figcaption class="gallery-caption">
+                    <span class="gallery-caption-title">{photo.title}</span>
+                    <span class="gallery-caption-meta">
+                      {photo.location} · {stampFor(photo.date)}
+                    </span>
+                  </figcaption>
+                </a>
               </figure>
             ))}
           </div>
@@ -763,5 +780,9 @@ const coopSpan = coops.length
         </nav>
       </div>
     </section>
+    {/* The same panel the archive page opens, over the same set. It is a
+        dialog in the top layer, so it sits here at the end rather than inside
+        any of the sections above. */}
+    <PhotoViewer frames={viewerFrames} />
   </main>
 </BaseLayout>

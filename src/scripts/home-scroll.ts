@@ -448,12 +448,18 @@ function setupPage() {
     }
 
     if (frame && showcaseImage) {
+      // Drifts down against the crop as the frame goes by. The range is bounded
+      // by the CN Tower: with transform-origin at the top edge (global.css), the
+      // zoom only ever takes from the bottom, and holding yPercent at or below 0
+      // keeps the image covering the frame. The old -7/+7 with a 1.18 zoom about
+      // the centre cut ~13% off the top on the way in, which took the spire with
+      // it. Keep yPercent <= 0 and scale - |yPercent/100| >= 1.
       gsap.fromTo(
         showcaseImage,
-        { yPercent: -7, scale: 1.18 },
+        { yPercent: -3, scale: 1.14 },
         {
-          yPercent: 7,
-          scale: 1.02,
+          yPercent: 0,
+          scale: 1.06,
           ease: 'none',
           scrollTrigger: {
             trigger: frame,
@@ -1151,30 +1157,72 @@ function setupPage() {
       const track = page.querySelector<HTMLElement>('[data-gallery-track]');
       if (!stage || !gallery || !track) return;
 
-      gallery.classList.add('is-pinned');
       const travel = () => Math.max(0, track.scrollWidth - gallery.clientWidth);
 
-      gsap.to(track, {
-        x: () => -travel(),
-        ease: 'none',
-        scrollTrigger: {
-          // The whole stage holds still, heading included.
-          trigger: stage,
-          start: 'center center',
-          // Exactly as long as there is strip left to move: any more and the
-          // section sits there pinned with nothing happening.
-          end: () => `+=${travel()}`,
-          pin: stage,
-          // No lag. With one, the strip was still sliding sideways after the
-          // pin had let go and the section was scrolling away underneath it.
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
+      let strip: gsap.core.Tween | null = null;
 
-      return () => {
+      const build = () => {
+        if (strip) return;
+        gallery.classList.add('is-pinned');
+        strip = gsap.to(track, {
+          x: () => -travel(),
+          ease: 'none',
+          scrollTrigger: {
+            // The whole stage holds still, heading included.
+            trigger: stage,
+            start: 'center center',
+            // Exactly as long as there is strip left to move: any more and the
+            // section sits there pinned with nothing happening.
+            end: () => `+=${travel()}`,
+            pin: stage,
+            // No lag. With one, the strip was still sliding sideways after the
+            // pin had let go and the section was scrolling away underneath it.
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        });
+      };
+
+      const teardown = () => {
+        if (!strip) return;
+        strip.scrollTrigger?.kill();
+        strip.kill();
+        strip = null;
         gallery.classList.remove('is-pinned');
         gsap.set(track, { x: 0 });
+      };
+
+      // A monitor wide enough for the whole archive has nothing to drive, and
+      // pinning it there would hold the page still through a stretch of scroll
+      // where the strip never moves. The CSS centres it instead.
+      //
+      // A hair of overflow is measurement noise — fractional widths, device
+      // pixel rounding, a zoom level — not a strip worth pinning the page for.
+      const FITS_SLACK = 1;
+      let pinning = false;
+      const sync = () => {
+        // The viewer parks the document at zero while it is open, by pinning
+        // the body. Refreshing against that would measure every trigger on the
+        // page from the wrong offset and leave them all displaced once it
+        // closes — this section's pin, and the hero and showcase besides.
+        if (document.body.classList.contains('is-photo-viewing')) return;
+        const wanted = travel() > FITS_SLACK;
+        if (wanted === pinning) return;
+        pinning = wanted;
+        if (wanted) build();
+        else teardown();
+        // Killing a pin puts its spacer back and changes the height of the
+        // document, so the measurement has to wait for the layout that follows
+        // rather than reading the one it is in the middle of replacing.
+        requestAnimationFrame(() => ScrollTrigger.refresh());
+      };
+
+      sync();
+      window.addEventListener('resize', sync, { passive: true, signal });
+
+      return () => {
+        window.removeEventListener('resize', sync);
+        teardown();
       };
     },
   );

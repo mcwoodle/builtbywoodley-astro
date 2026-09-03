@@ -5,10 +5,14 @@ import { unified } from '@astrojs/markdown-remark';
 import tailwindcss from '@tailwindcss/vite';
 
 import rehypeLeadIn from './src/plugins/rehype-lead-in';
+import stagePhotoMasters from './src/integrations/stage-photo-masters.mjs';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [mdx()],
+  // stagePhotoMasters gives each photograph a short deployed filename while the
+  // repository keeps the archival one. It has to run before the content
+  // collection is read, which astro:config:setup guarantees.
+  integrations: [mdx(), stagePhotoMasters()],
 
   // /about was folded into the landing page. Anything still pointing at the
   // old route lands on the chapter it became.

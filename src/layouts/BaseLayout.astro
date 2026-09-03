@@ -3,6 +3,7 @@ import NavigationTransitionHead from '../components/NavigationTransitionHead.ast
 import AiSlopMark from '../components/AiSlopMark.astro';
 import TopNav from '../components/TopNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import ImagePerfProbe from '../components/ImagePerfProbe.astro';
 import '../styles/global.css';
 import '../styles/view-transitions.css';
 
@@ -130,6 +131,7 @@ const {
     {aiSlop && <AiSlopMark floating={hideNav} />}
     <slot />
     {!hideFooter && <SiteFooter clearAiMark={aiSlop && hideNav} />}
+    <ImagePerfProbe />
     <script>
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';

@@ -1459,27 +1459,61 @@ html[data-motion-armed] [data-hero-tail] {
 .showcase {
   position: relative;
   width: 100%;
+
+  /* The widest crop this photograph survives. `cover` on a wider frame trims
+     height off both ends, and past roughly 1.82:1 the treeline and its lights
+     drop out of the bottom while the spire crowds the top. The frame height
+     and the picture's own width cap are both derived from it, so the crop is
+     the one number to change if the photograph is replaced. */
+  --showcase-crop: 1.82;
+  --showcase-h: min(86svh, 820px);
 }
 
 .showcase-frame {
   position: relative;
-  height: min(86svh, 820px);
+  height: var(--showcase-h);
   margin: 0;
   overflow: hidden;
 }
 
+/* The picture is capped at the crop and centred, so once a viewport is wider
+   than the crop allows it gains margins rather than losing the trees. The
+   caption is anchored to the 1180px column, which is narrower than the picture
+   at every width, so it stays over the photograph. */
 .showcase-media {
   position: absolute;
   inset: 0;
+  margin-inline: auto;
+  max-width: calc(var(--showcase-h) * var(--showcase-crop));
   overflow: hidden;
   clip-path: inset(0% 18% 0% 18% round 26px);
 }
 
+/* On a wide screen the frame grows tall enough to carry the whole crop at full
+   width, rather than staying short and slicing the photograph into a letterbox
+   slot. Once that would cost most of the viewport the height stops at 88svh
+   and the picture centres inside it — which is what an ultrawide gets. */
+@media (min-width: 1000px) {
+  .showcase {
+    --showcase-h: min(88svh, calc(100vw / var(--showcase-crop)));
+  }
+}
+
+/* The spire is 9.8% down the frame, so the top of the picture is the part that
+   must survive every crop. Two things eat into it: `cover` trimming the height
+   on wide viewports, and the scroll zoom in home-scroll.ts. Anchoring the
+   transform at the top edge keeps the zoom from taking any sky at all. With
+   --showcase-crop holding the frame at 1.82:1 or narrower, at least 82% of the
+   file's height is always in view, so 2% here lands the visible band at roughly
+   0.3%-83% — the spire clear of the top, the lit treeline clear of the bottom.
+   Both numbers are tied to this frame; remeasure if the photograph changes. */
 .showcase-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: 50% 2%;
+  transform-origin: 50% 0%;
   will-change: transform;
 }
 
@@ -2460,17 +2494,61 @@ html[data-motion-armed] [data-hero-tail] {
 }
 
 .gallery-track {
+  /* One statement of each number, so the width the frames actually occupy can
+     be worked out from the same values that lay them out.
+
+     The count is set inline by the template. The 1 here is the standalone
+     fallback: it makes --strip-frames small enough that the gutter below is
+     the full column inset, which is what this rule did before it knew how many
+     frames there were. */
+  --strip-count: 1;
+  --strip-item: clamp(230px, 29vw, 400px);
+  --strip-gap: clamp(14px, 2vw, 26px);
+  --strip-frames: calc(
+    var(--strip-count) * var(--strip-item) + (var(--strip-count) - 1) * var(--strip-gap)
+  );
+
   display: flex;
-  gap: clamp(14px, 2vw, 26px);
+  gap: var(--strip-gap);
   width: max-content;
-  padding-inline: var(--shell-gutter);
+  /* Centred when the whole archive fits the rail. Auto margins split the free
+     space, and resolve to zero the moment there is none — so an overflowing
+     strip still starts hard against the left edge, where it can be scrolled
+     from, rather than being centred into an unreachable overhang. */
+  margin-inline: auto;
+  /*
+   * A scrolling strip is inset to the shared column, so it starts under the
+   * heading. That inset is --shell-gutter, which on a wide monitor is enormous
+   * — 690px a side at 2560px — and the frames themselves are far narrower than
+   * the screen. Padding alone was then the entire reason the strip scrolled.
+   *
+   * So: the column inset, but never more than the room going spare once the
+   * frames are laid out. The 12px comes off each side so the result still
+   * clears a vertical scrollbar, which 100vw counts and the rail does not.
+   * When the frames genuinely overflow, both terms collapse to the 20px edge
+   * and the strip scrolls, which is the case the inset was never about.
+   */
+  padding-inline: min(
+    var(--shell-gutter),
+    max(20px, calc((100vw - var(--strip-frames)) / 2 - 12px))
+  );
   will-change: transform;
 }
 
 .gallery-item {
-  flex: 0 0 clamp(230px, 29vw, 400px);
+  flex: 0 0 var(--strip-item);
   margin: 0;
   scroll-snap-align: start;
+}
+
+.gallery-link {
+  display: block;
+  color: inherit;
+}
+
+.gallery-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 .gallery-media {
@@ -2485,6 +2563,12 @@ html[data-motion-armed] [data-hero-tail] {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 620ms var(--ease-out);
+}
+
+.gallery-link:hover .gallery-media img,
+.gallery-link:focus-visible .gallery-media img {
+  transform: scale(1.035);
 }
 
 .gallery-caption {
@@ -3151,6 +3235,87 @@ body.is-photo-viewing {
   height: auto;
   max-width: 100%;
   max-height: 100%;
+  /* The picture is the control: a click opens the 1:1 view, and on a touch
+     screen a held press magnifies the spot under the finger. */
+  cursor: zoom-in;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.photo-viewer-image:focus-visible {
+  outline: 2px solid var(--viewer-ink);
+  outline-offset: 3px;
+}
+
+/* The 1:1 view ───────────────────────────────────
+   A layer of its own rather than a transform on .photo-viewer-image, because
+   the swipe and the reveal already own that element's transform and the two
+   would fight. Fixed to the window on every screen: at one image pixel per CSS
+   pixel a smaller frame only shows less picture, and on a phone the window is
+   the only space worth inspecting a negative in. */
+.photo-zoom {
+  position: fixed;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  background: var(--viewer-ground);
+  /* Every gesture in here is a pan, and the script does the panning. */
+  touch-action: none;
+  overscroll-behavior: contain;
+  cursor: zoom-out;
+}
+
+.photo-zoom[hidden] {
+  display: none;
+}
+
+/* Natural size, moved by transform alone. The reset at the top of this file
+   caps every image at the width of its box, which is the one thing that must
+   not happen here. */
+.photo-zoom-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  max-height: none;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Held under a finger the layer is a loupe, not a mode: letting go is the way
+   out, so the button that would close it has nothing to do and no free hand to
+   reach it. */
+.photo-zoom[data-hold] .photo-zoom-close {
+  display: none;
+}
+
+/* Tapping anywhere closes the layer, but a dismissal with nothing to look at
+   is a thing people have to guess. This is the affordance: clear of the notch,
+   and larger than the panel's own controls because it is the only chrome here. */
+.photo-zoom-close {
+  position: absolute;
+  z-index: 1;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
+  width: 46px;
+  height: 46px;
+  border-color: rgba(242, 239, 232, 0.34);
+  background: rgba(11, 14, 16, 0.62);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.photo-zoom-close:hover:not(:disabled) {
+  background: rgba(11, 14, 16, 0.84);
+}
+
+.photo-zoom-close svg {
+  width: 19px;
+  height: 19px;
 }
 
 /* A steady footer across the panel: the metadata sits in the same place from
@@ -4217,8 +4382,8 @@ body.is-photo-viewing {
 
   /* The photograph has no room to open sideways on a phone, so it arrives
      already full width and simply gets shorter. */
-  .showcase-frame {
-    height: min(70svh, 560px);
+  .showcase {
+    --showcase-h: min(70svh, 560px);
   }
 
   .portfolio-card,

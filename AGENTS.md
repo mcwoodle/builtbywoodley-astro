@@ -23,6 +23,37 @@ npm run dev
 npm run build
 ```
 
+`postbuild` runs two guards after every build, local and CI alike:
+`check-asset-sizes.mjs` fails the build if any file reaches Cloudflare's hard
+25 MiB per-asset limit (warning at 20 MiB), and `audit-astro-assets.mjs` reports
+the full-size originals Astro emits but never references.
+
+**Photography image delivery:**
+```bash
+npm run measure:images              # bytes per page, by screen size
+npm run measure:images -- --self-test
+npm run audit:assets                # -- --prune shows, -- --prune --confirm deletes
+npm run photo:master -- --max-long-edge=2560 --dry-run shot.jpg
+npm run photo:master -- --strip-only --in-place shot.jpg   # EXIF/GPS, losslessly
+```
+
+Every responsive width ladder lives in `src/config/image-ladders.mjs` — plain
+`.mjs` because the Astro components and the Node scripts both import it. Spread
+`ladderAttrs()` **last** in a prop list so nothing can override it; the `src`
+fallback is derived from the widths, so it can never be forgotten. The `sizes`
+attribute stays at each call site next to the CSS it mirrors — if you change a
+breakpoint in `global.css`, change `sizes` with it and re-run
+`measure:images --self-test`. For real timings on a real device, add
+`?stats=true` to any URL — it works in production and costs a normal visitor
+1.8 KB, because the probe itself is a lazily imported chunk. See
+`docs/photography-image-delivery.md`.
+
+Photography masters are committed under their archival export names and deployed
+under short ones: `master` in `src/content/photos/manifest.mdx` names the file in
+`images/`, `src` names what it ships as, and `src/integrations/stage-photo-masters.mjs`
+copies one to the other before the content collection is read. Always strip EXIF
+on import — phone exports carry GPS, and the full-size original is deployed.
+
 ## Security & CI
 
 Automated guardrails keep secrets and vulnerable dependencies out of the repo:

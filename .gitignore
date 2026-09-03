@@ -1,5 +1,7 @@
 # build output
 dist/
+# photo masters staged under their short deployed names; rebuilt every run
+src/content/photos/_deploy/
 # generated types
 .astro/
 .wrangler/

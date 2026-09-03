@@ -1,0 +1,68 @@
+---
+// Loader for the image probe. Ships on every page; loads almost nothing.
+//
+// The probe reports what each <img> actually cost this browser on this screen —
+// which srcset rung it chose, how many bytes that was, whether it came from
+// cache, and the LCP. Turn it on anywhere, including production:
+//
+//   https://builtbywoodley.ca/photography/?stats=true
+//
+// It stays on for the rest of the browsing session, so it survives navigating
+// around the site, and ?stats=false turns it off again. In `astro dev` it is on
+// without asking.
+//
+// What ships to a visitor who never asks for it is the small inline script
+// below and nothing else: the panel, its styles and all the measurement code
+// live in src/scripts/image-perf.ts, which is a separate chunk that is only
+// fetched when the flag is set. Keeping that split is what
+// scripts/check-asset-sizes.mjs asserts on every build — inlining the probe
+// would put roughly 4 KB of debugging on the critical path of all 36 pages.
+---
+
+<script>
+  // Guarded because Astro re-runs page scripts on some ClientRouter
+  // navigations, and the probe must only ever be started once.
+  const started = '__imagePerfLoader';
+  if (!(started in window)) {
+    (window as Record<string, unknown>)[started] = true;
+
+    const KEY = 'image-perf';
+    // Present-but-empty (`?stats`) counts as on; only an explicit off-value is off.
+    const OFF = new Set(['false', '0', 'off', 'no']);
+
+    const remembered = () => {
+      try {
+        return sessionStorage.getItem(KEY) === '1';
+      } catch {
+        return false; // Private mode, or storage disabled. Not worth failing over.
+      }
+    };
+
+    const remember = (on: boolean) => {
+      try {
+        if (on) sessionStorage.setItem(KEY, '1');
+        else sessionStorage.removeItem(KEY);
+      } catch {
+        // The URL still works for this page; it just will not persist.
+      }
+    };
+
+    const wanted = () => {
+      const asked = new URLSearchParams(location.search).get('stats');
+      if (asked !== null) {
+        const on = !OFF.has(asked.toLowerCase());
+        remember(on);
+        return on;
+      }
+      return import.meta.env.DEV || remembered();
+    };
+
+    if (wanted()) {
+      // Dynamic, so Vite splits it into its own chunk and a page that never
+      // asks for the probe never downloads it.
+      void import('../scripts/image-perf').catch((error) => {
+        console.warn('image probe failed to load', error);
+      });
+    }
+  }
+</script>
