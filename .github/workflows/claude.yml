@@ -5,10 +5,21 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
+  # `assigned` is deliberately absent: on that event github.actor is the
+  # assigner, not the issue author, so the owner gate below would let a
+  # stranger's issue body become the prompt. On `opened` the actor is the
+  # author, so the gate holds.
   issues:
-    types: [opened, assigned]
+    types: [opened]
   pull_request_review:
     types: [submitted]
+
+# No token permissions by default; the job opts into exactly what it needs.
+permissions: {}
+
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   claude:
@@ -16,14 +27,27 @@ jobs:
     # strangers from triggering runs on the owner's CLAUDE_CODE_OAUTH_TOKEN by
     # commenting "@claude". To let collaborators in too, swap github.actor for an
     # author_association check (OWNER/MEMBER/COLLABORATOR).
+    #
+    #
+    # The second clause closes what the actor check alone does not: it says who
+    # INVOKE Claude, not whose text it then reads. Requiring the thread to be
+    # the owner's own as well means a stranger's issue body or PR description
+    # can never become the prompt, even when the owner is the one asking. The
+    # cost is that "@claude" on a contributor's PR no longer runs — relax this
+    # clause only if you are content to treat its output there as untrusted.
+    # `contents: read` is what bounds the damage either way: the run cannot
+    # push, open a PR, or alter the repo.
     if: |
-      github.actor == github.repository_owner && (
+      github.actor == github.repository_owner &&
+      (github.event.issue.user.login == github.repository_owner ||
+       github.event.pull_request.user.login == github.repository_owner) && (
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: read
@@ -35,6 +59,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+          # The action authenticates with the token from the environment, and
+          # `contents: read` means it cannot push regardless, so the credential
+          # does not need to persist in .git/config.
+          persist-credentials: false
 
       - name: Run Claude Code
         id: claude

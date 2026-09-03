@@ -1,19 +1,39 @@
 name: Deploy to Cloudflare Workers
 
+# The only path to production: a push to mainline builds the static site and
+# publishes it as Cloudflare Worker static assets. Pull requests never reach
+# this workflow — they get an isolated preview version instead (preview.yml).
 on:
   push:
     branches:
       - mainline
 
+# Queue production deploys rather than running them concurrently, and never
+# cancel one mid-flight: a half-finished `wrangler deploy` is worse than a
+# slightly stale one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+# No token permissions by default; the job opts into exactly what it needs.
+permissions: {}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # `npm ci` below runs dependency lifecycle scripts, so don't leave the
+          # job's GITHUB_TOKEN sitting in .git/config where they could read it.
+          # Nothing here pushes to the repo, and Cloudflare auth is passed
+          # explicitly to wrangler-action.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -23,6 +43,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          # `npm ci` runs the repo's `prepare` script, which downloads a gitleaks
+          # binary for the local pre-commit hook. This job never runs that hook,
+          # so skip the download rather than fetch a binary to leave unused.
+          SKIP_GITLEAKS_INSTALL: "1"
 
       - name: Build site
         run: npm run build

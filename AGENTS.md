@@ -72,12 +72,51 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
   `Permissions-Policy`, which Cloudflare serves with every static asset.
 - **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
   GitHub Actions current.
+- **Static analysis (SAST)** — CodeQL (`.github/workflows/codeql.yml`) analyses
+  two languages: `javascript-typescript` for the site source and `actions` for the
+  workflow files themselves. Free on public repositories.
+- **PR dependency diff** — `actions/dependency-review-action` fails a pull request
+  that introduces a new high-severity advisory, which catches a bad dependency in
+  review rather than after it lands.
+- **Pipeline hardening** — every workflow starts at `permissions: {}` and each job
+  opts into the scopes it needs; `actions/checkout` runs with
+  `persist-credentials: false` so the job token is not left in `.git/config` where a
+  dependency lifecycle script could read it; third-party actions are pinned to
+  commit SHAs; and every job has a `timeout-minutes`.
 
-> **Private repo:** SAST via CodeQL code scanning needs GitHub Advanced Security
-> (free only on public repos), so it is not enabled here — the public-only CodeQL
-> workflow and `dependency-review-action` have been removed. If this repo ever goes
-> public, re-add a `github/codeql-action` workflow and `actions/dependency-review-action`
-> to restore SAST and PR dependency-diff reporting.
+> **This is a public repository.** Two consequences worth holding on to when
+> editing CI:
+>
+> 1. **Anyone can open a pull request.** Fork PRs cannot read repository secrets,
+>    so `preview.yml` skips them outright rather than failing on a missing token.
+>    Never introduce `pull_request_target` to work around that — it runs untrusted
+>    PR code with a privileged token, and it is the single most common way a public
+>    repo leaks its secrets.
+> 2. **Anyone can write text the AI workflow might read.** `claude.yml` carries two
+>    gates, and both matter. `github.actor == github.repository_owner` decides who
+>    may invoke Claude; the thread-originator check decides *whose text* can become
+>    the prompt. The `issues: assigned` trigger is deliberately absent for the same
+>    reason — on that event the actor is the assigner while the issue body is
+>    stranger-authored. Loosening either gate, or adding a trigger where the actor
+>    and the author of the text can differ, reopens an indirect prompt-injection
+>    path into a run holding the owner's Claude token.
+
+### Repository settings (not in version control)
+
+These cannot live in the repo, so they are recorded here. If the repo is ever
+forked or recreated, re-apply them:
+
+- Private vulnerability reporting: **enabled** (this is what `SECURITY.md` points at).
+- Dependabot alerts and security updates: **enabled**.
+- Actions → Workflow permissions: **read-only** default `GITHUB_TOKEN`, and
+  "Allow GitHub Actions to create and approve pull requests" **off**.
+- Actions → Fork pull request workflows: **require approval for all external
+  contributors**, so a stranger's first workflow run does not start unreviewed.
+- Branch protection on `mainline`: require pull requests, require the Security and
+  CodeQL checks to pass, and no force pushes. `mainline` deploys straight to
+  production, so it is the branch that most needs the guard rail.
+- Code scanning: CodeQL results appear under the **Security** tab once
+  `codeql.yml` has run at least once on `mainline`.
 
 ## Authoring
 

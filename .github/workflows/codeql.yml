@@ -1,0 +1,62 @@
+name: CodeQL
+
+# Static analysis (SAST) via GitHub code scanning. Free on public repositories;
+# on a private repo this needs GitHub Advanced Security, which is why this
+# workflow only exists now that the repo is public.
+#
+# Two languages are analysed:
+#   javascript-typescript -> the site's own source (.astro compiles to TS/JS)
+#   actions               -> the workflow files in this directory, which is
+#                            where a public repo's most exploitable mistakes
+#                            live (injection via untrusted PR titles/bodies,
+#                            over-broad token permissions).
+
+on:
+  push:
+    branches: [mainline]
+  pull_request:
+  schedule:
+    # Wednesdays 06:41 UTC — offset from the Monday security workflow so the
+    # two scheduled scans don't land in the same window.
+    - cron: "41 6 * * 3"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      # Required to upload results to the code scanning dashboard.
+      security-events: write
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Don't leave the job's GITHUB_TOKEN behind in .git/config.
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          # Neither language is compiled, so CodeQL reads the source directly
+          # and no build step is needed.
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
