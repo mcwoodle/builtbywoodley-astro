@@ -35,6 +35,11 @@ jobs:
       # Required to upload results to the code scanning dashboard.
       security-events: write
       contents: read
+      # Required for the run's own status/telemetry lookup (get-a-workflow-run).
+      # GitHub's starter workflow marks this private-repo-only, but the job fails
+      # with "Resource not accessible by integration" without it while the repo is
+      # private, and it costs nothing to keep once public.
+      actions: read
 
     strategy:
       fail-fast: false
