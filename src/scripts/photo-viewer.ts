@@ -148,6 +148,10 @@ function start() {
     const picture = zoomImage();
     if (zoomed || !frame || !layer || !picture) return;
 
+    // A panel swipe underneath would otherwise be left mid-flight, and its
+    // offset would still be on the picture when the layer comes down.
+    endDrag(true);
+
     zoomed = true;
     zoomMoved = false;
     zoomW = frame.width;
@@ -245,6 +249,8 @@ function start() {
     // `cancel` (the Escape key) does not bubble, so it is bound per element.
     if (dialog && !dialog.dataset.photoBound) {
       dialog.dataset.photoBound = "true";
+      // Whatever closes the panel, the layer over it does not outlive it.
+      dialog.addEventListener("close", () => closeZoom(false));
       dialog.addEventListener("cancel", (event) => {
         event.preventDefault();
         // Escape peels off one layer at a time.
@@ -709,6 +715,9 @@ function start() {
   document.addEventListener("touchcancel", () => {
     if (zoomed) {
       zoomDragging = false;
+      // A cancelled pan never reaches a click, so nothing else clears this and
+      // the tap after it would read as the tail of a drag.
+      zoomMoved = false;
       return;
     }
     endDrag(true);
