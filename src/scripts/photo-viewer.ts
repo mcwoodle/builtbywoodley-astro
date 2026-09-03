@@ -59,7 +59,7 @@ function start() {
 
   // ── The loupe ──
   /** How long a finger rests before the picture turns into a magnifier. */
-  const HOLD_DELAY = 350;
+  const HOLD_DELAY = 100;
   /** Travel that means the press was the start of a swipe. */
   const HOLD_SLOP = 10;
   /** Half of 1:1. A phone screen cannot use the master's full density. */
