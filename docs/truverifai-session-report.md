@@ -13,6 +13,10 @@ responsive width ladders easy to configure, and make image loading measurable by
 screen size.
 **Result:** two commits (`701290c`, `540887a`), 13 files, 1,865 insertions.
 
+**Addendum:** §11 records a gate firing from a later session on the same
+repository. It is kept apart from §§1-10, whose numbers all describe the single
+session above.
+
 Timings below are inferred from file mtimes, commit timestamps and the
 `recorded_at` fields the MCP returned. They are accurate to roughly a minute, not
 instrumented. Credits, token counts, agreement scores and finding text are exact,
@@ -406,3 +410,99 @@ what blocked the gate and cost about five minutes to disprove. The product's
 sharpest friction is that its own headline advice — review before the code exists
 — produces a review that the gate will not accept as a review, because a pre-code
 call has no repo to bind to. Worth the credits; worth fixing that.
+
+---
+
+## 11. Addendum — a floor block on a CSS `clamp()`
+
+A later session on the same repository, 2026-09-02 ~22:33 local. Recorded here
+because it is a different and more expensive shape of false positive than the two
+in §6: this one landed in a **floor** class, which is the one category the cheap
+release paths are deliberately closed to.
+
+| | |
+| --- | --- |
+| Risk class | `removed_guard` — a floor class |
+| Matched token | `clamp` at `src/styles/global.css:1` |
+| Classifier | `2.13.0`, score 30 |
+| Change under review | CSS and one Astro template line. No JavaScript. |
+| Credits to clear | **0** |
+| Wall clock to clear | ~2 minutes, across two `confirm_floor` calls |
+
+### The change
+
+A horizontal photo strip was scrolling on wide monitors for no reason: its
+padding came from a viewport-scaled variable that reached 690px per side at
+2560px, which was the entire overflow. Fixing it meant deriving the frames' own
+width in CSS, which meant naming the numbers that were previously written inline:
+
+```diff
+ .gallery-track {
++  --strip-item: clamp(230px, 29vw, 400px);
+ ...
+ .gallery-item {
+-  flex: 0 0 clamp(230px, 29vw, 400px);
++  flex: 0 0 var(--strip-item);
+```
+
+The `clamp()` moved up one rule and is inherited by the same element. It was
+renamed, not removed, and the computed value is identical. The classifier saw
+`clamp` disappear from a line and read it as a guard being taken out.
+
+### Why this one costs more than a `sql_risk` on the word "truncate"
+
+The §6 false positives were annoying. This one is structurally worse, because
+`removed_guard` is a **floor** class, and floor blocks are explicitly exempt from
+`record_gate_skip`'s judgment reasons — by design, and correctly so, since "it's
+only a test file" does not make a real credential stop being a credential. The
+consequence is that a stylesheet refactor in a repository with no auth, no
+secrets, no money, no database and no migrations was routed to the same release
+paths as a change to a login flow.
+
+The free path exists and worked. `confirm_floor` returned `verdict: "noise"` and
+released the hunk on a single budget model, at zero credits. **The escape hatch is
+well designed.** The complaint is only that a CSS math function should not need
+it.
+
+### A concrete bug: drift tolerance did not tolerate a comment
+
+Between the gate firing and the confirmation, a code comment in the same rule was
+reworded — no declarations touched. The first `confirm_floor` returned:
+
+```json
+{ "status": "no_binding", "verdict": "noise",
+  "released_hunks": [], "drifted_hunks": [] }
+```
+
+The model judged it correctly and released nothing. The tool's own description
+says *"a cosmetically-drifted diff still releases; drift is flagged, not
+dropped"*, and `drifted_hunks` exists precisely to report this — but a
+comment-only edit produced an empty `drifted_hunks` and no binding, rather than a
+flagged release. Either the hunk hash covers comment bytes (in which case the
+description overstates the tolerance) or the drift path did not engage.
+
+Recovering was cheap and the messaging was accurate: the response's `hint` names
+the cause, and re-running the blocked commit issued a fresh
+`gate_context_id`, after which the same call released. Cost was one wasted commit
+attempt and one wasted free call. It would have been avoided entirely by a line in
+the block message saying *confirm before editing further*.
+
+### Suggestions
+
+7. **Give keyword risk classes file-type context before letting them reach a
+   floor.** `clamp`, `min`, `max` and `filter` are all CSS functions that read as
+   guard-ish identifiers. The file extension is known at match time. This is the
+   same root cause as suggestion 3, but the floor classes raise the stakes: a
+   non-floor false positive costs one free skip call, a floor false positive
+   costs a review call and forecloses the judgment path.
+8. **Require corroboration before `removed_guard` escalates.** A bare token
+   disappearing from a line is weak evidence on its own. Adjacent control flow, a
+   scripting file type, or a companion signal would separate "a conditional was
+   deleted" from "a value was given a name".
+9. **Fix or document the line number.** The block reported
+   `src/styles/global.css:1`. The `clamp()` it matched is at line 2539, inside a
+   rule beginning at 2496. Both §6 firings reported no line at all; a wrong line
+   is worse than none, because it sends the reader to the top of a 4,648-line
+   stylesheet with nothing to find there.
+10. **Say "do not edit before confirming" in the block message**, or make the
+    binding genuinely tolerate comment-only drift as documented.
