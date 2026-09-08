@@ -1,7 +1,28 @@
-# TruVerifAI in practice: one session, measured
+# TruVerifAI in practice: three sessions, measured
 
-A field report for the TruVerifAI team, written immediately after the session it
-describes so the details are first-hand rather than reconstructed.
+A field report for the TruVerifAI team. Each session below was written up
+immediately after it happened, so the details are first-hand rather than
+reconstructed.
+
+Three sessions on the same repository, in order: a feature build reviewed both
+before and after the code existed; a floor block on a stylesheet refactor; and a
+security review of the pull request that took the repository public.
+
+**On numbering.** §§1–10 belong to the first session and are cross-referenced
+throughout, so they keep their numbers. The later sessions use unnumbered
+subsections. The one list that genuinely runs across all three sessions is
+**Suggestions**, which continues rather than restarting: 1–6 from the first
+session, 7–10 from the second, 11–14 from the third.
+
+Timings are inferred from file mtimes, commit timestamps and the `recorded_at`
+fields the MCP returned. They are accurate to roughly a minute, not instrumented,
+and the third session made no commits so it has almost nothing to infer from.
+Credits, token counts, agreement scores and finding text are exact, copied from
+the tool responses.
+
+---
+
+## Session 1 — the image-delivery build (2026-09-02)
 
 **Session:** 2026-09-02, roughly 15:36–16:16 local (~40 minutes wall clock).
 **Repository:** a private Astro 7 static photography portfolio deployed to
@@ -13,18 +34,7 @@ responsive width ladders easy to configure, and make image loading measurable by
 screen size.
 **Result:** two commits (`701290c`, `540887a`), 13 files, 1,865 insertions.
 
-**Addendum:** §11 records a gate firing from a later session on the same
-repository. It is kept apart from §§1-10, whose numbers all describe the single
-session above.
-
-Timings below are inferred from file mtimes, commit timestamps and the
-`recorded_at` fields the MCP returned. They are accurate to roughly a minute, not
-instrumented. Credits, token counts, agreement scores and finding text are exact,
-copied from the tool responses.
-
----
-
-## 1. Summary for the impatient
+### 1. Summary for the impatient
 
 | | |
 | --- | --- |
@@ -50,7 +60,7 @@ rated "major" and was a one-line truthiness bug.
 
 ---
 
-## 2. What was invoked, in order
+### 2. What was invoked, in order
 
 | # | Tool | Result | Credits | Notes |
 | --- | --- | --- | ---: | --- |
@@ -71,7 +81,7 @@ during the session, despite ~20 file writes.
 
 ---
 
-## 3. Call one — `deliberate_coding`, before any code existed
+### 3. Call one — `deliberate_coding`, before any code existed
 
 **Request id:** `mcp_090e7aad0f394b0ab6cbdecec618d42a`
 **Invoked because:** the user's global `CLAUDE.md` mandates calling it before
@@ -94,7 +104,7 @@ Four decisions were posed together, each with the options already enumerated:
 "verdict_repaired"]`. Models: `gpt-5.6-luna`, `claude-sonnet-5`,
 `gemini-3.7-flash`, `grok-4-1-fast-non-reasoning`.
 
-### What it changed
+#### What it changed
 
 | Decision | Agent's plan going in | Panel | Applied? |
 | --- | --- | --- | --- |
@@ -118,7 +128,7 @@ history already holds every prior version, and that the plan contradicted the
 user's stated intent to move to higher-resolution masters. That is a reading of
 *context*, not of code.
 
-### Observations for the team
+#### Observations for the team
 
 - **`agreement_score: 0` alongside `action: proceed` and `recommendation:
   clear` reads as a contradiction.** The flag `positive_assessment_low_agreement`
@@ -141,7 +151,7 @@ user's stated intent to move to higher-resolution masters. That is a reading of
 
 ---
 
-## 4. The gate-binding gap — the sharpest product friction found
+### 4. The gate-binding gap — the sharpest product friction found
 
 When the first `git commit` fired the commit gate, the agent tried the sanctioned
 shortcut: it had already run one panel review and applied its findings, so it
@@ -188,14 +198,14 @@ model says should not have been necessary.
 
 ---
 
-## 5. Call two — `audit_coding` on the finished diff
+### 5. Call two — `audit_coding` on the finished diff
 
 **Request id:** `mcp_f76a0176e5794bc49233dd33ed707ff1`
 **Verdict:** `request_changes`; `action: escalate_to_human`, derived, because
 `"assessment was 'request_changes', but a critical finding forces
 escalate_to_human"`. `agreement_score: 0.82`. Gate **not** released.
 
-### A methodology note that probably explains two wrong findings
+#### A methodology note that probably explains two wrong findings
 
 The real diff was 66 KB / 1,652 lines. `CLAUDE.md` says to pass the real text and
 "if it's long, chunk by section", but the gate wants one `gate_diff` representing
@@ -209,7 +219,7 @@ judgement call, and it silently changes finding quality.** A documented chunking
 protocol — or an accepted `gate_diff_ref` pointing at a file — would remove the
 guesswork.
 
-### Finding-by-finding, with verified outcomes
+#### Finding-by-finding, with verified outcomes
 
 | ID | Sev | Claim | Verified verdict | Action |
 | --- | --- | --- | --- | --- |
@@ -223,7 +233,7 @@ guesswork.
 | F-008 | minor | Probe absence verified only by manual grep | **Correct and valuable** | Automated postbuild assertion, both states |
 | F-009 | pref | Warn threshold should be env-configurable | Declined — no need on a one-developer repo | None |
 
-### The one that earned its keep
+#### The one that earned its keep
 
 **F-005.** The code was:
 
@@ -241,7 +251,7 @@ leaks again.
 This is a genuine save. It is also, in fairness, a one-line bug that a type-aware
 lint rule would catch for a fraction of 3.9 credits.
 
-### The one that cost time
+#### The one that cost time
 
 **F-001, rated critical**, is what pushed `action` to `escalate_to_human` and
 kept the gate shut. Its stated mechanism was wrong, and disproving it took a
@@ -269,7 +279,7 @@ tax.** A reviewer who cannot execute the code is entitled to be suspicious of an
 untested `unlink`. But rating it *critical* on a mechanism that the supplied diff
 did not support is expensive — it is the rating that blocks the gate.
 
-### Disagreement reporting worked well
+#### Disagreement reporting worked well
 
 `dimensions_of_disagreement` was genuinely useful and is an underrated feature:
 
@@ -284,7 +294,7 @@ score.
 
 ---
 
-## 6. Gate mechanics observed
+### 6. Gate mechanics observed
 
 **Firing 1 — `gc_ba4d19f4b85b4005ab963e21ae793ae4`** (2 hunks):
 - `dependency` — matched `package.json`. **False positive.** Only `scripts` keys
@@ -316,9 +326,9 @@ a label, not a record.
 
 ---
 
-## 7. Cost, time, and what it bought
+### 7. Cost, time, and what it bought
 
-### Cost
+#### Cost
 
 - **8.2 credits.** Roughly half on a pre-code design deliberation, half on a
   post-hoc code audit.
@@ -330,7 +340,7 @@ a label, not a record.
   deliberation, ~6 min for the audit, plus time verifying two findings that
   turned out to be wrong — partly overlapping the poll waits, so not additive.
 
-### Value
+#### Value
 
 | What it bought | Would it have shipped otherwise? |
 | --- | --- |
@@ -345,7 +355,7 @@ session on a personal site, 8.2 credits to prevent an automatic delete step and 
 production debug leak is a good trade, and the agent said so in both
 `record_outcome` calls (`changed_decision: true` on each).
 
-### Where the value actually concentrated
+#### Where the value actually concentrated
 
 **The pre-code `deliberate_coding` call was worth more than the post-hoc
 `audit_coding` call**, despite costing slightly more. It changed the shape of the
@@ -358,7 +368,7 @@ receipt.
 
 ---
 
-## 8. What worked well, credited plainly
+### 8. What worked well, credited plainly
 
 - **The empty-`gate_diff` rejection charged nothing** and said exactly what was
   wrong. A caller mistake (a malformed parameter tag) cost zero credits.
@@ -375,7 +385,7 @@ receipt.
 - **`record_outcome` is free and frictionless**, which is the right call if you
   want honest telemetry.
 
-## 9. Suggestions, ranked by expected value
+### 9. Suggestions, ranked by expected value
 
 1. **Bind proactive reviews to a repo** (§4). Accept `gate_repo` on
    pre-code `deliberate_coding`, or document that callers should pass it. This is
@@ -398,7 +408,7 @@ receipt.
 
 ---
 
-## 10. One-paragraph version
+### 10. One-paragraph version
 
 Two panel calls, 8.2 credits, ~9 minutes of a 40-minute session. The pre-code
 deliberation changed three design decisions, the most important being talking the
@@ -413,12 +423,16 @@ call has no repo to bind to. Worth the credits; worth fixing that.
 
 ---
 
-## 11. Addendum — a floor block on a CSS `clamp()`
+## Session 2 — a floor block on a CSS `clamp()` (2026-09-02, later)
 
-A later session on the same repository, 2026-09-02 ~22:33 local. Recorded here
-because it is a different and more expensive shape of false positive than the two
-in §6: this one landed in a **floor** class, which is the one category the cheap
-release paths are deliberately closed to.
+**Session:** 2026-09-02, ~22:33 local, on the same repository.
+**Task given to the agent:** stop a horizontal photo strip from scrolling on wide
+monitors.
+**Result:** one commit, released through the free `confirm_floor` path.
+
+Recorded because it is a different and more expensive shape of false positive
+than the two in §6: this one landed in a **floor** class, which is the one
+category the cheap release paths are deliberately closed to.
 
 | | |
 | --- | --- |
@@ -506,3 +520,168 @@ the block message saying *confirm before editing further*.
    stylesheet with nothing to find there.
 10. **Say "do not edit before confirming" in the block message**, or make the
     binding genuinely tolerate comment-only drift as documented.
+
+---
+
+## Session 3 — reviewing the pull request that made the repo public (2026-09-08)
+
+**Session:** 2026-09-08. The one hard timestamp is the `record_outcome` receipt,
+`2026-09-08T14:53:39Z`; the session made no commits and wrote no files, so there
+are no mtimes to infer the rest from.
+**Repository:** the same Astro site — **now public**, which is what the session
+was about.
+**Task given to the agent:** before merging PR #79, verify the repository's GitHub
+settings were fit to be public, and code-review the pull request. The diff was a
+README rewrite plus a CI hardening pass: a new CodeQL workflow,
+`dependency-review-action`, `permissions: {}` at every workflow top level with
+per-job opt-in, `persist-credentials: false` on every checkout, a `SECURITY.md`,
+and a tightened trigger gate on the `@claude` workflow.
+**Result:** no commits. A review recommending the merge, with one false security
+claim in the diff to be corrected first.
+
+### What was invoked
+
+| # | Tool | Result | Credits | Notes |
+| --- | --- | --- | ---: | --- |
+| 1 | `audit_coding` | `in_progress` | — | Real diff as `gate_diff`; the post-merge workflow bodies as `relevant_code` |
+| 2–4 | `audit_coding` (continuation) | verdict on the 4th | 4.4 | 3 polls |
+| 5 | `record_outcome` | ok | free | `notes_truncated: true` — third session running |
+
+**No gate fired.** The session wrote no files and made no commits, so neither the
+write gate nor the commit gate had anything to bind to. The call was made because
+`CLAUDE.md` asks for one before signing off on a security change, not because
+anything blocked. This is the inverse of §4's problem and worth noting as its
+mirror image: a review whose entire purpose is to gate a merge produces no receipt
+either, because the merge is not a local commit.
+
+**Response:** `verdict: request_changes`, `action: request_changes`
+(`action_basis: derived`), `agreement_score: 0.72`, six findings — 3 major,
+3 minor. `degraded: true`. Models: `gpt-5.6-luna`, `gemini-3.7-flash`,
+`grok-4-1-fast-non-reasoning` — **three, not four**, with no `claude-sonnet-5`.
+
+### Finding-by-finding, with verified outcomes
+
+Every finding was checked against the pinned action's source and the GitHub API
+before being passed to the user, rather than relayed.
+
+| ID | Sev | Claim | Verified verdict | Action |
+| --- | --- | --- | --- | --- |
+| F-001 | major | `persist-credentials: false` breaks `claude-code-action`, citing upstream issue #1236 | **Correct, and the finding that earned the call.** The issue is real and open; #1711 and #1559 describe the same ordering bug — `setupBranch()` fetches before `configureGitAuth()` | Flag kept; that workflow named as the one to watch on first run |
+| F-002 | major | `issues: read` / `pull-requests: read` are too narrow — the action will 403 posting replies | **Wrong.** The action never uses `GITHUB_TOKEN` in this configuration | None |
+| F-003 | major | Stranger comments enter Claude's context when the owner invokes `@claude` on a poisoned thread | **Correct**, and matched the agent's own reading | Reported as residual risk; the PR's wording had overstated the mitigation |
+| F-004 | minor | `id-token: write` is unjustified; remove unless OIDC is confirmed | **Wrong, and acting on it would have broken the workflow.** The action calls `core.getIDToken()` and fails with "Did you remember to add `id-token: write`" | None |
+| F-005 | minor | `deployments: write` is unused in the deploy workflow | **Correct** — independently confirmed: `wrangler-action` never calls the Deployments API, and the repo has zero deployments in its history | Removal recommended |
+| F-006 | minor | The branch ruleset does not match what `AGENTS.md` claims | **Correct, but supplied.** The agent had stated this fact in the prompt; the panel returned it as a finding | Already in the review |
+
+Two right, two wrong, one right-but-already-known, one restatement of the input.
+
+Two things deserve credit against that ledger. The response **honoured the ranking
+the prompt asked for** — findings ordered by whether a stranger could exploit them
+without owner participation, with a summary table making that explicit per
+finding. And it marked two areas **Sound** — the fork guards, the absence of
+`pull_request_target` — instead of padding the count. A review that says "I
+checked this and it is fine" is more useful than one that only enumerates
+problems, and few reviewers do it.
+
+### The finding the panel missed, found by verifying the two it got wrong
+
+F-002 and F-004 contradict each other about the same six lines: one says the job's
+declared scopes are too narrow to post a comment, the other says one of those
+scopes is unnecessary. Both cannot be true. Resolving that meant reading
+`src/github/token.ts` at the pinned SHA, which shows what neither model saw:
+
+```js
+const DEFAULT_PERMISSIONS = { contents: "write", pull_requests: "write", issues: "write" };
+// ...
+const oidcToken = await retryWithBackoff(() => getOidcToken());
+const appToken  = await retryWithBackoff(() => exchangeForAppToken(oidcToken, permissions));
+```
+
+The action exchanges the OIDC token for a **GitHub App installation token** with
+`contents`, `pull_requests` and `issues` at **write**, merged with whatever
+`additional_permissions` declares. The workflow's own `permissions:` block governs
+`GITHUB_TOKEN` — which this configuration never uses.
+
+That matters because the workflow file carried a comment asserting the opposite:
+that `contents: read` meant "the run cannot push, open a PR, or alter the repo".
+That claim was the stated blast-radius bound for the entire prompt-injection
+design, repeated in the pull request description and in `AGENTS.md`, and it was
+false. It became the headline finding of the review — and **no model produced
+it.** Two of them argued about whether `read` was sufficient to post a comment;
+neither asked which credential was doing the posting.
+
+The mechanism is worth reporting on its own terms: the panel was useful *by being
+wrong in a way that pointed at the right file*. That is real value, but it is not
+the form the scoring captures, and it only works if the caller treats findings as
+leads to verify rather than conclusions to relay. A caller who forwarded these six
+findings unchecked would have shipped one genuine improvement and two bad
+instructions, one of which breaks the workflow it touches.
+
+### Disagreement reporting, again the best part of the response
+
+`dimensions_of_disagreement` carried three entries, and the first was the most
+useful thing in the payload after F-001:
+
+> **Grok 4.1 Fast:** "A stranger commenting @claude on an owner-created thread
+> will trigger Claude execution because the gate only checks thread originator."
+> **Consensus:** the `github.actor` check means the stranger *is* the actor, so the
+> condition evaluates false. Severity: `high`.
+
+A non-reasoning model produced a confident, specific and wrong claim about a
+security gate on a public repository, and the panel caught it and named the model
+rather than averaging it into the prose. That is exactly what the mechanism is
+for. §5 said the same about disagreement reporting on a much lower-stakes split;
+two sessions later it is still the field that earns the most trust, and it is
+still more decision-useful than the aggregate score.
+
+### Three models, not four, with no explanation
+
+`degraded: true` appeared in the response, the panel ran with three models instead
+of four, `claude-sonnet-5` was absent, and one of the three was explicitly
+non-reasoning. Nothing said why, whether the verdict was weakened by it, or that
+the caller might want to retry. The full 4.4 credits were charged.
+
+Given that two of six findings were wrong and a third restated the prompt, the
+degradation is a plausible cause and the caller has no way to tell. This is the
+same class of problem as the `agreement_score: 0` puzzle in §3: the response knows
+something is irregular about its own execution and does not say what.
+
+### Cost and value
+
+- **4.4 credits**, **86,329 panel tokens**, one call, three polls.
+- **The verification tax was the dominant cost** — checking the six findings
+  against the action's source, the upstream issue tracker and the GitHub settings
+  API took several times the panel's own wall clock. It appears in no usage field,
+  and on this session it is where the review's best output came from. §7 flagged
+  the same hidden cost for a different reason (reproducing a 66 KB diff); this time
+  it was verification rather than input preparation.
+- **One decision changed.** Without F-001 the agent would have signed the pull
+  request off clean; with it, the recommendation named a specific workflow as
+  unverified and told the user exactly what to watch on the first run.
+  `record_outcome` was filed `changed_decision: true`, `impact: high`.
+
+The honest ledger: one finding worth having, one confirmation, one residual-risk
+framing that improved the write-up, two wrong, one echo — plus a headline finding
+that exists only because two of the wrong ones contradicted each other. Worth 4.4
+credits on a change that was about to make a repository public.
+
+### Suggestions
+
+11. **Name the credential a permissions finding is about.** Both permission
+    findings assumed the workflow's `permissions:` block governed a third-party
+    action's GitHub API calls. It did not. A finding about token scope should say
+    which token — `GITHUB_TOKEN`, an app installation token, a PAT — and one that
+    cannot tell should say so rather than pick.
+12. **Say why a run was degraded, and let the caller decide.** `degraded: true`
+    with no reason, no model-count expectation and a full charge gives the caller
+    nothing to act on. A one-line cause and the option to retry at full panel
+    would both help.
+13. **Mark corroboration as corroboration.** F-006 was supplied verbatim in the
+    prompt and came back as a `minor` finding. Restating the caller's own input
+    inflates the finding count and dilutes the findings that were discovered.
+14. **Carry an upstream citation's scope conditions.** F-001 cited a real issue but
+    not its qualifier: the filed reproduction is specific to *private*
+    repositories, and this repository had just become public — which is precisely
+    what decides whether the bug bites here. A citation is only as good as its
+    applicability conditions, and omitting them turns a strong finding into one
+    the caller must re-derive.
