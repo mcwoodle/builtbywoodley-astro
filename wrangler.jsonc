@@ -15,7 +15,12 @@
   // no-slash, so drop-trailing-slash keeps navigations redirect-free.
   "assets": {
     "directory": "./dist",
-    "html_handling": "drop-trailing-slash"
+    "html_handling": "drop-trailing-slash",
+    // Serve dist/404.html for paths that match no asset. Without this,
+    // Workers' default is a 404 with a *null body* — so src/pages/404.astro
+    // built, deployed, and was never once shown to anyone. The smoke suite
+    // caught it; keep this and the assertion in platform.spec.ts together.
+    "not_found_handling": "404-page"
   },
   // Serve the site on the root domain. custom_domain:true makes wrangler
   // provision the DNS record and TLS certificate on deploy, so no manual
