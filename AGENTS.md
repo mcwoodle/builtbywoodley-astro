@@ -112,9 +112,21 @@ forked or recreated, re-apply them:
   "Allow GitHub Actions to create and approve pull requests" **off**.
 - Actions → Fork pull request workflows: **require approval for all external
   contributors**, so a stranger's first workflow run does not start unreviewed.
-- Branch protection on `mainline`: require pull requests, require the Security and
-  CodeQL checks to pass, and no force pushes. `mainline` deploys straight to
-  production, so it is the branch that most needs the guard rail.
+- Branch rulesets on `mainline` — **two**, deliberately, because they have
+  different bypass lists. `mainline` deploys straight to production, so it is the
+  branch that most needs the guard rails.
+  - **Mainline protection** — blocks deletion and force pushes. **No bypass for
+    anyone, the owner included.** History on the production branch is not
+    rewritable by accident or otherwise.
+  - **Mainline review requirements** — requires a pull request with one approving
+    review, and requires `Secret scan (gitleaks)`, `Dependency scan`, `Dependency
+    review (PR diff)`, `Analyze (javascript-typescript)` and `Analyze (actions)`
+    to pass. **The repository admin role bypasses this one always**, so the owner
+    can push content straight to `mainline` and deploy without opening a PR.
+    Everyone else — any future collaborator, any fork PR — goes through review
+    with the checks green.
+  - If a required check is ever renamed in a workflow, update the context here
+    too: a required check that no longer exists blocks every non-bypassing PR.
 - Code scanning: CodeQL results appear under the **Security** tab once
   `codeql.yml` has run at least once on `mainline`.
 

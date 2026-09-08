@@ -28,15 +28,27 @@ jobs:
     # commenting "@claude". To let collaborators in too, swap github.actor for an
     # author_association check (OWNER/MEMBER/COLLABORATOR).
     #
+    # The second clause closes what the actor check alone does not: the actor
+    # check decides who may INVOKE Claude, not whose text it then reads.
+    # Requiring the thread to be the owner's own as well means a stranger's
+    # issue body or PR description can never become the prompt, even when the
+    # owner is the one asking. The cost is that "@claude" on a contributor's PR
+    # no longer runs — relax this clause only if you are content to treat its
+    # output there as untrusted.
     #
-    # The second clause closes what the actor check alone does not: it says who
-    # INVOKE Claude, not whose text it then reads. Requiring the thread to be
-    # the owner's own as well means a stranger's issue body or PR description
-    # can never become the prompt, even when the owner is the one asking. The
-    # cost is that "@claude" on a contributor's PR no longer runs — relax this
-    # clause only if you are content to treat its output there as untrusted.
-    # `contents: read` is what bounds the damage either way: the run cannot
-    # push, open a PR, or alter the repo.
+    # What it does NOT close: a stranger's *comments* on the owner's own thread
+    # still enter Claude's context when the owner tags it there. Read "@claude"
+    # as authorising Claude to read the whole thread, untrusted replies included.
+    #
+    # The `permissions:` block below does NOT bound what this job can do, and
+    # must not be read as the thing that limits the blast radius.
+    # claude-code-action exchanges the OIDC token — which is what
+    # `id-token: write` is for, and why it cannot be removed — for a GitHub App
+    # installation token, requested at contents / pull-requests / issues
+    # **write** and merged with `additional_permissions` below. The
+    # `permissions:` block scopes GITHUB_TOKEN, which this configuration never
+    # uses. `additional_permissions` is the only lever that narrows the app
+    # token. See anthropics/claude-code-action src/github/token.ts.
     if: |
       github.actor == github.repository_owner &&
       (github.event.issue.user.login == github.repository_owner ||
@@ -59,9 +71,16 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
-          # The action authenticates with the token from the environment, and
-          # `contents: read` means it cannot push regardless, so the credential
-          # does not need to persist in .git/config.
+          # Don't leave the job's GITHUB_TOKEN in .git/config for a later
+          # step to read. The action does not need it — it authenticates with
+          # the app token it mints for itself (see above).
+          #
+          # Known risk: anthropics/claude-code-action#1711 and #1236 report that
+          # tag mode runs `git fetch` before configuring its own git auth, which
+          # fails with no persisted credential. Both filed reproductions are on
+          # private repos, where an anonymous fetch cannot work; this repo is
+          # public, so the fetch should succeed. Unverified — if a mention hangs
+          # on "Claude Code is working…", drop this line first.
           persist-credentials: false
 
       - name: Run Claude Code
