@@ -28,6 +28,47 @@ npm run build
 25 MiB per-asset limit (warning at 20 MiB), and `audit-astro-assets.mjs` reports
 the full-size originals Astro emits but never references.
 
+**Run the smoke tests:**
+```bash
+npm run test:smoke                                    # all 5 projects, builds first
+npm run test:smoke -- --project=chromium --headed
+npm run test:smoke:report                             # HTML report from the last run
+```
+
+A Playwright suite in `tests/smoke/` covering the flows a build cannot check:
+ClientRouter navigation between routes, the hash-driven photo viewer, the
+three-mode theme toggle, the 404 page, and horizontal overflow at phone widths.
+Five projects — Chrome, Firefox and WebKit at desktop width, plus Pixel 7 and
+iPhone 14 — run in one job. WebKit is Safari's *engine*, not Safari itself.
+
+The suite never knows where the site is: **`SMOKE_BASE_URL` names the target**,
+and with it unset `playwright.config.ts` builds the site and serves it on
+`astro preview` instead. That one switch covers a local run, the CI run against
+the Cloudflare preview URL, and the fork-PR fallback with no branching in the
+tests.
+
+```bash
+SMOKE_BASE_URL=https://builtbywoodley.ca npm run test:smoke      # a deployed origin
+npm run dev                                                      # ... or, for a fast loop,
+SMOKE_BASE_URL=http://localhost:5572 npm run test:smoke -- --project=chromium
+```
+
+Two things hold the suite steady, and both are worth knowing before adding to
+it. `reducedMotion: 'reduce'` is **load-bearing**, not a courtesy: every GSAP
+timeline sits inside a `(prefers-reduced-motion: no-preference)` guard, so
+asking for stillness is what makes below-the-fold content assertable at all —
+a new animation that forgets that guard will show up here as a flaky test. And
+the security-header assertion skips itself unless `SMOKE_BASE_URL` is an
+`https://` origin, because `public/_headers` is a Cloudflare directive that
+`astro preview` copies into `dist/` without ever applying.
+
+One local caveat: **Playwright's WebKit only runs on Debian/Ubuntu.** The build
+links against `libicu.so.74` and `libjpeg.so.8`, which Fedora does not ship, so
+`webkit` and `mobile-safari` fail to launch on a Fedora workstation no matter
+what `playwright install-deps` is given — that command is apt-only. Run
+`--project=chromium --project=firefox --project=mobile-chrome` locally there and
+let CI, which is `ubuntu-latest`, cover the other two.
+
 **Photography image delivery:**
 ```bash
 npm run measure:images              # bytes per page, by screen size
@@ -74,7 +115,10 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
   CI will fail.
 - **HTTP security headers** — `public/_headers` ships a Content-Security-Policy
   plus HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and
-  `Permissions-Policy`, which Cloudflare serves with every static asset.
+  `Permissions-Policy`, which Cloudflare serves with every static asset. The
+  smoke suite asserts they are actually present whenever it runs against a
+  deployed origin, so a `_headers` edit that Cloudflare silently rejects fails
+  the PR instead of shipping.
 - **Updates** — Dependabot (`.github/dependabot.yml`) keeps npm deps and pinned
   GitHub Actions current.
 - **Static analysis (SAST)** — CodeQL (`.github/workflows/codeql.yml`) analyses
@@ -94,6 +138,10 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
 >
 > 1. **Anyone can open a pull request.** Fork PRs cannot read repository secrets,
 >    so `preview.yml` skips them outright rather than failing on a missing token.
+>    Its `Smoke tests` job runs anyway (`if: always()`), building and serving the
+>    site itself when there is no preview URL to point at — which is what makes
+>    that job safe to require, since a required check that never reports on fork
+>    PRs would block them forever.
 >    Never introduce `pull_request_target` to work around that — it runs untrusted
 >    PR code with a privileged token, and it is the single most common way a public
 >    repo leaks its secrets.
@@ -125,7 +173,8 @@ forked or recreated, re-apply them:
     rewritable by accident or otherwise.
   - **Mainline review requirements** — changes must arrive via a pull request,
     with `Secret scan (gitleaks)`, `Dependency scan`, `Dependency review (PR
-    diff)`, `Analyze (javascript-typescript)` and `Analyze (actions)` green.
+    diff)`, `Analyze (javascript-typescript)`, `Analyze (actions)` and
+    `Smoke tests` green.
     **The repository admin role bypasses this one always**, so the owner can push
     content straight to `mainline` and deploy without opening a PR. Everyone
     else — any future collaborator, any fork PR — goes through a PR with the
@@ -149,6 +198,31 @@ forked or recreated, re-apply them:
 - Add 0-3 sentences to the commit message body to describe the changes.
 - Use imperative mood ("Add feature" not "Added feature")
 - ALWAYS use "Co-Authored-By" in commit messages (For Claude, use your default, for Antigravity IDE only use "[model] <antigravity.git@gmail.com>" - replacing [model] with the actual model name and version)
+
+### Keeping the README current
+
+`README.md` is the front door. It is the only document many contributors will
+read, and the one a future you will skim first — so **when a change adds or
+reshapes something at that level, update the README in the same pull request.**
+
+That means a new top-level directory, a new npm script anyone would actually
+run, a new CI check or required status, a change to how the site is built,
+served or deployed, or a whole new class of tooling (the Playwright suite is the
+worked example — it earned a `## Testing` section, three rows in the scripts
+table, a line in the structure tree, and a sentence in the deploy section).
+
+It does **not** mean routine work. A new component, a content entry, a bug fix,
+a dependency bump, a refactor inside an existing structure — all leave the
+README alone. A README that narrates every commit stops being read, which is a
+worse failure than one that is slightly behind.
+
+The test: *would someone cloning this repo tomorrow be surprised, or waste time,
+because the README does not mention it?* If yes, it belongs there.
+
+Keep it high-level and keep it honest. The README says what exists and how to
+run it; `AGENTS.md` and `docs/` carry the reasoning and the caveats. Point at
+them rather than duplicating them — two files describing the same thing will
+eventually disagree, and the reader has no way to tell which one is stale.
 
 ## Architecture
 

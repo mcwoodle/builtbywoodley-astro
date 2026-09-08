@@ -34,12 +34,49 @@ platform with no pinned release, install it by hand and the hook will find it.
 | `npm run dev` | Dev server. Pass a port: `npm run dev -- 4321` |
 | `npm run build` | Static build to `dist/`, followed by the postbuild guards |
 | `npm run preview` | Serve the built `dist/` locally |
+| `npm run test:smoke` | Playwright smoke suite — builds and serves the site first |
+| `npm run test:smoke:ui` | The same suite in Playwright's interactive runner |
+| `npm run test:smoke:report` | Open the HTML report from the last run |
 | `npm run measure:images` | Report image bytes per page, by screen size |
 | `npm run audit:assets` | List full-size originals Astro emits but never references |
 | `npm run photo:master` | Resize and strip EXIF from a photograph before import |
 
 Two guards run after every build, locally and in CI: one fails the build if any file
 approaches Cloudflare's per-asset size limit, the other reports unreferenced originals.
+
+## Testing
+
+A Playwright smoke suite in `tests/` covers what a build cannot: that pages
+actually render, that client-side navigation survives a second page, and that
+nothing throws on the way.
+
+```bash
+npx playwright install          # once, to fetch the browsers
+npm run test:smoke
+```
+
+With no arguments it builds the site, serves `dist/`, runs the suite, and stops
+the server again — no setup, and nothing left running afterwards. To test a site
+that is already up instead, name it:
+
+```bash
+SMOKE_BASE_URL=https://builtbywoodley.ca npm run test:smoke
+```
+
+Five browser projects run on every pull request — Chrome, Firefox and WebKit at
+desktop width, plus Pixel 7 and iPhone 14 — covering navigation between routes,
+the photo viewer, the theme toggle, the 404 page, and horizontal overflow at
+phone widths. In CI they run against that pull request's own Cloudflare preview
+URL: the real artifact, served with the real response headers, so a routing or
+header change that only breaks at the edge fails the PR instead of reaching
+production.
+
+The `webkit` and `mobile-safari` projects need Debian or Ubuntu. On another
+distribution, run the rest locally and let CI cover those two:
+
+```bash
+npm run test:smoke -- --project=chromium --project=firefox --project=mobile-chrome
+```
 
 ## Project structure
 
@@ -56,6 +93,7 @@ src/
 └── styles/         global.css — design tokens and page styles
 public/             static passthrough, including the response-headers file
 scripts/            Node tooling: build guards, image measurement, hook setup
+tests/              Playwright smoke suite (smoke/) and its helpers (support/)
 docs/               deep dives on image delivery and view transitions
 ```
 
@@ -74,9 +112,11 @@ Wrangler provisions DNS and TLS on deploy instead of anyone editing the dashboar
 
 **Pull requests.** Every push to a PR uploads a *version* rather than deploying
 (`wrangler versions upload`) and comments the resulting immutable preview URL on the
-PR, so each revision keeps its own link. Production traffic is never touched. Preview
-URLs must be enabled once for the Worker in the Cloudflare dashboard. PRs from forks
-are skipped, because they cannot read repository secrets.
+PR, so each revision keeps its own link. Production traffic is never touched. The
+smoke suite then runs against that URL before the PR can merge. Preview
+URLs must be enabled once for the Worker in the Cloudflare dashboard. The upload is
+skipped for PRs from forks, because they cannot read repository secrets; the smoke
+suite still runs there, building and serving the site itself.
 
 **Credentials.** Deploys authenticate with two repository secrets — a scoped
 Cloudflare API token (`Workers Scripts: Edit` is enough) and the account ID. Nothing
@@ -112,7 +152,9 @@ Running continuously:
   third-party actions are pinned to commit SHAs, and fork pull requests never
   receive deploy credentials.
 - **Transport and content** — a Content-Security-Policy plus HSTS and the usual
-  hardening headers, in `public/_headers`.
+  hardening headers, in `public/_headers`. The smoke suite asserts they are
+  actually present on every deployed origin it tests, so a header change that
+  Cloudflare quietly rejects fails the PR rather than shipping.
 
 ## Contributing
 
