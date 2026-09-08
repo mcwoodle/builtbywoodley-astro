@@ -118,13 +118,18 @@ forked or recreated, re-apply them:
   - **Mainline protection** — blocks deletion and force pushes. **No bypass for
     anyone, the owner included.** History on the production branch is not
     rewritable by accident or otherwise.
-  - **Mainline review requirements** — requires a pull request with one approving
-    review, and requires `Secret scan (gitleaks)`, `Dependency scan`, `Dependency
-    review (PR diff)`, `Analyze (javascript-typescript)` and `Analyze (actions)`
-    to pass. **The repository admin role bypasses this one always**, so the owner
-    can push content straight to `mainline` and deploy without opening a PR.
-    Everyone else — any future collaborator, any fork PR — goes through review
-    with the checks green.
+  - **Mainline review requirements** — changes must arrive via a pull request,
+    with `Secret scan (gitleaks)`, `Dependency scan`, `Dependency review (PR
+    diff)`, `Analyze (javascript-typescript)` and `Analyze (actions)` green.
+    **The repository admin role bypasses this one always**, so the owner can push
+    content straight to `mainline` and deploy without opening a PR. Everyone
+    else — any future collaborator, any fork PR — goes through a PR with the
+    checks passing.
+  - Required approving reviews is deliberately **0**. The owner is the only
+    account that can press merge, so requiring an approval would only mean
+    approving your own PR before merging it — no guard, and it puts a
+    bypass-the-rules banner on every merge. The PR requirement and the checks are
+    what carry the weight.
   - If a required check is ever renamed in a workflow, update the context here
     too: a required check that no longer exists blocks every non-bypassing PR.
 - Code scanning: CodeQL results appear under the **Security** tab once
