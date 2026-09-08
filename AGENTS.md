@@ -199,6 +199,31 @@ forked or recreated, re-apply them:
 - Use imperative mood ("Add feature" not "Added feature")
 - ALWAYS use "Co-Authored-By" in commit messages (For Claude, use your default, for Antigravity IDE only use "[model] <antigravity.git@gmail.com>" - replacing [model] with the actual model name and version)
 
+### Keeping the README current
+
+`README.md` is the front door. It is the only document many contributors will
+read, and the one a future you will skim first — so **when a change adds or
+reshapes something at that level, update the README in the same pull request.**
+
+That means a new top-level directory, a new npm script anyone would actually
+run, a new CI check or required status, a change to how the site is built,
+served or deployed, or a whole new class of tooling (the Playwright suite is the
+worked example — it earned a `## Testing` section, three rows in the scripts
+table, a line in the structure tree, and a sentence in the deploy section).
+
+It does **not** mean routine work. A new component, a content entry, a bug fix,
+a dependency bump, a refactor inside an existing structure — all leave the
+README alone. A README that narrates every commit stops being read, which is a
+worse failure than one that is slightly behind.
+
+The test: *would someone cloning this repo tomorrow be surprised, or waste time,
+because the README does not mention it?* If yes, it belongs there.
+
+Keep it high-level and keep it honest. The README says what exists and how to
+run it; `AGENTS.md` and `docs/` carry the reasoning and the caveats. Point at
+them rather than duplicating them — two files describing the same thing will
+eventually disagree, and the reader has no way to tell which one is stale.
+
 ## Architecture
 
 The site is built as a static site using Astro.
