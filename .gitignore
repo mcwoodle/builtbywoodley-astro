@@ -6,6 +6,12 @@ src/content/photos/_deploy/
 .astro/
 .wrangler/
 
+# playwright smoke-test output (reports, traces, downloaded browsers)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # dependencies
 node_modules/
 

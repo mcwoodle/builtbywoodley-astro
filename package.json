@@ -8,12 +8,16 @@
     "postbuild": "node scripts/check-asset-sizes.mjs && node scripts/audit-astro-assets.mjs --quiet",
     "preview": "astro preview",
     "astro": "astro",
+    "test:smoke": "playwright test",
+    "test:smoke:ui": "playwright test --ui",
+    "test:smoke:report": "playwright show-report",
     "measure:images": "node scripts/measure-image-delivery.mjs",
     "audit:assets": "node scripts/audit-astro-assets.mjs",
     "photo:master": "node scripts/prepare-master.mjs",
     "prepare": "node scripts/setup-hooks.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
     "cross-env": "^10.1.0",
     "lefthook": "^2.1.12"
