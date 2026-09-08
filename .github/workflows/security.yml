@@ -2,7 +2,7 @@ name: Security
 
 # Secret + dependency scanning. Runs on PRs and pushes to mainline, plus a
 # weekly schedule so fresh advisories and a full-history secret rescan happen
-# even when the repo is quiet.
+# even when the repo is quiet. SAST lives in codeql.yml.
 on:
   pull_request:
   push:
@@ -12,9 +12,8 @@ on:
     # Mondays 07:13 UTC (off the hour to avoid scheduler congestion).
     - cron: "13 7 * * 1"
 
-# Least privilege by default; jobs opt into more where needed.
-permissions:
-  contents: read
+# No token permissions by default; every job opts into exactly what it needs.
+permissions: {}
 
 concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
@@ -24,6 +23,7 @@ jobs:
   gitleaks:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       # gitleaks-action lists PR commits via the API on pull_request events.
@@ -35,6 +35,10 @@ jobs:
           # Full history so scheduled/push runs scan every commit, not just the
           # latest diff. gitleaks-action scopes PR runs to the PR commits.
           fetch-depth: 0
+          # The scan reads the working tree and authenticates to the API with
+          # the explicit GITHUB_TOKEN below, so the credential does not need to
+          # stay in .git/config after checkout.
+          persist-credentials: false
       - name: Run gitleaks
         # Pinned to a commit SHA (Dependabot's github-actions ecosystem keeps
         # this current). Fails the job on any finding.
@@ -46,14 +50,18 @@ jobs:
   dependencies:
     name: Dependency scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      # Audit the resolved lockfile for known high/critical advisories. npm audit
-      # works on private repos (unlike dependency-review-action, which requires
-      # GitHub Advanced Security), so the same gate runs on PRs, pushes, and the
-      # weekly schedule.
+      # Audit the resolved lockfile for known high/critical advisories. This
+      # runs on every event, so pushes and the weekly schedule are covered too
+      # — dependency-review below only sees pull requests.
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -61,3 +69,24 @@ jobs:
           cache: npm
       - name: npm audit (high+)
         run: npm audit --audit-level=high
+
+  dependency-review:
+    name: Dependency review (PR diff)
+    # Diffs the dependency manifest of the PR against its base and fails on a
+    # newly introduced high-severity advisory, so a bad dependency is caught in
+    # review rather than after it lands. Needs the GitHub dependency graph,
+    # which is free on public repositories.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
