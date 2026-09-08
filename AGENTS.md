@@ -63,7 +63,12 @@ Automated guardrails keep secrets and vulnerable dependencies out of the repo:
 - **Local hooks** — `npm install` runs the `prepare` script (`scripts/setup-hooks.mjs`),
   which fetches a **checksum-verified, version-pinned** gitleaks binary into
   `node_modules/.bin` and installs the lefthook hooks (`lefthook.yml`). No manual
-  step is needed; set `SKIP_GITLEAKS_INSTALL=1` to opt out of the download.
+  step is needed. The hook **fails closed**: it looks in `node_modules/.bin` and
+  then on `PATH`, and blocks the commit with a fix-it message if it finds
+  neither. It used to print a notice and exit 0, which made a skipped or broken
+  install indistinguishable from a clean scan. `SKIP_GITLEAKS_INSTALL=1` opts
+  out of the *download*, not the scan — set it and commits are blocked until
+  gitleaks is on `PATH`. Use `git commit --no-verify` for a real emergency.
 - **Dependency scanning** — `npm audit --audit-level=high` runs on PRs, pushes,
   and the weekly schedule. Keep `npm audit` clean of high/critical advisories or
   CI will fail.

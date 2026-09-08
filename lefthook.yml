@@ -7,13 +7,40 @@ pre-commit:
   parallel: true
   commands:
     gitleaks:
-      # `protect --staged` scans only what is about to be committed. The guard
-      # propagates gitleaks' exit code when the binary is present (so a finding
-      # still blocks the commit) and no-ops when it isn't (e.g. an unsupported
-      # platform where auto-install was skipped) — CI still enforces the scan.
-      run: >
+      # `protect --staged` scans only what is about to be committed.
+      #
+      # This guard fails closed: if gitleaks cannot be found, the commit is
+      # blocked rather than waved through. It used to print a notice and exit
+      # 0 on a missing binary, on the reasoning that CI still enforces the
+      # scan — but that made a broken or skipped install look exactly like a
+      # clean scan, so the guard could be silently absent for every commit
+      # without anyone noticing. A secret is cheapest to catch before it
+      # reaches the remote, and `git commit --no-verify` is still there for a
+      # genuine emergency.
+      #
+      # node_modules/.bin first (the pinned, checksum-verified binary), then
+      # PATH, so a platform with no pinned release can satisfy this by
+      # installing gitleaks by hand.
+      run: |
         if [ -x node_modules/.bin/gitleaks ]; then
-          node_modules/.bin/gitleaks protect --staged --redact --no-banner;
+          node_modules/.bin/gitleaks protect --staged --redact --no-banner
+        elif command -v gitleaks >/dev/null 2>&1; then
+          gitleaks protect --staged --redact --no-banner
         else
-          echo "gitleaks binary missing; skipping local scan (CI still enforces)";
+          echo "" >&2
+          echo "  gitleaks not found — refusing to commit without a local secret scan." >&2
+          echo "" >&2
+          echo "  Fix whichever applies:" >&2
+          echo "" >&2
+          echo "  * The install did not fetch it (most common). Run:" >&2
+          echo "        npm install" >&2
+          echo "    Do not set SKIP_GITLEAKS_INSTALL=1 — that disables this scan." >&2
+          echo "" >&2
+          echo "  * Your platform has no pinned binary (Windows, or an arch other" >&2
+          echo "    than x64/arm64). Install gitleaks yourself and put it on PATH:" >&2
+          echo "        https://github.com/gitleaks/gitleaks#installing" >&2
+          echo "" >&2
+          echo "  * Genuine emergency: git commit --no-verify (CI still scans)." >&2
+          echo "" >&2
+          exit 1
         fi
