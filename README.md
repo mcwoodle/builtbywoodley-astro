@@ -19,8 +19,13 @@ npm run dev     # http://localhost:5572
 ```
 
 `npm install` runs `scripts/setup-hooks.mjs`, which installs the lefthook pre-commit
-hooks and fetches a checksum-verified, version-pinned secret scanner. Set
-`SKIP_GITLEAKS_INSTALL=1` to opt out of that download.
+hooks and fetches a checksum-verified, version-pinned secret scanner.
+
+The pre-commit scan fails closed: if the scanner cannot be found, the commit is
+blocked rather than passed through unscanned, and the error says how to fix it.
+`SKIP_GITLEAKS_INSTALL=1` opts out of the download, but it does not opt out of
+the scan — commits will be blocked until `gitleaks` is on your `PATH`. On a
+platform with no pinned release, install it by hand and the hook will find it.
 
 ## Scripts
 

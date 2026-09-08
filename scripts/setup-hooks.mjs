@@ -75,15 +75,21 @@ async function download(url, dest) {
 
 async function installGitleaks() {
   if (process.env.SKIP_GITLEAKS_INSTALL) {
-    log("SKIP_GITLEAKS_INSTALL set — skipping gitleaks download.");
+    log(
+      "SKIP_GITLEAKS_INSTALL set — skipping gitleaks download. The pre-commit " +
+        "hook fails closed, so commits will be blocked unless gitleaks is " +
+        "already on PATH.",
+    );
     return;
   }
 
   const key = assetKey();
   if (!key) {
     log(
-      `no pinned binary for ${process.platform}/${process.arch}; ` +
-        "install gitleaks manually (https://github.com/gitleaks/gitleaks) for local secret scanning.",
+      `no pinned binary for ${process.platform}/${process.arch}. ` +
+        "Install gitleaks manually and put it on PATH " +
+        "(https://github.com/gitleaks/gitleaks#installing) — the pre-commit " +
+        "hook fails closed, so commits are blocked until it is found.",
     );
     return;
   }
