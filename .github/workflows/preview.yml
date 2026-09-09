@@ -185,7 +185,7 @@ jobs:
 
       - name: Restore Playwright browsers
         id: browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           # The browser build a given @playwright/test pins is fixed by the
