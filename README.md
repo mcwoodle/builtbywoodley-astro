@@ -5,27 +5,22 @@ portfolio and workshop journal. One editorial layout carries three things: softw
 case studies, a project log of woodworking and renovation builds, and a photography
 archive.
 
-It is a static site, built with [Astro](https://astro.build), Tailwind CSS v4, GSAP
-and Lenis, and served from Cloudflare's edge. There is no server runtime and no
-origin to keep online.
+Static, built with [Astro](https://astro.build), Tailwind CSS v4, GSAP and Lenis, and
+served from Cloudflare's edge. No server runtime, no origin to keep online.
 
 ## Quick start
 
 Requires Node.js 22 or newer.
 
 ```bash
-npm install     # also installs the local git hooks
+npm install     # also installs the git hooks and a pinned secret scanner
 npm run dev     # http://localhost:5572
 ```
 
-`npm install` runs `scripts/setup-hooks.mjs`, which installs the lefthook pre-commit
-hooks and fetches a checksum-verified, version-pinned secret scanner.
-
-The pre-commit scan fails closed: if the scanner cannot be found, the commit is
+The pre-commit secret scan **fails closed**: if the scanner is missing, the commit is
 blocked rather than passed through unscanned, and the error says how to fix it.
-`SKIP_GITLEAKS_INSTALL=1` opts out of the download, but it does not opt out of
-the scan — commits will be blocked until `gitleaks` is on your `PATH`. On a
-platform with no pinned release, install it by hand and the hook will find it.
+`SKIP_GITLEAKS_INSTALL=1` skips the download but not the scan — on a platform with no
+pinned release, install `gitleaks` yourself and the hook will find it on `PATH`.
 
 ## Scripts
 
@@ -41,38 +36,34 @@ platform with no pinned release, install it by hand and the hook will find it.
 | `npm run audit:assets` | List full-size originals Astro emits but never references |
 | `npm run photo:master` | Resize and strip EXIF from a photograph before import |
 
-Two guards run after every build, locally and in CI: one fails the build if any file
+Two guards run after every build, locally and in CI: one fails the build if a file
 approaches Cloudflare's per-asset size limit, the other reports unreferenced originals.
 
 ## Testing
 
-A Playwright smoke suite in `tests/` covers what a build cannot: that pages
-actually render, that client-side navigation survives a second page, and that
-nothing throws on the way.
+A Playwright smoke suite in `tests/smoke/` covers what a build cannot: that pages
+render, that client-side navigation survives a second page, and that nothing throws on
+the way.
 
 ```bash
-npx playwright install          # once, to fetch the browsers
-npm run test:smoke
+npx playwright install    # once, to fetch the browsers
+npm run test:smoke        # builds, serves dist/, runs, then tears down
 ```
 
-With no arguments it builds the site, serves `dist/`, runs the suite, and stops
-the server again — no setup, and nothing left running afterwards. To test a site
-that is already up instead, name it:
+To test a site that is already up, name it instead:
 
 ```bash
 SMOKE_BASE_URL=https://builtbywoodley.ca npm run test:smoke
 ```
 
-Five browser projects run on every pull request — Chrome, Firefox and WebKit at
-desktop width, plus Pixel 7 and iPhone 14 — covering navigation between routes,
-the photo viewer, the theme toggle, the 404 page, and horizontal overflow at
-phone widths. In CI they run against that pull request's own Cloudflare preview
-URL: the real artifact, served with the real response headers, so a routing or
-header change that only breaks at the edge fails the PR instead of reaching
-production.
+Five projects run on every pull request — Chrome, Firefox and WebKit at desktop width,
+plus Pixel 7 and iPhone 14 — covering route navigation, the photo viewer, the theme
+toggle, the 404 page and phone-width overflow. CI points them at that PR's own
+Cloudflare preview URL, so a routing or header change that only breaks at the edge
+fails the PR instead of reaching production.
 
-The `webkit` and `mobile-safari` projects need Debian or Ubuntu. On another
-distribution, run the rest locally and let CI cover those two:
+`webkit` and `mobile-safari` need Debian or Ubuntu. On another distribution, run the
+rest locally and let CI cover those two:
 
 ```bash
 npm run test:smoke -- --project=chromium --project=firefox --project=mobile-chrome
@@ -82,11 +73,13 @@ npm run test:smoke -- --project=chromium --project=firefox --project=mobile-chro
 
 ```text
 src/
+├── assets/         logos and other bundled assets
 ├── components/     UI components — nav, carousel, photo viewer, footer
 ├── config/         shared config, notably the responsive image ladders
 ├── content/        content collections: projects, software, photos, work
 ├── integrations/   build-time Astro integrations
 ├── layouts/        BaseLayout supplies the site chrome to every page
+├── lib/, utils/    shared helpers
 ├── pages/          file-based routes
 ├── plugins/        remark / rehype plugins
 ├── scripts/        client-side scripts (navigation transitions)
@@ -103,27 +96,22 @@ rather than one file per entry.
 
 ## Deploying and hosting
 
-`astro build` emits `dist/`, and Cloudflare serves it as Worker static assets.
-Routing, asset handling and the custom domains are declared in `wrangler.jsonc`, so
-Wrangler provisions DNS and TLS on deploy instead of anyone editing the dashboard.
+`astro build` emits `dist/`, and Cloudflare serves it as Worker static assets. Routing,
+asset handling and the custom domains are declared in `wrangler.jsonc`, so Wrangler
+provisions DNS and TLS on deploy instead of anyone editing the dashboard.
 
-**Production.** A push to `mainline` runs the deploy workflow: install, build,
-`wrangler deploy`. That is the only path to production.
-
-**Pull requests.** Every push to a PR uploads a *version* rather than deploying
-(`wrangler versions upload`) and comments the resulting immutable preview URL on the
-PR, so each revision keeps its own link. Production traffic is never touched. The
-smoke suite then runs against that URL before the PR can merge. Preview
-URLs must be enabled once for the Worker in the Cloudflare dashboard. The upload is
-skipped for PRs from forks, because they cannot read repository secrets; the smoke
-suite still runs there, building and serving the site itself.
-
-**Credentials.** Deploys authenticate with two repository secrets — a scoped
-Cloudflare API token (`Workers Scripts: Edit` is enough) and the account ID. Nothing
-else is needed, and no credentials live in the repo.
-
-**Headers.** `public/_headers` ships a Content-Security-Policy alongside HSTS and the
-usual hardening headers; Cloudflare applies them to every response it serves.
+- **Production** — a push to `mainline` runs install, build, `wrangler deploy`. That is
+  the only path to production.
+- **Pull requests** — each push uploads a *version* (`wrangler versions upload`) and
+  comments the immutable preview URL on the PR, so every revision keeps its own link;
+  production traffic is never touched. The smoke suite then runs against that URL before
+  the PR can merge. Preview URLs must be enabled once for the Worker in the Cloudflare
+  dashboard. Fork PRs skip the upload — they cannot read repository secrets — and the
+  smoke suite builds and serves the site itself there.
+- **Credentials** — two repository secrets: a scoped Cloudflare API token (`Workers
+  Scripts: Edit` is enough) and the account ID. Nothing lives in the repo.
+- **Headers** — `public/_headers` ships a Content-Security-Policy alongside HSTS and the
+  usual hardening headers, applied to every response Cloudflare serves.
 
 To deploy by hand, from a machine with Wrangler already authenticated:
 
@@ -134,53 +122,48 @@ npx wrangler deploy
 
 ## Security
 
-Found a vulnerability? Please report it privately — **Security** tab → **Report a
-vulnerability**, not a public issue. [SECURITY.md](SECURITY.md) has the details and
-the scope.
+Found a vulnerability? Report it privately — **Security** tab → **Report a
+vulnerability**, not a public issue. [SECURITY.md](SECURITY.md) has the scope.
 
 Running continuously:
 
-- **Secret scanning** — gitleaks blocks commits locally via a pre-commit hook, and
-  scans in CI on every pull request and push, plus weekly against the full history.
-- **Static analysis** — CodeQL analyses the site source and the GitHub Actions
-  workflows themselves, on every pull request and weekly.
-- **Dependencies** — `npm audit --audit-level=high` gates every pull request and
-  push, a dependency review runs on the pull request diff, and Dependabot keeps
-  packages and pinned actions current.
-- **Pipeline** — workflows start from zero token permissions and opt in per job,
-  the checkout credential is never persisted into the build environment,
-  third-party actions are pinned to commit SHAs, and fork pull requests never
-  receive deploy credentials.
-- **Transport and content** — a Content-Security-Policy plus HSTS and the usual
-  hardening headers, in `public/_headers`. The smoke suite asserts they are
-  actually present on every deployed origin it tests, so a header change that
-  Cloudflare quietly rejects fails the PR rather than shipping.
+- **Secrets** — gitleaks blocks commits locally and scans in CI on every PR and push,
+  plus weekly against the full history.
+- **Static analysis** — CodeQL analyses the site source and the workflows themselves,
+  on every PR and weekly.
+- **Dependencies** — `npm audit --audit-level=high` gates every PR and push, a
+  dependency review runs on the PR diff, and Dependabot keeps packages and pinned
+  actions current.
+- **Pipeline** — workflows start from zero token permissions and opt in per job, the
+  checkout credential is never persisted, third-party actions are pinned to commit SHAs,
+  and fork PRs never receive deploy credentials.
+- **Transport and content** — CSP, HSTS and the usual hardening headers, asserted by the
+  smoke suite against every deployed origin it tests, so a header change Cloudflare
+  quietly rejects fails the PR rather than shipping.
 
 ## Contributing
 
-This is a personal site, so the content is mine and pull requests that rewrite it
-are unlikely to land. Everything else is fair game — bug reports, build and
-tooling fixes, accessibility problems, and broken links are all genuinely welcome.
-Open an issue first for anything substantial, so neither of us builds the wrong
-thing.
+This is a personal site, so the content is mine and PRs that rewrite it are unlikely to
+land. Everything else is fair game — bug reports, build and tooling fixes,
+accessibility problems and broken links are all genuinely welcome. Open an issue first
+for anything substantial.
 
 [`AGENTS.md`](AGENTS.md) is the canonical guide to the architecture and conventions
 here, for humans and coding agents alike — read it first. Commits follow
-[Conventional Commits](https://www.conventionalcommits.org):
-`type(scope): description`, imperative mood, subject under 72 characters.
+[Conventional Commits](https://www.conventionalcommits.org): `type(scope): description`,
+imperative mood, subject under 72 characters.
 
-Two things to expect when you open a pull request from a fork: the Cloudflare
-preview job skips it (forks cannot read repository secrets, by design), and a
-maintainer has to approve the first workflow run. The security checks still run.
+Two things to expect from a fork PR: the Cloudflare preview job skips it (forks cannot
+read repository secrets, by design), and a maintainer has to approve the first workflow
+run. The security checks still run.
 
 ## Further reading
 
-- `docs/photography-image-delivery.md` — the responsive image pipeline, width
-  ladders, and how delivery is measured.
-- `docs/whole-page-navigation-animation-plan.md` — the cross-document navigation
-  transitions.
-- `docs/chrome-view-transition-white-rectangle.md` — a browser-specific view
-  transition bug and its workaround.
+- `docs/photography-image-delivery.md` — the responsive image pipeline, width ladders,
+  and how delivery is measured.
+- `docs/whole-page-navigation-animation-plan.md` — cross-document navigation transitions.
+- `docs/chrome-view-transition-white-rectangle.md` — a browser-specific view transition
+  bug and its workaround.
 
 ## License
 
