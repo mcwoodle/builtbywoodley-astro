@@ -29,6 +29,12 @@ a result there is no way to answer the questions the site exists to raise:
 - Is the contact CTA — a `mailto:` link, the site's only conversion — ever
   used? It produces no pageview, so nothing about it is currently observable.
 - Is any of the photography archive reached at all?
+- What does the site actually cost a real device? This is a photography site
+  with a GSAP-driven landing reveal and a full-resolution zoom view, and every
+  load measurement that exists today is a lab one:
+  `scripts/measure-image-delivery.mjs` models `dist/`, and the `?stats=true`
+  probe shows one device's numbers to whoever is holding it. Neither reports
+  what visitors got.
 
 The goal is a small, honest measurement layer that answers those questions
 without turning a static portfolio into a surveillance surface, without a
@@ -48,6 +54,13 @@ repository already maintains.
   CSP block; instrumenting it is deliberately out of scope.
 - Replacing the smoke suite as the correctness signal. Analytics measures
   visitors, not the build.
+- Replacing lab measurement. `measure:images` and the `?stats=true` probe stay
+  the tools for *diagnosing* a build on a machine you control. Field timing
+  answers a different question — what real devices experienced — and neither
+  substitutes for the other.
+- Per-asset waterfalls, error/exception monitoring, or anything that would make
+  this an APM product. The performance requirements below are a handful of
+  numbers per pageview, not a trace.
 
 ## Requirements
 
@@ -60,6 +73,14 @@ repository already maintains.
 | R3 | How far a visitor scrolled | Document depth per pageview. |
 | R4 | Which narrative chapter was reached | `hero → about → work → archive → contact` on Home. Added by this design; see C4 for why R3 alone is not enough. |
 | R5 | A traffic baseline that does not depend on a browser script | Something to sanity-check R1–R4 against when a visitor blocks JavaScript analytics. |
+| R6 | How fast the page rendered and finished loading | Server response, first render, largest paint, layout stability, interaction latency, "fully loaded", and the long tasks the Home reveal spends — per pageview, with hard loads and ClientRouter soft navigations kept apart. |
+| R7 | What images cost and how fast the photo viewer responded | Which srcset rung this device actually chose and what it transferred; the latency of opening the photo viewer, and of entering the 1:1 zoom — including whether the master was already warm. |
+
+R6 and R7 are the reason the analytics layer has to justify its own weight
+twice over: it is measuring a page whose whole argument is that it feels fast,
+so the measurement must be small enough not to be the thing that slows it down.
+Acceptance criterion 4 under *CSP, Cloudflare and performance* exists for
+exactly that, and R6 is what tells us afterwards whether it held in the field.
 
 ### Constraints from this codebase
 
@@ -72,6 +93,8 @@ repository already maintains.
 | C5 | Free hosted plans, no service of our own | — | Rules out self-hosting; makes vendor free-tier limits a live risk to record and alert on. |
 | C6 | Public repository with enforced CI gates | `.github/workflows/`, `AGENTS.md` | gitleaks, `npm audit --audit-level=high`, CodeQL, dependency review and the smoke suite all gate `mainline`. New dependencies and any new CI variable must pass them. |
 | C7 | Reduced-motion contract | `AGENTS.md`, smoke suite runs `reducedMotion: 'reduce'` | Analytics must work identically under reduced motion. An `IntersectionObserver` creates no motion, so it runs for everyone — but it must not be nested inside an existing motion guard. |
+| C8 | A build-time image model and an on-device probe already exist | `scripts/measure-image-delivery.mjs`, `src/scripts/image-perf.ts`, `src/components/ImagePerfProbe.astro` | Field timing must reuse their definitions rather than invent a second set of numbers — and must **not** import the probe module. Its separation from the critical path is asserted on every build by `scripts/check-asset-sizes.mjs`, because inlining it would put ~4 KB of debugging on all 36 pages. |
+| C9 | The photo viewer decodes in two stages and can cancel | `src/scripts/photo-viewer.ts` — `revealPicture()` (`:451`), `openZoom()` (`:207`), `masterReady`, `zoomToken` | Latency here is not one number. A zoom paints an upscaled stand-in immediately and swaps in the decoded master when it lands, and a hold-to-zoom can end before either. Any timing that ignores this will report cancelled interactions as fast ones. |
 
 Two facts from the first draft are now stale and should not be carried forward:
 `not_found_handling` **is** set to `404-page` in `wrangler.jsonc` (it is no
@@ -89,6 +112,18 @@ IDs.
 | P3 | Global Privacy Control and best-effort Do Not Track are honoured, and a discoverable site opt-out works **mid-visit**, not only after a hard reload. |
 | P4 | The processor, its region, retention period and the transient use of IP/user-agent are documented in the repository and disclosed on the site. |
 | P5 | Local development and PR previews never enter production data, and there is a documented way to run a real end-to-end test that does not. |
+| P6 | Timing payloads carry no URLs and no image paths beyond a build-stable basename, are rounded to whole milliseconds, and describe device shape only in coarse buckets. |
+
+P6 is where the performance requirements press hardest on the privacy ones.
+Viewport width and device pixel ratio are what make R7 answerable at all — the
+srcset ladders in `src/config/image-ladders.mjs` are chosen against exactly
+those two axes — but they are also fingerprinting surface. The design records
+them **bucketed** (viewport rounded to the nearest 160 px, DPR to 1/2/3) and
+records nothing else about the device: no `deviceMemory`, no
+`hardwareConcurrency`, no `navigator.connection` unless a specific question
+later needs it. The mitigation that matters most is structural: cookieless
+server-hash mode means there is no stable identifier for that entropy to
+accumulate against.
 
 P1–P4 are a product and privacy decision, not a legal conclusion. This design
 avoids analytics storage and identification, which is the reason no consent
@@ -156,6 +191,10 @@ Analytics beacon.
 | Ingest path | Same-origin `/sawdust/*` via Worker | Direct `us.i.posthog.com` | Direct ingest needs a `connect-src` exception (C3) and is on every common blocklist, for a developer-heavy audience. |
 | Chapter measurement | `data-analytics-chapter` on all five sections; count when the leading edge enters a stable viewport band (threshold `0` with a negative bottom `rootMargin`) | 50% intersection over sections with derived IDs | A `0.5` threshold can never fire for a section taller than twice the viewport, which About and Work routinely are. Two of the five sections have no ID at all. |
 | Traffic baseline (R5) | Cloudflare **zone/edge** Analytics, dashboard-only | Cloudflare **Web** Analytics as "the unblockable baseline" | Web Analytics is a JavaScript beacon and is blockable. Edge Analytics counts requests at Cloudflare with no code change. |
+| Page timing source (R6) | PostHog's own web-vitals capture: `capture_performance: { web_vitals: true, network_timing: false }` | A hand-rolled `PerformanceObserver` per vital; or PostHog's defaults with `network_timing` left on | The SDK already carries a maintained web-vitals implementation, and its property names are what the Web Analytics dashboard reads. `network_timing` emits a resource-timing entry per asset — high volume, and URL-bearing, so it stays off (P6). |
+| Soft-navigation timing | A custom `page_load_timing` event carrying `nav_type: 'soft'` and a mark-to-first-frame measure | Letting ClientRouter swaps be timed as ordinary navigations | FCP and LCP are hard-load metrics; they do not re-fire on a `pushState` swap. Recording a soft-nav render time under the same property name would quietly corrupt both populations. |
+| Component latency (R7) | Custom `photo_viewer_opened` / `photo_zoom_used` events timed around the viewer's existing decode points (C9) | Inferring it from INP, or from PostHog's generic slow-interaction signals | INP is a page-level aggregate: it can say the page felt slow, never *which stage* was slow. The viewer's two-stage decode is the thing worth measuring and is already a distinct code path. |
+| Image cost (R7) | One bucketed `image_cost` summary per pageview, sampled | A resource-timing event per image | Ten images per gallery page per visitor is a volume and cardinality problem for no extra insight. The ladder question is answered by the summary plus viewport and DPR. |
 | Init timing | Dynamic import promptly after the first `astro:page-load`, then measure the cost | `requestIdleCallback` with a 2s timeout | Up to two seconds of idle delay undercounts short visits, early clicks, initial dwell and quickly-passed chapters. If a delay is reinstated after measurement, annotated clicks must be queued synchronously and the timing bias documented. |
 | Enablement | Explicit build-time switch (`PUBLIC_ANALYTICS_ENABLED`) plus key presence | Hostname sniffing (`localhost`/`*.workers.dev` always suppressed) | Hostname suppression makes local and preview verification impossible — the first draft asked for a local click test that its own code could never allow. |
 
@@ -170,7 +209,10 @@ What each requirement means, decided before any dashboard card is built:
 | R3 scroll depth | PostHog pageview/pageleave properties | `$prev_pageview_max_scroll_percentage` and `$prev_pageview_max_content_percentage`, both `0..1`. Technical document depth, distorted by pin spacers (C4). |
 | R4 narrative depth | PostHog `chapter_viewed` | The named chapter's leading edge reached the agreed viewport band once during that Home pageview. **This is the primary reading-depth metric**, and R3 is the diagnostic. |
 | R5 traffic baseline | Cloudflare zone/edge Analytics | Requests reaching Cloudflare. Do not expect it to reconcile one-for-one with PostHog sessions or pageviews. |
-| Optional performance view | Cloudflare Web Analytics | Browser RUM and SPA navigation metrics, if explicitly enabled. A cross-check, not a baseline. |
+| R6 page load | PostHog web vitals + `page_load_timing` | TTFB, FCP, LCP, CLS and INP as the `web-vitals` library defines them, for **hard loads only**. `load_ms`, `dom_content_loaded_ms`, `long_task_ms` and, for soft navigations, `render_ms` come from the custom event. A metric the browser did not report is **missing**, never zero. |
+| R7 image cost | PostHog `image_cost` | For one sampled pageview: how many `<img>` elements resolved, the total transferred kilobytes (bucketed), the slowest single image, how many came from cache, and the viewport/DPR bucket that explains which rung was chosen. Mirrors what `?stats=true` shows on the device and what `measure:images` models from `dist/`. |
+| R7 viewer latency | PostHog `photo_viewer_opened`, `photo_zoom_used` | Milliseconds from the activating input to the frame that shows the decoded image. Zoom is two numbers — stand-in painted, then master swapped — because the code is two stages (C9). Cancelled interactions are dropped, not recorded as fast. |
+| Optional performance view | Cloudflare Web Analytics | Browser RUM and SPA navigation metrics, if explicitly enabled. A cross-check, not a baseline — and largely redundant once PostHog reports the same vitals. |
 
 ### Event dictionary
 
@@ -185,6 +227,18 @@ component is edited — not one event name per button label.
 | `control_used` | `control`, optional `value` | `theme` / `dark`, `photo-step` / `next`, `photo-close`, `map-mode` / `mobile` |
 | `disclosure_opened` | `kind` | `ai-generated`, `human-written` |
 | `chapter_viewed` | `chapter` | `hero`, `about`, `work`, `archive`, `contact` |
+| `page_load_timing` | `nav_type`, plus the timings the browser supplied | `hard` / `load_ms`, `dom_content_loaded_ms`, `long_task_ms`; `soft` / `render_ms`, `long_task_ms` |
+| `image_cost` | `images`, `bytes_kb`, `slowest_ms`, `from_cache`, `viewport_bucket`, `dpr` | `9`, `1400`, `620`, `3`, `1440`, `2` |
+| `photo_viewer_opened` | `open_ms`, `source`, `warm` | `210` / `gallery-link` / `false`, `90` / `step` / `true` |
+| `photo_zoom_used` | `to_standin_ms`, `to_master_ms`, `warm`, `input` | `16` / `540` / `false` / `hold`, `12` / `0` / `true` / `pointer` |
+
+Two naming conventions are in play and should stay distinct: interaction events
+are past-tense verbs (`chapter_viewed`, `photo_zoom_used`), and measurement
+snapshots are nouns (`page_load_timing`, `image_cost`). All durations are whole
+milliseconds; all byte counts are kilobytes rounded to the nearest 100. Web
+vitals themselves are **not** in this table — they arrive under PostHog's own
+`$web_vitals_*` properties, and duplicating them into custom events would
+create two numbers that disagree.
 
 PostHog supplies timestamps. Project slugs are derived at render time; titles
 and full URLs are not sent. The theme value is captured from the resulting
@@ -276,7 +330,7 @@ posthog.init(KEY, {
   capture_heatmaps: false,
   capture_dead_clicks: false,
   capture_exceptions: false,
-  capture_performance: false,
+  capture_performance: { web_vitals: true, network_timing: false },
   rageclick: false,
   respect_dnt: true,
 });
@@ -290,6 +344,15 @@ collection surface; if that card turns out to matter, the documented escape is
 to enable autocapture scoped to clicks on annotated anchors and buttons only,
 after confirming in real payloads that text, hierarchy and `href` data are
 acceptable under P2.
+
+`capture_performance` is the one capture flag deliberately *not* set to
+`false`, because R6 depends on it. The object form is what makes that safe:
+`web_vitals` is a bounded set of numeric metrics per hard load, while
+`network_timing` would send a resource-timing entry — carrying a URL — for
+every asset on the page, which fails P6 and would dominate the free-tier event
+budget on a gallery page. Verify the accepted shape of this option against the
+installed `posthog-js` version at implementation time; it is vendor surface,
+not a repository guarantee.
 
 Lifecycle — SDK initialisation and page-scoped instrumentation are separate
 responsibilities:
@@ -330,6 +393,98 @@ that the email event is delivered before control passes to the mail client.
 All five chapters are annotated explicitly with
 `data-analytics-chapter="hero|about|work|archive|contact"` — including the two
 sections that have no ID today.
+
+#### Performance and interaction timing (`src/scripts/perf.ts`)
+
+Four sources, deliberately kept apart because they answer different questions
+and fail in different ways.
+
+**1. Web vitals — hard loads only.** TTFB, FCP, LCP, CLS and INP arrive from
+`posthog-js` itself once `capture_performance.web_vitals` is on. No code beyond
+the flag. One caveat belongs on the dashboard card rather than in the data: on
+Home the largest paint is usually an element the GSAP intro timeline is still
+animating (C4), so Home's LCP reads as *when the reveal settled* and is only
+comparable against itself. Software and photography pages carry the honest
+cross-page number.
+
+**2. Navigation and long tasks — `page_load_timing`, one per pageview.**
+
+- *Hard load*: `load_ms` and `dom_content_loaded_ms` from the
+  `PerformanceNavigationTiming` entry. "Fully loaded" is a weaker claim than it
+  sounds here — `load` fires when subresources finish, while the landing page
+  goes on building GSAP timelines and a Lenis loop afterwards. That gap is the
+  reason for the next property.
+- *Both*: `long_task_ms`, the summed duration of `longtask` entries seen before
+  the event is sent, with their count. This is the number that says whether the
+  analytics layer itself cost frames during the Home reveal — the field version
+  of acceptance criterion 4.
+- *Soft navigation*: `render_ms`, marked at `astro:before-preparation` and
+  measured at the first `requestAnimationFrame` after `astro:after-swap`, with
+  `astro:page-load` as the scripts-ran checkpoint. It is sent with
+  `nav_type: 'soft'` and **never** under a vitals property name, because FCP
+  and LCP do not re-fire on a `pushState` swap and a soft-nav render time
+  averaged into them would corrupt both.
+
+**3. Image cost — `image_cost`, sampled, one per pageview.** This reuses the
+probe's definitions rather than inventing new ones (C8): `currentSrc` for the
+rung the browser actually chose after weighing DPR, connection and its own
+cache; the matching resource-timing entry for `transferSize`; and the
+`transferSize === 0` with non-zero `encodedBodySize` test that
+`image-perf.ts:172` already uses to mean "came from cache".
+
+The summarising logic moves into a small shared module — `src/lib/image-cost.ts`
+— imported by both `image-perf.ts` and the analytics chunk. The HUD's DOM,
+styles and observers stay in the probe, so the chunk split that
+`scripts/check-asset-sizes.mjs` asserts on every build is unaffected; the
+analytics module must never import `image-perf.ts` itself. Only basenames
+leave the browser, which is what the probe already does at `image-perf.ts:178`.
+
+**4. Photo viewer latency — `photo_viewer_opened` and `photo_zoom_used`.** The
+viewer has three ways in and a two-stage decode, and the timing has to respect
+both (C9):
+
+- *Opening* starts at a delegated gallery-link click
+  (`photo-viewer.ts:741`), a hash arrival or `popstate` through `sync()`
+  (`:585`), or a `step()`/`advance()` to the next frame (`:606`). Take `t0`
+  from the input event's `timeStamp` — same monotonic clock as
+  `performance.now()`, and it includes the queueing delay the visitor actually
+  felt — and `t1` at the first `requestAnimationFrame` after
+  `revealPicture()`'s decode settles (`picture.decode()` at `:491`, with the
+  `load` listener at `:494` as the fallback path). `source` distinguishes the
+  three entries; `warm` records whether that frame had already been decoded.
+  One subtlety decides whether `source` is trustworthy: `step()` navigates by
+  replacing the hash (`:608`), so a prev/next arrival reaches `sync()` by
+  exactly the route a shared deep link does. `source` must be set from the
+  initiating input, not inferred at the hash, or every step lands in the data
+  as a deep link.
+- *Zoom* is two numbers because `openZoom()` (`:207`) is two stages. It paints
+  an upscaled stand-in from the panel's `currentSrc` immediately, then swaps in
+  the full master once `master.decode()` resolves (`:261`). `to_standin_ms` is
+  what the finger feels; `to_master_ms` is when it sharpens, and is `0` with
+  `warm: true` when `masterReady` already held it. Reporting only one of these
+  would either flatter the interaction or libel it.
+- *Cancellation is the trap.* A hold-to-zoom that lifts early, or a pending
+  decode invalidated by a newer `zoomToken`, must **drop** its measurement.
+  Recording those would give the best-looking numbers to the interactions that
+  never finished.
+
+The viewer must not import the analytics module. It runs for every visitor,
+including opted-out ones, and it should keep working with analytics absent.
+Instead it dispatches two small DOM events carrying the timings in `detail`
+(`photo:opened`, `photo:zoomed`), and the analytics module listens for them —
+the same separation the delegated click handler uses for R1. With analytics
+suppressed, those events dispatch into an empty room.
+
+**Volume.** A gallery visit that opens three photographs and zooms twice
+produces roughly a dozen events including pageview and pageleave. That is
+comfortable, but the levers exist: `image_cost` is sampled from the start, and
+`page_load_timing` can be sampled too if the free tier tightens. Sampling rate
+is a Phase 0 decision so it is recorded rather than discovered.
+
+**Missing is not zero.** Support for these entry types differs across browsers,
+and some are absent in Safari. When a metric is unavailable the property is
+omitted; a zero would be indistinguishable from an instantaneous load and would
+quietly drag every average down.
 
 #### Cloudflare layer
 
@@ -376,7 +531,9 @@ PostHog region. Create separate production and test projects. Enable
 **Cookieless server hash mode in each project** — PostHog drops cookieless
 events if the project-side setting is absent. Set retention, disable session
 replay and surveys, decide on GeoIP. Draft the analytics disclosure and the
-opt-out control. Decide whether Web Analytics earns its second beacon.
+opt-out control. Decide whether Web Analytics earns its second beacon. Set the
+`image_cost` sampling rate and confirm that bucketed viewport and DPR are
+acceptable to record (P6).
 
 **Phase 1 — Worker proxy.** `src/worker/index.ts`, the `wrangler.jsonc` change,
 wrangler and generated binding types as devDependencies, and the three scripts
@@ -387,6 +544,11 @@ above.
 
 **Phase 3 — Explicit instrumentation.** Annotations on the real controls, the
 delegated handler, the chapter observer.
+
+**Phase 3b — Timing instrumentation.** The `capture_performance` flag,
+`src/scripts/perf.ts`, the `src/lib/image-cost.ts` extraction shared with the
+probe, and the two DOM events dispatched by `photo-viewer.ts`. Separable from
+Phase 3 and independently revertable: R1–R5 do not depend on any of it.
 
 **Phase 4 — Cloudflare baseline.** Read edge Analytics. Enable Web Analytics
 only if Phase 0 decided it is worth it, with the CSP edits above.
@@ -426,6 +588,30 @@ only if Phase 0 decided it is worth it, with the CSP edits above.
    unexpected high-cardinality values.
 6. The email event is delivered before control passes to the mail client.
 
+### Timing and performance data
+
+1. A hard load reports web vitals and one `page_load_timing` with
+   `nav_type: 'hard'`; a ClientRouter navigation reports one with
+   `nav_type: 'soft'` and a `render_ms`, and **no** second set of vitals.
+2. A browser lacking an entry type omits the property. No metric arrives as `0`
+   where it means "not measured".
+3. `image_cost` fires at the configured sampling rate, and its `images`,
+   `bytes_kb` and cache counts agree with what `?stats=true` shows on the same
+   device and page, and with `npm run measure:images` for that build. Three
+   numbers that disagree mean the shared `image-cost` module is wrong.
+4. Opening a photograph reports `photo_viewer_opened` once per open, from each
+   of the three sources (gallery link, hash/`popstate`, prev/next step), with
+   `warm` reflecting whether it was already decoded.
+5. Zoom reports `to_standin_ms` and `to_master_ms` separately, `to_master_ms: 0`
+   with `warm: true` on a repeat zoom of the same frame, and reports **nothing**
+   for a hold released before the master lands or a zoom superseded by a newer
+   one.
+6. No timing payload contains a URL, a full image path, or an unbucketed
+   viewport/DPR value.
+7. `npm run build` still passes `scripts/check-asset-sizes.mjs` — extracting
+   `src/lib/image-cost.ts` must not pull the probe's HUD onto the critical path,
+   and the analytics chunk must not import `image-perf.ts`.
+
 ### Privacy and environment isolation
 
 1. A normal visit leaves no PostHog identity in cookies, `localStorage` or
@@ -445,7 +631,9 @@ only if Phase 0 decided it is worth it, with the CSP edits above.
 3. Neither browser tool double-counts Astro soft navigations.
 4. A production build is compared before and after for transferred JavaScript,
    long tasks during the Home reveal, and LCP. **Record the measurement**
-   rather than relying on the first draft's unverified SDK-size estimate.
+   rather than relying on the first draft's unverified SDK-size estimate. This
+   is the lab half; `long_task_ms` and LCP from R6 are the field half, and the
+   first production day is when they are compared against it.
 5. `npm audit --audit-level=high` is clean after adding `posthog-js` and
    wrangler, and the smoke suite still passes.
 
@@ -459,13 +647,14 @@ counts and vendor quota consumption before calling the work done.
 | Option | Cost | Satisfies | Verdict |
 | --- | --- | --- | --- |
 | **A.** Cloudflare zone/edge Analytics alone | Zero — no code, no script | R5 only | Rejected as the whole answer; **adopted as a component**. |
-| **B.** Cloudflare Web Analytics alone | One beacon, one CSP host | Partial R2, no R1/R3/R4 | Rejected; optional add-on at most. |
+| **B.** Cloudflare Web Analytics alone | One beacon, one CSP host | Partial R2 and R6, no R1/R3/R4/R7 | Rejected; optional add-on at most. |
 | **C.** PostHog direct to vendor hosts, no proxy | Two CSP exceptions, no Worker | R1–R4 | Rejected on measurement validity for this audience. |
 | **D.** PostHog with autocapture + localStorage (the first draft) | Lowest build cost | R1–R4, fails P1/P2 | Rejected. |
 | **E.** Self-hosted (Umami, Plausible CE, Matomo) | A service, a database, backups, patching | R1–R5, best privacy story | Rejected against C5. |
 | **F.** Paid hosted privacy analytics (Plausible, Fathom) | ~$9–14/month | R1–R3, R4 with the same instrumentation work | Rejected on cost for a personal site; the natural upgrade if PostHog's free tier stops fitting. |
 | **G.** Minimal free hosted (GoatCounter, Counter.dev) | Tiny script | R2 partially, not R3/R4 | Rejected on capability. |
-| **H.** Build our own: Worker + Analytics Engine/D1 + tiny beacon | We own ingest, schema, retention, bot filtering, dashboards | R1–R5, no third-party processor | Rejected as the primary; kept as the escape hatch. |
+| **H.** Build our own: Worker + Analytics Engine/D1 + tiny beacon | We own ingest, schema, retention, bot filtering, dashboards | R1–R7, no third-party processor | Rejected as the primary; kept as the escape hatch. |
+| **I.** Lab-only performance measurement (Lighthouse CI, Playwright traces) | CI time, no field data, no privacy surface | R6 in the lab, never R7 in the field | Rejected as the answer to R6; **worth adding alongside**. |
 
 **A. Cloudflare zone/edge Analytics alone.** Free, invisible, unblockable,
 already running. It reports requests, paths, referrers and countries — and
@@ -533,6 +722,16 @@ no. **Revisit if** PostHog's pricing or limits change, or if the privacy
 disclosure becomes a reason to remove the processor: the Worker boundary in
 this design is deliberately the seam where that swap would happen.
 
+**I. Lab-only performance measurement.** Lighthouse CI or a Playwright trace on
+every PR would catch a regression before it ships, deterministically, with no
+visitor data involved at all — and this repository already runs a Playwright
+suite, so the harness exists. It cannot answer R6 or R7, because the questions
+are about *devices we do not own*: which srcset rung a 3× phone on a slow
+connection actually chose, and how long its zoom took to sharpen. A lab machine
+answers a different question very well. **Adopt it as a complement** when
+regressions start slipping through; it is not a substitute, and neither is a
+substitute for the other.
+
 ## Risks and open questions
 
 **Open decisions (Phase 0 blocks on these).**
@@ -545,6 +744,9 @@ this design is deliberately the seam where that swap would happen.
    are in scope for R1.
 4. Whether PostHog's autocapture-derived bounce metric matters enough to enable
    the narrow autocapture exception under D.
+5. The `image_cost` sampling rate, and whether bucketed viewport and DPR are
+   acceptable to record at all (P6). Recording neither still leaves R6 intact;
+   it costs R7 its explanatory half.
 
 **Risks.**
 
@@ -559,6 +761,20 @@ this design is deliberately the seam where that swap would happen.
   meaning.
 - **The chapter viewport band needs tuning** against the real pinned layout,
   desktop and mobile, before its numbers can be trusted.
+- **`decode()` resolving is not the same as a frame on screen.** The viewer
+  timings measure to the first `requestAnimationFrame` after the decode
+  settles, which is close but not identical to presentation time. It is a
+  consistent definition, so trends are trustworthy; the absolute number should
+  not be quoted as "time to pixels".
+- **Browser coverage for timing APIs is uneven**, so R6 will be
+  better-populated on Chromium than elsewhere. Segment by browser before
+  concluding that anything got faster or slower.
+- **Field and lab numbers will disagree**, and that is not a bug. The lab
+  measures a controlled machine; R6 measures whatever hardware and network a
+  visitor brought. Neither corrects the other.
+- **Timing instrumentation is the part most likely to be cut.** It is the least
+  privacy-sensitive and the most code, which is why it is Phase 3b and
+  independently revertable.
 - **Adding a Worker to a deployment that has never had one** is the largest
   structural risk here. Selective `run_worker_first` keeps normal asset
   requests off the Worker path, and rollout is a rollbackable Worker version;
@@ -587,4 +803,9 @@ this design is deliberately the seam where that swap would happen.
 - [Cloudflare Web Analytics setup](https://developers.cloudflare.com/web-analytics/get-started/)
 - [Cloudflare Web Analytics CSP and automatic-injection FAQ](https://developers.cloudflare.com/web-analytics/faq/)
 - [Cloudflare Web Analytics SPA tracking](https://developers.cloudflare.com/web-analytics/get-started/web-analytics-spa/)
+- [PostHog web vitals and performance capture](https://posthog.com/docs/web-analytics/web-vitals)
+- [`web-vitals` metric definitions](https://web.dev/articles/vitals) — what TTFB, FCP, LCP, CLS and INP mean, and what they do not
+- [MDN: PerformanceObserver and `longtask` entries](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver)
+- [MDN: `HTMLImageElement.decode()`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode)
+- [Astro ClientRouter lifecycle events](https://docs.astro.build/en/guides/view-transitions/#lifecycle-events)
 - [Cloudflare Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/) — alternative H
