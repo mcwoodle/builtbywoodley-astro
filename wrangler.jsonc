@@ -24,10 +24,11 @@
   },
   // Serve the site on the root domain. custom_domain:true makes wrangler
   // provision the DNS record and TLS certificate on deploy, so no manual
-  // DNS changes are needed. Both hostnames live in the builtbywoodley.ca
-  // zone on this Cloudflare account.
+  // DNS changes are needed.
   "routes": [
     { "pattern": "builtbywoodley.ca", "custom_domain": true },
-    { "pattern": "www.builtbywoodley.ca", "custom_domain": true }
+    { "pattern": "www.builtbywoodley.ca", "custom_domain": true },
+    { "pattern": "mattwoodley.ca", "custom_domain": true },
+    { "pattern": "www.mattwoodley.ca", "custom_domain": true }
   ]
 }
