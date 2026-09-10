@@ -2,6 +2,33 @@
 import { ClientRouter } from 'astro:transitions';
 ---
 
+<!-- Chrome's headed Wayland GPU compositor intermittently presents native
+     View Transition snapshots as white surfaces. Browsers do not expose their
+     Ozone backend, so desktop Linux is the narrowest reliable runtime scope.
+     Mask the API before ClientRouter initializes so affected Chrome sessions
+     take Astro's DOM/CSS fallback animation path. -->
+<script is:inline>
+  (function () {
+    try {
+      var userAgent = navigator.userAgent || '';
+      var isChrome = /\b(?:Chrome|HeadlessChrome)\//.test(userAgent) &&
+        !/\b(?:Edg|OPR|SamsungBrowser)\//.test(userAgent);
+      /* Chrome retains this legacy X11 token on both X11 and Wayland Linux. */
+      var isDesktopLinux = /\bX11;\s*Linux\b/.test(userAgent);
+      if (!isChrome || !isDesktopLinux ||
+          typeof document.startViewTransition !== 'function') return;
+
+      document.documentElement.setAttribute('data-chrome-vt-fallback', '');
+      Object.defineProperty(document, 'startViewTransition', {
+        configurable: true,
+        writable: true,
+        value: undefined,
+      });
+    } catch (error) {
+      /* If the override is unavailable, preserve normal navigation. */
+    }
+  })();
+</script>
 <ClientRouter fallback="animate" />
 <script>
   import '../scripts/navigation-transitions/client-router';
