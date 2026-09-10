@@ -24,6 +24,9 @@ const sorted = entries.sort((a, b) => a.data.order - b.data.order);
         <a
           href={entry.data.cardUrl ?? `/software/${entry.id}`}
           class="portfolio-card"
+          data-analytics-event="project_link_clicked"
+          data-analytics-project={entry.id}
+          data-analytics-kind="case-study"
         >
           <article>
             <div class="portfolio-card-media">

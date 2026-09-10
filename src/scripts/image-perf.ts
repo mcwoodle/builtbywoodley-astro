@@ -13,6 +13,19 @@
 // does my phone really do", because it reads currentSrc — the rung the browser
 // picked after weighing DPR, the connection and its own cache — rather than
 // predicting it.
+//
+// The arithmetic itself lives in src/lib/image-cost.ts, shared with the
+// analytics layer so the panel below and the image_cost event cannot drift into
+// reporting two different answers for the same page. What stays here is
+// everything that makes this a debugging tool: the panel, its styles, the
+// console tables and the LCP observer.
+
+import {
+  collectShots,
+  observeImageTimings,
+  whenImagesSettle,
+  type Shot,
+} from '../lib/image-cost';
 
 const HUD_STYLE = `  .image-perf-hud {
     position: fixed;
@@ -95,20 +108,6 @@ function mountHud() {
 }
 
 
-type Shot = {
-  ladder: string;
-  chosen: string;
-  rung: number;
-  intrinsic: number;
-  layout: number;
-  dpr: number;
-  bytes: number;
-  transferred: number;
-  cached: boolean;
-  ms: number | null;
-  lazy: boolean;
-};
-
 const bound = '__imagePerfBound';
 if (!(bound in window)) {
   (window as Record<string, unknown>)[bound] = true;
@@ -117,78 +116,23 @@ if (!(bound in window)) {
 }
 
 function start() {
-  /** Resource timing, keyed by absolute URL. Buffered, so entries that landed
-   *  before this script ran are still here. */
-  const timings = new Map<string, PerformanceResourceTiming>();
+  const timings = observeImageTimings();
   let lcp: { url: string; ms: number } | null = null;
 
-  const observe = (type: string, handle: (entries: PerformanceEntryList) => void) => {
-    try {
-      new PerformanceObserver((list) => handle(list.getEntries())).observe({
-        type,
-        buffered: true,
-      });
-    } catch {
-      // An unsupported entry type is not worth breaking a debug build over.
-    }
-  };
-
-  observe('resource', (entries) => {
-    for (const entry of entries) {
-      const resource = entry as PerformanceResourceTiming;
-      if (resource.initiatorType === 'img' || /\.(webp|avif|jpe?g|png|gif)(\?|$)/i.test(resource.name)) {
-        timings.set(resource.name, resource);
-      }
-    }
-  });
-
-  observe('largest-contentful-paint', (entries) => {
-    const last = entries[entries.length - 1] as PerformanceEntry & { url?: string };
-    if (last) lcp = { url: last.url ?? '', ms: Math.round(last.startTime) };
-  });
-
-  /** Which ladder an <img> came from, read off its srcset rather than guessed. */
-  const ladderOf = (image: HTMLImageElement) => {
-    const widths = (image.getAttribute('srcset') ?? '')
-      .match(/(\d+)w/g)
-      ?.map((entry) => parseInt(entry, 10)) ?? [];
-    if (widths.length === 0) return 'no srcset';
-    return widths.join(',');
-  };
-
-  const rungOf = (image: HTMLImageElement) => {
-    const current = image.currentSrc || image.src;
-    const srcset = image.getAttribute('srcset') ?? '';
-    const file = current.slice(current.lastIndexOf('/') + 1);
-    const match = new RegExp(`${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(\\d+)w`).exec(srcset);
-    return match ? Number(match[1]) : image.naturalWidth;
-  };
-
-  function collect(): Shot[] {
-    const shots: Shot[] = [];
-    for (const image of Array.from(document.images)) {
-      if (!image.currentSrc) continue;
-      const timing = timings.get(image.currentSrc);
-      // transferSize is 0 on a memory or disk cache hit, and encodedBodySize
-      // survives it — so a 0 here means "already cached", not "free".
-      const transferred = timing?.transferSize ?? 0;
-      const encoded = timing?.encodedBodySize ?? 0;
-      shots.push({
-        ladder: ladderOf(image),
-        chosen: image.currentSrc.slice(image.currentSrc.lastIndexOf('/') + 1),
-        rung: rungOf(image),
-        intrinsic: image.naturalWidth,
-        layout: Math.round(image.getBoundingClientRect().width),
-        dpr: window.devicePixelRatio,
-        bytes: encoded,
-        transferred,
-        cached: encoded > 0 && transferred === 0,
-        ms: timing ? Math.round(timing.duration) : null,
-        lazy: image.loading === 'lazy',
-      });
-    }
-    return shots;
+  // The one observer that stays here: LCP is a debugging number for the panel,
+  // and the field version arrives through PostHog's own web-vitals capture
+  // rather than through this file.
+  try {
+    new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      const last = entries[entries.length - 1] as PerformanceEntry & { url?: string };
+      if (last) lcp = { url: last.url ?? '', ms: Math.round(last.startTime) };
+    }).observe({ type: 'largest-contentful-paint', buffered: true });
+  } catch {
+    // An unsupported entry type is not worth breaking a debug build over.
   }
+
+  const collect = (): Shot[] => collectShots(timings);
 
   function paint() {
     const shots = collect();
@@ -247,22 +191,7 @@ function start() {
   }
 
   /** Wait for the images actually to be in, then report. */
-  function schedule() {
-    const pending = Array.from(document.images).filter((image) => !image.complete);
-    if (pending.length === 0) {
-      setTimeout(paint, 60);
-      return;
-    }
-    let left = pending.length;
-    for (const image of pending) {
-      const done = () => {
-        left -= 1;
-        if (left === 0) setTimeout(paint, 60);
-      };
-      image.addEventListener('load', done, { once: true });
-      image.addEventListener('error', done, { once: true });
-    }
-  }
+  const schedule = () => whenImagesSettle(paint);
 
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;

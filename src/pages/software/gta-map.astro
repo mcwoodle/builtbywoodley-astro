@@ -37,12 +37,18 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         data-map="full"
         type="button"
         aria-pressed="false"
+        data-analytics-event="control_used"
+        data-analytics-control="map-mode"
+        data-analytics-value="desktop"
       >Desktop</button>
       <button
         class="map-toggle__btn"
         data-map="lite"
         type="button"
         aria-pressed="false"
+        data-analytics-event="control_used"
+        data-analytics-control="map-mode"
+        data-analytics-value="mobile"
       >Mobile</button>
     </div>
 

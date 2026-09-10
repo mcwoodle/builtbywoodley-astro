@@ -73,6 +73,10 @@ jobs:
           # so skip the download rather than fetch a binary to leave unused.
           SKIP_GITLEAKS_INSTALL: "1"
 
+      # Deliberately WITHOUT the analytics variables. A preview build must never
+      # reach the production PostHog project: previews are throwaway URLs and
+      # their traffic is us, not visitors. To exercise analytics end to end, run
+      # a local build pointed at the separate test project — see .env.example.
       - name: Build site
         run: npm run build
 
