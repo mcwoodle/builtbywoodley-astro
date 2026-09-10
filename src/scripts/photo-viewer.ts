@@ -105,6 +105,33 @@ function start() {
   /** Invalidates a full-resolution load the reader has already moved past. */
   let zoomToken = 0;
 
+  // ── Measurement ──
+  // The viewer reports how long it took, as DOM events. It deliberately does
+  // NOT import the analytics module: this code runs for every visitor,
+  // including opted-out ones, and it has to keep working with analytics absent
+  // — so the seam is an event that dispatches into an empty room when nobody
+  // is listening. See docs/front-end-analytics-design.md, R7.
+  type OpenIntent = { at: number; source: "gallery-link" | "step" | "deep-link" };
+  /**
+   * How the frame about to be shown was asked for.
+   *
+   * Set from the initiating input rather than read off the hash, because
+   * step() navigates by REPLACING the hash — so a prev/next arrival reaches
+   * sync() by exactly the route a shared deep link does. Inferring the source
+   * at the hash would file every step as a deep link.
+   */
+  let openIntent: OpenIntent | null = null;
+  /** Frames whose panel picture has already been decoded once this visit. */
+  const revealedOnce = new Set<string>();
+  /** A zoom whose stand-in is painted and whose master is still in flight. */
+  let pendingZoom:
+    | { token: number; at: number; input: string; toStandIn: number }
+    | null = null;
+
+  const report = (name: string, detail: Record<string, string | number | boolean>) => {
+    document.dispatchEvent(new CustomEvent(name, { detail }));
+  };
+
   let dragging = false;
   let dragStartX = 0;
   let dragStartY = 0;
@@ -202,9 +229,19 @@ function start() {
     scale?: number;
     /** The press is still down: follow it, and end when it lifts. */
     hold?: boolean;
+    /** What opened it, and when, on the performance.now() clock. */
+    input?: string;
+    at?: number;
   };
 
-  function openZoom({ atX, atY, scale = 1, hold = false }: ZoomOptions = {}) {
+  function openZoom({
+    atX,
+    atY,
+    scale = 1,
+    hold = false,
+    input = "pointer",
+    at = performance.now(),
+  }: ZoomOptions = {}) {
     const frame = frames[openIndex];
     const layer = zoomLayer();
     const picture = zoomImage();
@@ -236,6 +273,28 @@ function start() {
     const wanted = settled ? frame.full : standIn;
     if (picture.getAttribute("src") !== wanted) picture.src = wanted;
 
+    // Two numbers, because this is two stages. to_standin_ms is what the finger
+    // feels; to_master_ms is when it sharpens. Reporting only one of them would
+    // either flatter the interaction or libel it.
+    pendingZoom = null;
+    requestAnimationFrame(() => {
+      // Closed, or superseded by a newer zoom, before the first frame landed.
+      if (token !== zoomToken) return;
+      const toStandIn = Math.max(0, Math.round(performance.now() - at));
+      if (settled) {
+        // The master was already decoded, so the first frame IS the master and
+        // there is no second stage to wait for.
+        report("photo:zoomed", {
+          to_standin_ms: toStandIn,
+          to_master_ms: 0,
+          warm: true,
+          input,
+        });
+        return;
+      }
+      pendingZoom = { token, at, input, toStandIn };
+    });
+
     layer.hidden = false;
     if (hold) layer.dataset.hold = "true";
     else layer.removeAttribute("data-hold");
@@ -266,8 +325,22 @@ function start() {
       void arrived.then(() => {
         if (!master.naturalWidth) return;
         masterReady.add(frame.anchor);
+        // A hold that lifted early, or a zoom the reader has already replaced,
+        // reports NOTHING. Recording those would hand the best-looking numbers
+        // to the interactions that never finished.
         if (token !== zoomToken) return;
         picture.src = frame.full;
+        requestAnimationFrame(() => {
+          const measurement = pendingZoom;
+          if (token !== zoomToken || measurement?.token !== token) return;
+          pendingZoom = null;
+          report("photo:zoomed", {
+            to_standin_ms: measurement.toStandIn,
+            to_master_ms: Math.max(0, Math.round(performance.now() - measurement.at)),
+            warm: false,
+            input: measurement.input,
+          });
+        });
       });
     }
 
@@ -286,7 +359,10 @@ function start() {
     if (!zoomed) return;
     const layer = zoomLayer();
     zoomed = false;
+    // Bumping the token invalidates every pending decode AND every pending
+    // measurement, which is exactly the cancellation rule R7 asks for.
     zoomToken += 1;
+    pendingZoom = null;
     zoomDragging = false;
     zoomMoved = false;
     const wasHold = zoomHold;
@@ -448,11 +524,17 @@ function start() {
    * once the browser can actually paint it. One <img> serves every frame, so
    * revealing it before the new bytes have decoded shows the last one instead.
    */
-  function revealPicture(from: Entrance) {
+  function revealPicture(from: Entrance, anchor: string) {
     const picture = image();
     if (!picture) return;
 
     const token = ++revealToken;
+    // Claim the intent now: whatever happens next, this reveal owns it, and a
+    // later one must not inherit it.
+    const intent = openIntent;
+    openIntent = null;
+    const warm = revealedOnce.has(anchor);
+    revealedOnce.add(anchor);
     const opening = from === "open";
     const start = opening
       ? "translate3d(0, 10px, 0) scale(0.986)"
@@ -494,7 +576,21 @@ function start() {
           else picture.addEventListener("load", () => resolve(), { once: true });
         });
 
-    void decoded.then(() => requestAnimationFrame(arrive));
+    void decoded.then(() =>
+      requestAnimationFrame(() => {
+        // A reveal the reader has already moved past reports nothing. Timing a
+        // superseded decode would credit the fastest numbers to the frames
+        // nobody waited for.
+        if (intent && token === revealToken) {
+          report("photo:opened", {
+            open_ms: Math.max(0, Math.round(performance.now() - intent.at)),
+            source: intent.source,
+            warm,
+          });
+        }
+        arrive();
+      }),
+    );
   }
 
   /** Switch off whichever control has nothing left to reach. */
@@ -562,7 +658,12 @@ function start() {
 
     const entrance = pendingEntrance ?? "open";
     pendingEntrance = null;
-    if (changed || opening) revealPicture(entrance);
+    if (changed || opening) {
+      // No initiating input claimed this one, so it arrived at the hash on its
+      // own: a shared link, a bookmark, or a history traversal.
+      openIntent ??= { at: performance.now(), source: "deep-link" };
+      revealPicture(entrance, frame.anchor);
+    }
   }
 
   function close() {
@@ -575,6 +676,7 @@ function start() {
     revealToken += 1;
     pushedByGrid = false;
     pendingEntrance = null;
+    openIntent = null;
     dragging = false;
     stepping = false;
     restPicture();
@@ -609,11 +711,15 @@ function start() {
   }
 
   /** Send the current frame out along the control axis and bring the next in. */
-  function advance(direction: number) {
+  function advance(direction: number, at = performance.now()) {
     if (stepping || !canStep(direction)) return;
     const axis = stepAxis();
     pendingEntrance = { axis, offset: direction * ENTER_SHIFT };
     stepping = true;
+    // Claimed before the exit glide, so the ~190 ms this frame spends leaving
+    // counts against the step: it is time the visitor spent waiting for the
+    // next photograph, whatever it was spent on.
+    openIntent = { at, source: "step" };
     void glideTo(shift(axis, -direction * STEP_EXIT_SHIFT), 0, 190).then(() => {
       stepping = false;
       step(direction);
@@ -641,6 +747,7 @@ function start() {
     // Swiping up carries the frame away and brings the next one up behind it,
     // the way a stack of prints is dealt through.
     pendingEntrance = { axis: "y", offset: direction * ENTER_SHIFT };
+    openIntent = { at: performance.now(), source: "step" };
     const exit = direction === 1 ? -window.innerHeight : window.innerHeight;
     void glideTo(shift("y", exit), 0, 200).then(() => step(direction));
   }
@@ -667,7 +774,17 @@ function start() {
       holdTimer = window.setTimeout(() => {
         holdTimer = 0;
         holdRect = image()?.getBoundingClientRect() ?? null;
-        openZoom({ atX: holdX, atY: holdY, scale: HOLD_SCALE, hold: true });
+        // Timed from here rather than from the touchstart: HOLD_DELAY is a
+        // deliberate gesture threshold, not latency, and folding it in would
+        // add a constant 100 ms to every held zoom in the data.
+        openZoom({
+          atX: holdX,
+          atY: holdY,
+          scale: HOLD_SCALE,
+          hold: true,
+          input: "hold",
+          at: performance.now(),
+        });
       }, HOLD_DELAY);
     }
 
@@ -746,6 +863,9 @@ function start() {
 
       if (target.closest("[data-photo-open]") && isPlainClick(event)) {
         pushedByGrid = true;
+        // timeStamp is on the same monotonic clock as performance.now(), and it
+        // includes the queueing delay the visitor actually felt.
+        openIntent = { at: event.timeStamp, source: "gallery-link" };
         lockScroll();
         return;
       }
@@ -798,14 +918,19 @@ function start() {
           swallowClick = false;
           return;
         }
-        openZoom({ atX: event.clientX, atY: event.clientY });
+        openZoom({
+          atX: event.clientX,
+          atY: event.clientY,
+          input: "pointer",
+          at: event.timeStamp,
+        });
         return;
       }
 
       const stepper = target.closest<HTMLElement>("[data-photo-step]");
       if (stepper) {
         event.preventDefault();
-        advance(Number(stepper.dataset.photoStep));
+        advance(Number(stepper.dataset.photoStep), event.timeStamp);
         return;
       }
 
@@ -835,16 +960,16 @@ function start() {
     if (event.key === "Enter" || event.key === " ") {
       if (document.activeElement?.closest("[data-photo-zoom-open]")) {
         event.preventDefault();
-        openZoom();
+        openZoom({ input: "key", at: event.timeStamp });
       }
       return;
     }
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
-      advance(-1);
+      advance(-1, event.timeStamp);
     } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
-      advance(1);
+      advance(1, event.timeStamp);
     }
   });
 

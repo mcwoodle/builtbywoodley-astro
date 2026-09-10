@@ -8,6 +8,10 @@
   // Independent of production, which stays on the custom domains below; this
   // is a deployment-level setting that applies on the next production deploy.
   "preview_urls": true,
+  // The analytics proxy, and only the analytics proxy. Everything else this
+  // Worker sees it hands straight to env.ASSETS. See src/worker/index.ts and
+  // docs/front-end-analytics-design.md.
+  "main": "./src/worker/index.ts",
   // Serve directory pages at their no-trailing-slash path with a direct 200.
   // Astro builds /foo/index.html; Cloudflare's default auto-trailing-slash
   // 307-redirects /foo -> /foo/, and that redirect makes the browser skip the
@@ -20,7 +24,17 @@
     // Workers' default is a 404 with a *null body* — so src/pages/404.astro
     // built, deployed, and was never once shown to anyone. The smoke suite
     // caught it; keep this and the assertion in platform.spec.ts together.
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    // Lets the Worker reach the asset router for everything it does not
+    // proxy, so page responses stay byte-identical to a Worker-less deploy.
+    "binding": "ASSETS",
+    // Selective worker-first routing: ONLY /sawdust/* enters the Worker. Every
+    // other request is served by the asset router without ever waking the
+    // script, which keeps normal traffic off the Workers request count (static
+    // assets are free and unlimited) and keeps the blast radius of a Worker
+    // bug down to the analytics path. Array form needs wrangler >= 4.20.0;
+    // both deploy workflows pin wranglerVersion: "4".
+    "run_worker_first": ["/sawdust/*"]
   },
   // Serve the site on the root domain. custom_domain:true makes wrangler
   // provision the DNS record and TLS certificate on deploy, so no manual

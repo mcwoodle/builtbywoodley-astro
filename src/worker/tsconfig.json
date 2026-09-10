@@ -1,0 +1,16 @@
+{
+  // The Worker is typed against the Cloudflare runtime, not the DOM. That is
+  // the whole reason it has a tsconfig of its own: `wrangler types` emits
+  // global declarations for Request, Response, caches and friends that are
+  // deliberately NOT the browser's, and letting them merge into the root
+  // project would retype every client script in src/scripts/ against a runtime
+  // it never runs in. The root tsconfig excludes this directory for the same
+  // reason. Regenerate worker-configuration.d.ts with `npm run typegen:worker`
+  // after any change to wrangler.jsonc.
+  "extends": "../../tsconfig.json",
+  "include": ["./**/*.ts", "./worker-configuration.d.ts"],
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": []
+  }
+}
