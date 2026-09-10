@@ -2,6 +2,7 @@ import { resolveRouteTransition, type RouteTransition } from './route-model';
 
 const root = document.documentElement;
 let requestedDestination = '';
+let navigationEpoch = 0;
 
 function setTransitionAttributes(
   target: HTMLElement,
@@ -45,6 +46,7 @@ function normalizedDestination(url: URL) {
 }
 
 document.addEventListener('astro:before-preparation', (event) => {
+  navigationEpoch += 1;
   clearTransitionAttributes(document);
   requestedDestination = normalizedDestination(event.to);
 
@@ -53,6 +55,7 @@ document.addEventListener('astro:before-preparation', (event) => {
 });
 
 document.addEventListener('astro:before-swap', (event) => {
+  const currentEpoch = navigationEpoch;
   const transition = resolveRouteTransition(event.from, event.to);
   const redirected = requestedDestination !== normalizedDestination(event.to);
 
@@ -67,10 +70,10 @@ document.addEventListener('astro:before-swap', (event) => {
     for (const type of types) event.viewTransition.types.add(type);
   }
 
-  event.viewTransition.finished.then(
-    () => clearTransitionAttributes(document),
-    () => clearTransitionAttributes(document),
-  );
+  const clearIfCurrent = () => {
+    if (currentEpoch === navigationEpoch) clearTransitionAttributes(document);
+  };
+  event.viewTransition.finished.then(clearIfCurrent, clearIfCurrent);
 });
 
 document.addEventListener('astro:page-load', () => {
