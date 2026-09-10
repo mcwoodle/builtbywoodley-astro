@@ -7,6 +7,9 @@
     "build": "astro build",
     "postbuild": "node scripts/check-asset-sizes.mjs && node scripts/audit-astro-assets.mjs --quiet",
     "preview": "astro preview",
+    "preview:worker": "astro build && wrangler dev",
+    "typegen:worker": "wrangler types ./src/worker/worker-configuration.d.ts",
+    "check:worker": "wrangler deploy --dry-run",
     "astro": "astro",
     "test:smoke": "playwright test",
     "test:smoke:ui": "playwright test --ui",
@@ -20,7 +23,8 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
     "cross-env": "^10.1.0",
-    "lefthook": "^2.1.12"
+    "lefthook": "^2.1.12",
+    "wrangler": "^4.131.0"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.0",
@@ -29,6 +33,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.1",
     "gsap": "^3.15.0",
+    "posthog-js": "^1.429.5",
     "tailwindcss": "^4.3.3"
   }
 }

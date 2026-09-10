@@ -18,6 +18,9 @@ Cloudflare as Worker static assets.
 | `npm run measure:images` | Image bytes per page, by screen size (`-- --self-test`) |
 | `npm run audit:assets` | `-- --prune` shows, `-- --prune --confirm` deletes |
 | `npm run photo:master` | `-- --max-long-edge=2560 --dry-run shot.jpg`; `-- --strip-only --in-place shot.jpg` |
+| `npm run preview:worker` | Builds, then serves through the real Worker (`wrangler dev`) — the only way to exercise `/sawdust/*` |
+| `npm run typegen:worker` | Regenerates `src/worker/worker-configuration.d.ts`; rerun after any `wrangler.jsonc` change |
+| `npm run check:worker` | `wrangler deploy --dry-run` — bundles the Worker without deploying |
 
 `postbuild` runs after every build, local and CI alike: `check-asset-sizes.mjs` fails
 at Cloudflare's hard 25 MiB per-asset limit (warns at 20 MiB); `audit-astro-assets.mjs`
@@ -60,6 +63,52 @@ the Astro components and the Node scripts. See `docs/photography-image-delivery.
   other before the content collection is read.
 - **Always strip EXIF on import** — phone exports carry GPS, and the full-size original
   is deployed.
+
+## Analytics
+
+**Design of record: `docs/front-end-analytics-design.md`.** Read it before
+changing anything here. The short version, so nothing below gets "cleaned up"
+as unexplained:
+
+- **There is a Worker, and it does one thing.** `src/worker/index.ts` proxies
+  **only** `/sawdust/*` to PostHog; everything else falls through to
+  `env.ASSETS.fetch()` and is byte-identical to a Worker-less deploy.
+  `run_worker_first: ["/sawdust/*"]` in `wrangler.jsonc` keeps normal traffic
+  off the script entirely. The two upstream hosts are **constants** — never
+  derive an upstream host from a request, or this becomes an open proxy.
+- **`/sawdust` is deliberately a nonsense name.** PostHog's own proxy guide
+  names `/analytics`, `/track` and `/posthog` as the strings blocklists match.
+  Renaming it to something descriptive would defeat its purpose.
+- **PostHog is cookieless server-hash mode**, `person_profiles: 'never'`, and
+  **autocapture is off**. A normal visit stores no identifier of any kind. The
+  only key the site persists for analytics is `analytics-opt-out`, and it is
+  named on `/privacy`. Autocapture must stay off: it ships link text, class
+  lists, element ancestry and `href` values — including the `mailto:` address.
+- **`src/scripts/analytics.ts` is a gate, not the SDK.** It is ~3 KB on every
+  page; `posthog-js` (≈90 KB gzip) sits behind a dynamic import that only runs
+  after the GPC / DNT / opt-out checks pass, so a visitor who refuses never
+  downloads it. Keep those checks ahead of the import.
+- **Events are annotations, not guesses.** A control is measured because it
+  carries `data-analytics-event` plus allowlisted `data-analytics-*`
+  properties. The allowlist is `src/scripts/analytics-events.ts`, and a
+  property not declared there is dropped rather than sent. Never send DOM
+  content — no text, no classes, no hierarchy, no `href`.
+- **`src/lib/image-cost.ts` is shared** between the `?stats=true` probe and the
+  `image_cost` event so the two cannot disagree. The analytics chunk must
+  **never** import `src/scripts/image-perf.ts` — `check-asset-sizes.mjs` fails
+  the build if the probe's HUD reaches the critical path.
+- **The photo viewer does not import analytics.** It dispatches `photo:opened`
+  and `photo:zoomed`; `analytics.ts` listens. Those listeners live there rather
+  than in `perf.ts` because a deep link opens the panel about a frame after the
+  modules evaluate, long before the SDK has loaded.
+- **`static.cloudflareinsights.com` appears in `public/_headers` twice**, in
+  `/*` and in `/viz/*`, because the second block unsets the first. It belongs to
+  Cloudflare Web Analytics, not PostHog — PostHog needs no CSP exception at all.
+  Removing it means removing it from both places.
+- **Enablement is explicit**: `PUBLIC_ANALYTICS_ENABLED === 'true'` plus a
+  `PUBLIC_POSTHOG_KEY`, both documented in `.env.example`. Never suppress by
+  hostname — it makes local and preview verification impossible. Point non-
+  production builds at a **separate PostHog project**, never the real one.
 
 ## Security & CI
 
@@ -155,3 +204,6 @@ Keep it high-level and honest. The README says what exists and how to run it;
   Tailwind is also configured for utility classes (`tailwind.config.ts`).
 - **`src/integrations/`, `src/plugins/`, `src/scripts/`** — build-time Astro
   integrations, remark/rehype plugins, client-side scripts.
+- **`src/worker/`** — the Cloudflare Worker entry point and its generated types.
+  Typed against the Workers runtime, not the DOM, so it has its own
+  `tsconfig.json` and the root config excludes it. See **Analytics** above.

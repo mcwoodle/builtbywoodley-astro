@@ -16,6 +16,23 @@
 #                                            'unsafe-inline' is required for the
 #                                            inline theme-init script and the inline
 #                                            style attributes Astro emits.
+#
+# ── static.cloudflareinsights.com ──
+# The ONLY third-party origin the analytics work added, and it belongs to
+# Cloudflare Web Analytics — the optional second beacon, not the PostHog layer.
+# PostHog needs no CSP exception at all: its SDK is bundled from npm, so it is
+# first-party script, and its events go to the same-origin /sawdust proxy, so
+# `connect-src 'self'` is untouched. Automatic injection posts same-origin to
+# /cdn-cgi/rum, so this is a script-src entry and nothing else. (The
+# manual-snippet fallback would additionally need https://cloudflareinsights.com
+# in connect-src. Do not add it speculatively — it is a different edit for a
+# setup this site does not use.)
+#
+# It appears TWICE, here and in the /viz/* block below, because that block
+# unsets this policy rather than extending it. If Web Analytics is ever retired
+# — see the keep-or-retire rule in docs/front-end-analytics-design.md — the host
+# has to come out of BOTH places. C3 cuts in both directions.
+#
 # ── Path-scoped CSP exception for /viz/* ──
 # The GTA Urban Analytics kepler.gl map at /viz/gta-crime-map.html is a
 # standalone React app that loads third-party libraries (kepler.gl, React,
@@ -31,7 +48,7 @@
 # (re-listing them here would duplicate them).
 /viz/*
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: blob: https://*.cartocdn.com https://*.basemaps.cartocdn.com https://studio-public-data.foursquare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' data:; connect-src 'self' https://*.cartocdn.com https://*.basemaps.cartocdn.com https://unpkg.com https://studio-public-data.foursquare.com data: blob:; worker-src 'self' blob:; child-src 'self' blob:; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: blob: https://*.cartocdn.com https://*.basemaps.cartocdn.com https://studio-public-data.foursquare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://unpkg.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://unpkg.com; font-src 'self' data:; connect-src 'self' https://*.cartocdn.com https://*.basemaps.cartocdn.com https://unpkg.com https://studio-public-data.foursquare.com data: blob:; worker-src 'self' blob:; child-src 'self' blob:; upgrade-insecure-requests
   ! X-Frame-Options
   X-Frame-Options: SAMEORIGIN
 
@@ -52,4 +69,4 @@
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; upgrade-insecure-requests

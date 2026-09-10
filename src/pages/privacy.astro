@@ -1,0 +1,223 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import HumanWrittenMark from "../components/HumanWrittenMark.astro";
+
+// The analytics disclosure, and the control that turns it off (P3, P4).
+//
+// The design that produced this is docs/front-end-analytics-design.md. This
+// page is the visitor-facing half of it: what is measured, who processes it,
+// how long it is kept, and the one switch that stops it. Everything stated
+// here is a promise the code has to keep — if the configuration in
+// src/scripts/analytics.ts changes, this page changes with it.
+---
+
+<BaseLayout
+  title="Privacy | Built by Woodley"
+  description="What this site measures, what it does not, and how to turn it off."
+>
+  <main class="page-shell privacy-page">
+    <header class="page-intro">
+      <div>
+        <h1 class="page-heading">Privacy.</h1>
+      </div>
+      <p class="page-subtitle">
+        This site counts how it is read. It does not try to work out who is
+        reading it.
+      </p>
+    </header>
+
+    <div class="prose privacy-prose">
+      <h2>The short version</h2>
+      <p>
+        No cookies. No visitor ID. Nothing about you is stored in your browser
+        except the one preference you set yourself, on this page. There is no
+        consent banner because there is nothing to consent to storing.
+      </p>
+
+      <h2>What gets measured</h2>
+      <ul>
+        <li>Which page was viewed, and how long it was open.</li>
+        <li>How far down the page you scrolled, and which chapter of the landing page you reached.</li>
+        <li>
+          Which named controls were used — the navigation links, the contact
+          buttons, the theme toggle, the photo viewer's controls, the map's
+          Desktop/Mobile switch. A fixed list, chosen one at a time, not "every
+          click".
+        </li>
+        <li>
+          How fast the page loaded and rendered on your device, what its images
+          cost to fetch, and how quickly the photo viewer responded.
+        </li>
+      </ul>
+
+      <h2>What does not</h2>
+      <ul>
+        <li>
+          <strong>No identifier.</strong> No cookie, no <code>localStorage</code>
+          entry, no fingerprint. Sessions are grouped by a hash our processor
+          computes on its own servers and rotates daily; nothing durable is
+          written to your browser and nothing links one day to the next.
+        </li>
+        <li>
+          <strong>No page content.</strong> Link text, headings, class names and
+          element structure are never sent. Neither is my email address, even
+          when the event being recorded is that someone clicked the button
+          holding it.
+        </li>
+        <li>
+          <strong>No session recording, heatmaps, or replay.</strong> Nothing
+          watches your pointer or reconstructs your visit.
+        </li>
+        <li>
+          <strong>No advertising, no data sale, no cross-site tracking.</strong>
+        </li>
+      </ul>
+
+      <h2>Who processes it</h2>
+      <p>
+        <a href="https://posthog.com" target="_blank" rel="noopener noreferrer">
+          PostHog
+        </a>, on their US cloud, as the processor. Events reach them through
+        this site's own domain rather than a third-party one — a small proxy on
+        the path <code>/sawdust</code> — which means no request goes to a
+        different origin than the one in your address bar.
+      </p>
+      <p>
+        Your IP address and browser user-agent are sent to that proxy, as they
+        are with any web request, and used transiently: PostHog derives a coarse
+        location and the daily session hash from them, then discards them. They
+        are not stored against you and never reach me. Event data is retained for
+        one year.
+      </p>
+      <p>
+        Cloudflare, who serve this site, additionally count requests at their
+        edge for basic traffic and performance figures. That is aggregate
+        infrastructure data — request counts, countries, load timings — with no
+        per-person dimension available to me at any tier.
+      </p>
+
+      <h2>Turning it off</h2>
+      <p>
+        If your browser sends <strong>Global Privacy Control</strong> or
+        <strong>Do Not Track</strong>, it is already off: the analytics code is
+        never even downloaded, let alone run. You do not have to do anything
+        here.
+      </p>
+      <p>
+        Otherwise, this switch decides. It takes effect immediately — no reload
+        — and is remembered on this device under the key
+        <code>analytics-opt-out</code>, which is the only thing this site
+        persists about analytics.
+      </p>
+
+      <div class="privacy-optout" data-analytics-optout hidden>
+        <p class="privacy-optout-state" data-analytics-optout-state aria-live="polite"></p>
+        <button type="button" class="button" data-analytics-optout-toggle></button>
+      </div>
+
+      <noscript>
+        <p>
+          With JavaScript off, no analytics run at all — the entire measurement
+          layer is client-side.
+        </p>
+      </noscript>
+
+      <h2>Why any of this exists</h2>
+      <p>
+        This is a portfolio with a long landing page, a photography archive, and
+        a contact link that produces no pageview when it is used. Without
+        measurement I have no way to know whether anyone reads past the first
+        chapter, whether the archive is ever reached, or whether the site is
+        slow on a phone. The design that decided what to collect — and, at more
+        length, what not to — is
+        <a
+          href="https://github.com/mcwoodle/builtbywoodley-astro/blob/mainline/docs/front-end-analytics-design.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >in the repository</a>, along with everything else that runs this site.
+      </p>
+
+      <HumanWrittenMark />
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  // The control renders only once this runs, because a switch that cannot work
+  // is worse than no switch: with JavaScript off there is nothing to turn off,
+  // and a dead button saying "analytics are on" would be a lie.
+  import { isAvailable, isOptedOut, setOptedOut } from "../scripts/analytics";
+
+  const COPY = {
+    on: {
+      state: "Analytics are on for this browser.",
+      action: "Turn analytics off",
+    },
+    off: {
+      state: "Analytics are off for this browser.",
+      action: "Turn analytics back on",
+    },
+    unavailable: {
+      state:
+        "Analytics are off — either your browser asked for that, or this build has none.",
+      action: "",
+    },
+  };
+
+  function render() {
+    const box = document.querySelector<HTMLElement>("[data-analytics-optout]");
+    const state = document.querySelector<HTMLElement>("[data-analytics-optout-state]");
+    const button = document.querySelector<HTMLButtonElement>(
+      "[data-analytics-optout-toggle]",
+    );
+    if (!box || !state || !button) return;
+
+    box.hidden = false;
+
+    // GPC, DNT, or a build with analytics compiled out. The choice below would
+    // change nothing, so it is reported rather than offered.
+    if (!isAvailable()) {
+      state.textContent = COPY.unavailable.state;
+      button.hidden = true;
+      return;
+    }
+
+    const copy = isOptedOut() ? COPY.off : COPY.on;
+    state.textContent = copy.state;
+    button.hidden = false;
+    button.textContent = copy.action;
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest("[data-analytics-optout-toggle]")) return;
+    setOptedOut(!isOptedOut());
+    render();
+  });
+
+  document.addEventListener("astro:page-load", render);
+  render();
+</script>
+
+<style>
+  .privacy-prose {
+    max-width: 62ch;
+  }
+
+  .privacy-optout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin: 1.75rem 0;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border-radius: 12px;
+  }
+
+  .privacy-optout-state {
+    margin: 0;
+    flex: 1 1 18ch;
+  }
+</style>

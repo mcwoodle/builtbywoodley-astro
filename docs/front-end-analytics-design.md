@@ -1,8 +1,11 @@
 # Front-end analytics design
 
-Status: proposed — nothing in this document is implemented
+Status: **implemented** — Phases 1, 2, 3, 3b and the code half of Phase 5 are in
+the tree. Phase 0 (the PostHog account, projects and project-side settings) and
+Phase 4 (reading the Cloudflare dashboards) are account work that has to be done
+by hand; see [What is left](#what-is-left) at the end.
 
-Last reviewed: 2026-09-10
+Last reviewed: 2026-09-10 · Implemented: 2026-09-10
 
 This is the design of record for adding analytics to builtbywoodley.ca. It
 supersedes the first draft plan
@@ -641,6 +644,32 @@ keep-or-retire rule is applied.
    rather than relying on the first draft's unverified SDK-size estimate. This
    is the lab half; `long_task_ms` and LCP from R6 are the field half, and the
    first production day is when they are compared against it.
+
+   **Measured 2026-09-10** on `/`, counting every chunk reachable by static
+   import from the page's own `<script src>` tags:
+
+   | Build | Chunks | Raw | Gzip |
+   | --- | --- | --- | --- |
+   | Before any analytics work | 5 | 175.2 KB | 65.0 KB |
+   | After, switch **off** | 7 | 179.3 KB | 67.1 KB |
+   | After, switch **on** | 7 | 179.6 KB | 67.2 KB |
+
+   So the eager cost of the whole layer is **+4.4 KB raw / +2.2 KB gzip**, and
+   it is the same whether analytics is switched on or off — the gate is what
+   ships, not the SDK.
+
+   `posthog-js` itself is **274.1 KB raw / 89.8 KB gzip**, in its own chunk,
+   reached only by the dynamic import inside the consent gate. It is not
+   referenced from any HTML file and carries no `modulepreload`, which was
+   verified in the build output: a visitor sending GPC, or one who has opted
+   out, never requests it.
+
+   That 89.8 KB is the number worth arguing about later, and it is far from
+   free for a site whose whole argument is that it feels fast. It is off the
+   critical path — imported after `astro:page-load`, never render-blocking —
+   but it is still ~90 KB down the wire for every other visitor. This is
+   precisely the measurement alternative **F** (Plausible/Fathom, "ship a much
+   smaller script") said to revisit once it existed. It now exists.
 5. `npm audit --audit-level=high` is clean after adding `posthog-js` and
    wrangler, and the smoke suite still passes.
 
@@ -748,23 +777,29 @@ substitute for the other.
 
 ## Risks and open questions
 
-**Open decisions (Phase 0 blocks on these).**
+**Open decisions — all five settled at implementation, 2026-09-10.**
 
-1. PostHog **US or EU** region — a deployment decision that must be recorded in
-   one Worker config block and in the privacy disclosure.
+1. ~~PostHog **US or EU** region.~~ **US.** The project cannot be migrated
+   between PostHog's clouds later, so this is effectively permanent. Recorded in
+   `src/worker/index.ts` (`UPSTREAM`) and on `/privacy`.
 2. Whether to **keep** Cloudflare Web Analytics past the first few weeks.
    Enabling it no longer blocks Phase 0 — that phase turns it on — but the
    second beacon and its CSP host in two places are only worth keeping under
    the rule in [Cloudflare's free
    tier](#cloudflares-free-tier-what-it-already-covers), and that call needs
    production numbers.
-3. Whether project cards and the Home *All projects* / *View the archive* links
-   are in scope for R1.
-4. Whether PostHog's autocapture-derived bounce metric matters enough to enable
-   the narrow autocapture exception under D.
-5. The `image_cost` sampling rate, and whether bucketed viewport and DPR are
-   acceptable to record at all (P6). Recording neither still leaves R6 intact;
-   it costs R7 its explanatory half.
+3. ~~Whether project cards and the Home *All projects* / *View the archive*
+   links are in scope for R1.~~ **Yes, in scope.** Both are annotated, and the
+   cards introduced a third `kind` value — `case-study`, alongside `repo` and
+   `live` — so a card click and an outbound link stay distinguishable.
+4. ~~Whether PostHog's autocapture-derived bounce metric matters enough to
+   enable the narrow autocapture exception under D.~~ **No.** Autocapture stays
+   off. Revisit only against real payloads, as D says.
+5. ~~The `image_cost` sampling rate, and whether bucketed viewport and DPR are
+   acceptable to record at all (P6).~~ **100%, with buckets.** Viewport to the
+   nearest 160 px and DPR clamped to 1/2/3, in `src/lib/image-cost.ts`. The rate
+   is one constant (`IMAGE_COST_SAMPLE` in `src/scripts/perf.ts`) and is the
+   first thing to turn down if volume ever matters.
 
 **Risks.**
 
@@ -987,6 +1022,102 @@ baseline and stays. Web Analytics goes on in Phase 0 as a free R6 baseline and
 blocked-rate probe, and is reviewed against the rule above once there is data.
 PostHog is what buys R1, R3, R4 and R7 — the questions this document exists to
 answer — and nothing in Cloudflare's free tier substitutes for it at any tier.
+
+## What is left
+
+Everything in this document that is code is in the tree. What remains is
+account work, and none of it can be done from the repository.
+
+**Phase 0 — PostHog (blocks any real data).**
+
+1. Create the production project on PostHog's **US** cloud, and a second,
+   separate project for test builds (P5).
+2. **Turn on cookieless server hash mode in each project.** Without the
+   project-side setting PostHog *drops every cookieless event*, so until this is
+   done the site will appear to send data and none of it will land.
+3. Set retention to one year, confirm session replay and surveys are off, and
+   decide on GeoIP.
+4. Put the `phc_…` key in the GitHub repository **variable**
+   `PUBLIC_POSTHOG_KEY` (a variable, not a secret — it ships in the bundle), and
+   set `PUBLIC_ANALYTICS_ENABLED` to `true`.
+5. Set a usage alert. Free-tier limits are vendor state and move.
+
+**Phase 0 — Cloudflare Web Analytics.** The CSP host is already committed in
+both blocks of `public/_headers`, so this is one switch in the Cloudflare
+dashboard. Turn it on **before** the first deploy that carries `posthog-js`:
+the pre-PostHog field LCP baseline that acceptance criterion 4 wants cannot be
+collected retrospectively.
+
+**Verification that needs a real key.** Acceptance criterion 5 under *Build and
+Worker* — a browser-generated `/sawdust/e/` POST arriving in the PostHog project
+— is the one check that cannot be faked locally, because it ends in a real
+project. Everything around it has been verified locally; see below.
+
+**Phase 4.** Read the dashboards once there is a day of data, and apply the
+keep-or-retire rule to the Web Analytics beacon.
+
+### What was verified locally, and how
+
+Recorded so a later reader knows which claims rest on evidence and which rest
+on the account work above.
+
+Against `wrangler dev` with the real Worker:
+
+- `/`, `/software` and `/privacy` serve a direct `200` with no trailing-slash
+  redirect, and `/nope` still serves the built 404 page with a body. The full
+  `_headers` security set is present on asset responses.
+- `/sawdust/static/array.js` returns 200 and 95 KB of JavaScript from PostHog's
+  asset host, through the proxy.
+- No request steers the upstream: `Host`, `X-Forwarded-Host` and a query
+  parameter naming another host all still land on PostHog, and
+  `/sawdust//evil.com/x` and `/sawdust/../admin` reach PostHog's 404 rather than
+  anywhere else.
+
+Against a local echo standing in for PostHog, with only the two host constants
+repointed:
+
+- `cookie` is deleted — including a `ph_*` one — and never reaches upstream.
+- `X-Forwarded-For` arrives as Cloudflare's `CF-Connecting-IP`, **not** the
+  spoofed value the client sent. `true-client-ip`, `x-real-ip` and
+  `cf-connecting-ip` are all dropped.
+- A 3000-byte binary POST arrives intact with its query string preserved.
+
+Against the built site in Chromium, with `/sawdust` stubbed:
+
+- GPC and the stored opt-out each stop the SDK being **downloaded at all** —
+  zero `/sawdust` requests, and the chunk is never fetched.
+- A normal visit leaves **no cookies and no `localStorage`**; only `theme` and
+  `analytics-opt-out`, both the site's own, ever appear.
+- One `$pageview` per direct load; Home → Software → Back gives three, with one
+  `nav_type: 'hard'` and two `nav_type: 'soft'` `page_load_timing` events.
+- All five chapters emit exactly once on a full Home traversal — on desktop,
+  at phone width, and under `reducedMotion: 'reduce'` — and scrolling back up
+  repeats none of them.
+- `photo_viewer_opened` reports all three sources distinctly: `gallery-link`,
+  `step` and `deep-link`. The `step`/`deep-link` split is the trap C9 warns
+  about, and it holds.
+- `photo_zoom_used` reports the two stages separately, returns
+  `to_master_ms: 0, warm: true` on a repeat zoom of the same frame, and reports
+  **nothing at all** for a zoom cancelled before the master lands.
+- `disclosure_opened` counts opens only: open, close, reopen produces two.
+- Opting out mid-visit stops collection immediately, with no reload.
+- Across every captured payload: no email address, no `mailto:`, no visible
+  copy, no class lists, no image paths.
+
+Three defects were found this way and fixed:
+
+1. `render_ms` was missing from every soft navigation. `astro:page-load` fires
+   *before* the frame the swap paints, so reading the measurement there always
+   found nothing and omitted the property. It is now sent from inside a
+   `requestAnimationFrame`, which runs after the one the measurement is taken in.
+2. `photo_viewer_opened` never fired for a deep link. The viewer dispatches
+   about one frame after the page's modules evaluate, while `perf.ts` waits on a
+   network fetch of the SDK — so the listener did not exist yet. Those two
+   listeners moved to `analytics.ts`, which is attached during the same tick as
+   the viewer.
+3. `image_cost` reported `bytes_kb: 0` for light pages, because rounding to the
+   nearest 100 KB sends anything under 50 KB to zero — which reads as "this page
+   has no images". A non-zero total now floors at 100.
 
 ## References
 

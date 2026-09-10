@@ -235,7 +235,11 @@ const coopSpan = coops.length
     <!-- ── 1 · Title ──
          Deliberately shorter than the viewport: the photograph below breaks
          the fold, which is what asks you to keep going. No scroll arrow. -->
-    <section class="chapter chapter--hero" aria-labelledby="landing-title">
+    <section
+      class="chapter chapter--hero"
+      aria-labelledby="landing-title"
+      data-analytics-chapter="hero"
+    >
       <div class="chapter-shell hero-shell">
         <p class="hero-eyebrow" data-hero-tail>Principal Software Engineer</p>
 
@@ -310,7 +314,12 @@ const coopSpan = coops.length
     </div>
 
     <!-- ── 4 · What I do ── -->
-    <section class="chapter chapter--about" id="about" aria-labelledby="about-title">
+    <section
+      class="chapter chapter--about"
+      id="about"
+      aria-labelledby="about-title"
+      data-analytics-chapter="about"
+    >
       <div class="chapter-shell">
         <header class="chapter-head chapter-head--split">
           <div>
@@ -621,6 +630,9 @@ const coopSpan = coops.length
                         rel="noopener noreferrer"
                         aria-label="Introduce yourself to Matt Woodley on LinkedIn — opens in a new tab"
                         data-magnetic
+                        data-analytics-event="contact_clicked"
+                        data-analytics-method="linkedin"
+                        data-analytics-placement="home-about"
                       >
                         <span class="history-link-mark" aria-hidden="true">
                           <svg viewBox="2.4 2.4 19.2 19.2" fill="none" focusable="false">
@@ -653,7 +665,12 @@ const coopSpan = coops.length
     </section>
 
     <!-- ── 5 · Selected work ── -->
-    <section class="chapter chapter--work" id="work" aria-labelledby="work-title">
+    <section
+      class="chapter chapter--work"
+      id="work"
+      aria-labelledby="work-title"
+      data-analytics-chapter="work"
+    >
       <div class="chapter-shell">
         <header class="chapter-head chapter-head--split">
           <div>
@@ -662,7 +679,15 @@ const coopSpan = coops.length
               <span class="reveal-line"><span>The summer of Matt</span></span>
             </h2>
           </div>
-          <a class="chapter-link" href="/software" data-reveal data-magnetic>
+          <a
+            class="chapter-link"
+            href="/software"
+            data-reveal
+            data-magnetic
+            data-analytics-event="navigation_clicked"
+            data-analytics-destination="software"
+            data-analytics-placement="home-work"
+          >
             All projects
             <span class="chapter-link-arrow" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" focusable="false">
@@ -674,7 +699,13 @@ const coopSpan = coops.length
 
         <div class="work-grid">
           {softwareEntries.map((entry, index) => (
-            <a class="work-card" href={entry.data.cardUrl ?? `/software/${entry.id}`}>
+            <a
+              class="work-card"
+              href={entry.data.cardUrl ?? `/software/${entry.id}`}
+              data-analytics-event="project_link_clicked"
+              data-analytics-project={entry.id}
+              data-analytics-kind="case-study"
+            >
               <div class="work-card-media">
                 <Image
                   src={entry.data.coverImage}
@@ -698,7 +729,12 @@ const coopSpan = coops.length
     <!-- ── 6 · Photography ──
          The strip is a real horizontal scroller; on a wide pointer screen the
          page pins and drives it, and everywhere else you swipe it yourself. -->
-    <section class="chapter chapter--archive" id="archive" aria-labelledby="archive-title">
+    <section
+      class="chapter chapter--archive"
+      id="archive"
+      aria-labelledby="archive-title"
+      data-analytics-chapter="archive"
+    >
       {/* The heading and the strip are pinned together, so the title holds
           with its pictures instead of scrolling off above them. */}
       <div class="archive-stage" data-archive-stage>
@@ -710,7 +746,15 @@ const coopSpan = coops.length
                 <span class="reveal-line"><span>Shots Taken</span></span>
               </h2>
             </div>
-            <a class="chapter-link" href="/photography" data-reveal data-magnetic>
+            <a
+              class="chapter-link"
+              href="/photography"
+              data-reveal
+              data-magnetic
+              data-analytics-event="navigation_clicked"
+              data-analytics-destination="photography"
+              data-analytics-placement="home-archive"
+            >
               View the archive
               <span class="chapter-link-arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" focusable="false">
@@ -759,7 +803,11 @@ const coopSpan = coops.length
     </section>
 
     <!-- ── 7 · Close ── -->
-    <section class="chapter chapter--contact" aria-labelledby="contact-title">
+    <section
+      class="chapter chapter--contact"
+      aria-labelledby="contact-title"
+      data-analytics-chapter="contact"
+    >
       <div class="chapter-shell">
         <p class="chapter-eyebrow" data-reveal>That's all</p>
         <h2 id="contact-title" class="contact-title" data-mask-title>
@@ -773,8 +821,18 @@ const coopSpan = coops.length
             rel="noopener noreferrer"
             class="button button--primary"
             data-magnetic
+            data-analytics-event="contact_clicked"
+            data-analytics-method="linkedin"
+            data-analytics-placement="home-contact"
           >LinkedIn <span aria-hidden="true">↗</span></a>
-          <a href="mailto:matt@builtbywoodley.ca" class="button" data-magnetic>
+          <a
+            href="mailto:matt@builtbywoodley.ca"
+            class="button"
+            data-magnetic
+            data-analytics-event="contact_clicked"
+            data-analytics-method="email"
+            data-analytics-placement="home-contact"
+          >
             Email me <span aria-hidden="true">↗</span>
           </a>
         </nav>
