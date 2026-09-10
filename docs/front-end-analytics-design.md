@@ -2,7 +2,7 @@
 
 Status: proposed — nothing in this document is implemented
 
-Last reviewed: 2026-09-09
+Last reviewed: 2026-09-10
 
 This is the design of record for adding analytics to builtbywoodley.ca. It
 supersedes the first draft plan
@@ -208,11 +208,11 @@ What each requirement means, decided before any dashboard card is built:
 | R2 time on site | PostHog Web Analytics | Average session duration in aggregate; `$prev_pageview_duration` (seconds) for page-level diagnostics. Elapsed time, not active reading time; pageleave delivery is best effort. |
 | R3 scroll depth | PostHog pageview/pageleave properties | `$prev_pageview_max_scroll_percentage` and `$prev_pageview_max_content_percentage`, both `0..1`. Technical document depth, distorted by pin spacers (C4). |
 | R4 narrative depth | PostHog `chapter_viewed` | The named chapter's leading edge reached the agreed viewport band once during that Home pageview. **This is the primary reading-depth metric**, and R3 is the diagnostic. |
-| R5 traffic baseline | Cloudflare zone/edge Analytics | Requests reaching Cloudflare. Do not expect it to reconcile one-for-one with PostHog sessions or pageviews. |
+| R5 traffic baseline | Cloudflare zone/edge Analytics | Requests reaching Cloudflare. On a **Free** zone this is a site-level count — requests, bandwidth, unique visitors and countries, delayed 24 hours — not a per-path breakdown; paths and referrers begin at Pro. Do not expect it to reconcile one-for-one with PostHog sessions or pageviews. |
 | R6 page load | PostHog web vitals + `page_load_timing` | TTFB, FCP, LCP, CLS and INP as the `web-vitals` library defines them, for **hard loads only**. `load_ms`, `dom_content_loaded_ms`, `long_task_ms` and, for soft navigations, `render_ms` come from the custom event. A metric the browser did not report is **missing**, never zero. |
 | R7 image cost | PostHog `image_cost` | For one sampled pageview: how many `<img>` elements resolved, the total transferred kilobytes (bucketed), the slowest single image, how many came from cache, and the viewport/DPR bucket that explains which rung was chosen. Mirrors what `?stats=true` shows on the device and what `measure:images` models from `dist/`. |
 | R7 viewer latency | PostHog `photo_viewer_opened`, `photo_zoom_used` | Milliseconds from the activating input to the frame that shows the decoded image. Zoom is two numbers — stand-in painted, then master swapped — because the code is two stages (C9). Cancelled interactions are dropped, not recorded as fast. |
-| Optional performance view | Cloudflare Web Analytics | Browser RUM and SPA navigation metrics, if explicitly enabled. A cross-check, not a baseline — and largely redundant once PostHog reports the same vitals. |
+| Optional performance view | Cloudflare Web Analytics | Browser RUM and SPA navigation metrics. A cross-check, not a baseline: redundant with PostHog on the vitals themselves, but **not** on the blocked-rate cross-check described under [Cloudflare's free tier](#cloudflares-free-tier-what-it-already-covers). |
 
 ### Event dictionary
 
@@ -531,9 +531,12 @@ PostHog region. Create separate production and test projects. Enable
 **Cookieless server hash mode in each project** — PostHog drops cookieless
 events if the project-side setting is absent. Set retention, disable session
 replay and surveys, decide on GeoIP. Draft the analytics disclosure and the
-opt-out control. Decide whether Web Analytics earns its second beacon. Set the
-`image_cost` sampling rate and confirm that bucketed viewport and DPR are
-acceptable to record (P6).
+opt-out control. **Enable Cloudflare Web Analytics now**, with the CSP edits
+under *Cloudflare layer*, so a field baseline is accumulating before
+`posthog-js` ships — see [Cloudflare's free
+tier](#cloudflares-free-tier-what-it-already-covers). Set the `image_cost`
+sampling rate and confirm that bucketed viewport and DPR are acceptable to
+record (P6).
 
 **Phase 1 — Worker proxy.** `src/worker/index.ts`, the `wrangler.jsonc` change,
 wrangler and generated binding types as devDependencies, and the three scripts
@@ -550,8 +553,12 @@ delegated handler, the chapter observer.
 probe, and the two DOM events dispatched by `photo-viewer.ts`. Separable from
 Phase 3 and independently revertable: R1–R5 do not depend on any of it.
 
-**Phase 4 — Cloudflare baseline.** Read edge Analytics. Enable Web Analytics
-only if Phase 0 decided it is worth it, with the CSP edits above.
+**Phase 4 — Cloudflare baseline.** Read edge Analytics, and read the Web
+Analytics data that has been accumulating since Phase 0 — including its pageview
+ratio against PostHog. Enabling the beacon is no longer this phase's work; it
+moved ahead of the PostHog build for the reasons in [Cloudflare's free
+tier](#cloudflares-free-tier-what-it-already-covers), and this is where the
+keep-or-retire rule is applied.
 
 **Phase 5 — Configuration, documentation, rollout.** CI variables,
 `.env.example`, `AGENTS.md`, recorded vendor limits and a usage alert.
@@ -657,8 +664,11 @@ counts and vendor quota consumption before calling the work done.
 | **I.** Lab-only performance measurement (Lighthouse CI, Playwright traces) | CI time, no field data, no privacy surface | R6 in the lab, never R7 in the field | Rejected as the answer to R6; **worth adding alongside**. |
 
 **A. Cloudflare zone/edge Analytics alone.** Free, invisible, unblockable,
-already running. It reports requests, paths, referrers and countries — and
-nothing about clicks, dwell or depth. It fails R1–R4 outright. Its value is
+already running. On this site's **Free** zone it reports requests, bandwidth,
+unique visitors and countries, delayed 24 hours — and nothing about clicks,
+dwell or depth. Paths, referrers and page views are the Pro-and-above
+"Privacy-first HTTP Traffic Analytics", so the free baseline is a site-level
+number rather than a per-page one. It fails R1–R4 outright. Its value is
 precisely that it is the one dataset a blocker cannot touch, which is why it is
 adopted as the R5 baseline rather than discarded.
 
@@ -666,8 +676,12 @@ adopted as the R5 baseline rather than discarded.
 page-load timing from a browser beacon, with no cookies. But it has no custom
 events, no scroll depth and no chapter concept, so R1, R3 and R4 are
 unreachable. The first draft's framing of it as "an unblockable traffic
-baseline" was simply wrong: it is JavaScript, and it is blockable. It survives
-here only as an optional performance cross-check.
+baseline" was simply wrong: it is JavaScript, and it is blockable. Where it is
+better than this list first credited is R6: since 2026-08-21 it measures
+Astro-style soft navigations natively, which is the one thing C2 otherwise
+forces this design to hand-roll. It survives here as an optional performance
+cross-check and as the blocked-rate probe described under [Cloudflare's free
+tier](#cloudflares-free-tier-what-it-already-covers).
 
 **C. PostHog direct, no proxy.** The cheapest path to R1–R4: skip the Worker
 entirely and let the SDK talk to `us.i.posthog.com`. Two objections. First, it
@@ -738,8 +752,12 @@ substitute for the other.
 
 1. PostHog **US or EU** region — a deployment decision that must be recorded in
    one Worker config block and in the privacy disclosure.
-2. Whether Cloudflare Web Analytics earns a second browser beacon and a CSP
-   edit made in two places.
+2. Whether to **keep** Cloudflare Web Analytics past the first few weeks.
+   Enabling it no longer blocks Phase 0 — that phase turns it on — but the
+   second beacon and its CSP host in two places are only worth keeping under
+   the rule in [Cloudflare's free
+   tier](#cloudflares-free-tier-what-it-already-covers), and that call needs
+   production numbers.
 3. Whether project cards and the Home *All projects* / *View the archive* links
    are in scope for R1.
 4. Whether PostHog's autocapture-derived bounce metric matters enough to enable
@@ -793,6 +811,183 @@ substitute for the other.
 - Session replay stays off. Turning it on later needs `worker-src 'self' blob:`
   in the CSP and a fresh look at the no-banner position.
 
+## Cloudflare's free tier: what it already covers
+
+Added 2026-09-10, after the design above had settled. The question it answers:
+the site is already on Cloudflare, Cloudflare gives analytics away, so how much
+of R1–R7 arrives for free — and is the PostHog layer buying anything the
+platform does not already provide?
+
+Everything below is vendor state, read from Cloudflare's documentation on
+2026-09-10 and linked in *References*. Re-verify at implementation time; free
+tiers move.
+
+### Four products, not one
+
+"Cloudflare Analytics" is four separate things with four different answers, and
+conflating them is how the first draft ended up calling a JavaScript beacon
+unblockable.
+
+| Product | What the free tier actually gives | Blockable? |
+| --- | --- | --- |
+| **Zone / HTTP traffic analytics** | On a **Free** zone: Requests, Bandwidth, Unique Visitors and a requests-by-country map, with metrics delayed **24 hours**. Data Transfer, Page Views, Visits, API Requests and path/referrer breakdowns are the Pro-and-above "Privacy-first HTTP Traffic Analytics". | No — counted at the edge |
+| **Web Analytics** | Free on every plan. Visits, page views, page load time, Core Web Vitals. Dimensions: country, host, path, referer, device type, browser, OS, site, navigation type, plus an exclude-bots filter. **No custom events at any tier.** | Yes — Cloudflare's own FAQ names Adblock Plus and Brave |
+| **GraphQL Analytics API** | The export seam for both of the above; RUM data is account-scoped (`rumPageloadEventsAdaptiveGroups`). Dataset selection and query window widen with plan. | n/a |
+| **Workers Analytics Engine** | Workers Free: 100k data points written per day, 10k read queries per day, three-month retention, currently unbilled. Ingest plus a SQL API — no dashboard. | n/a — first-party |
+
+Zaraz is sometimes counted as a fifth (1M events/month free, all plans). It is a
+tag loader, not an analytics product: it would still need a destination, and the
+destination would be PostHog. It changes how an SDK is delivered, not what is
+measured, so it is out of scope here.
+
+Two retention numbers matter more than they look. Web Analytics keeps beacon
+data unsampled for **7 days**, then aggregates it to roughly 10% for long-term
+storage, and applies dynamic sampling between 0.0001% and 100% depending on
+volume and filters. Free zone analytics is a 24-hour dashboard window. PostHog's
+free tier retains **one year**. Any question of the form "is this better than it
+was last spring" is answerable in exactly one of these.
+
+### Scorecard: the free tier against R1–R7
+
+| Req | Cloudflare free tier alone | Verdict |
+| --- | --- | --- |
+| R1 named control clicks | No custom events exist in the product. The `mailto:` CTA generates no edge request either, so the site's only conversion is invisible to both Cloudflare datasets. | **Out of reach** |
+| R2 time on site | Visits and page views, not session duration or time on page. | **No** |
+| R3 scroll depth | Not a concept in either product. | **Out of reach** |
+| R4 narrative chapter | Requires custom events. | **Out of reach** |
+| R5 traffic baseline | Zone analytics, and only zone analytics. Site-level on Free — requests and countries, 24 hours delayed — rather than the per-path baseline. | **Yes; this is why A is adopted** |
+| R6 page load | Page load time and Core Web Vitals, split by `navigationType`, for zero instrumentation. Missing: `long_task_ms`, the mark-to-first-frame `render_ms`, and any correlation with an R1–R4 event. | **Substantially yes** |
+| R7 image cost, viewer latency | Custom events again, plus per-image resource timing the product does not collect. | **Out of reach** |
+
+R6 is the row that changed while this document was being written. Cloudflare
+shipped native Soft Navigation API measurement on **2026-08-21**:
+`navigationType` now carries `soft-navigation` and `routing-apis` alongside
+`navigate`, and LCP is measured on soft navigations. That is precisely the
+hard-versus-soft split C2 forces this design to hand-roll in `page_load_timing`,
+arriving free and with no code. The caveat is the usual one — the Soft
+Navigation API is a Chromium feature, so treat coverage elsewhere as unproven
+until it is checked, which is the same browser-skew warning R6 already carries.
+
+### The choice is not "one or the other"
+
+Zone analytics is free, already running, needs no code and cannot be blocked.
+There is no version of this design in which it is switched off — the
+*Recommendation* adopts it as the R5 baseline for exactly that reason. So the
+real question is narrower than it first appears:
+
+- **Cloudflare alone** — zone analytics, plus the Web Analytics beacon.
+- **Cloudflare and PostHog** — the design above, with zone analytics underneath
+  it.
+
+The Web Analytics beacon is the only genuinely optional component in either
+column, and the only one that costs a CSP edit.
+
+### When Cloudflare alone is the right answer
+
+Choose it, and stop, if any of these hold:
+
+- **Chapter depth and CTA clicks would not change anything.** R1–R4 are worth
+  their cost only if a low `chapter_viewed` count for Archive would actually
+  cause the landing page to be rewritten. If the honest answer is no, the whole
+  PostHog layer is instrumentation for its own sake.
+- **The Worker is a step too far.** C1 is candid that a `main` entry point, an
+  `ASSETS` binding and a Worker deploy path are the largest structural change
+  here, on a deployment that has never had a Worker. Cloudflare's free tier
+  needs none of it.
+- **Keeping a named processor out of the privacy disclosure matters more than
+  R1–R4.** Web Analytics sets nothing client-side and collects no personal data,
+  so P1–P4 become close to trivial and the no-banner position gets much easier
+  to defend.
+- **Traffic is unknown.** At genuinely low volume per-event data is noise, and
+  the free baseline is how that gets discovered before anything is built.
+
+What the choice forfeits, stated plainly: every question in *Purpose* except the
+cost one. Whether anyone reads past the first chapter, whether the contact CTA
+is ever used, whether the photography archive is reached at all — none of them
+survive.
+
+### Sequencing: enable Web Analytics in Phase 0, not Phase 4
+
+This is the change the evaluation actually recommends, and it holds whichever
+column wins.
+
+1. **It is the only way acceptance criterion 4 becomes a field measurement.**
+   That criterion asks for a production build compared before and after for
+   transferred JavaScript, long tasks and LCP. Lab numbers can be taken at any
+   time; *field* LCP from before `posthog-js` shipped can only be collected
+   before `posthog-js` ships. Turning the beacon on in Phase 0 costs one CSP
+   host and buys a baseline that cannot be reconstructed afterwards.
+2. **It sizes the problem before structure is committed.** Real visit counts say
+   whether PostHog's free tier is anywhere near binding — at roughly a dozen
+   events per gallery visit, 1M events/month is about 83,000 visits, and usage
+   stops at the free tier rather than billing by surprise — and whether R1–R4
+   will have the volume to mean anything.
+3. **It creates a three-tier cross-check that nothing else can.** Each dataset
+   sees a strictly smaller population than the one before it, and the gaps are
+   the interesting part:
+
+```text
+edge requests  ≥  CF Web Analytics pageviews  ≥  PostHog pageviews
+               ^                              ^
+               bots + JavaScript-off          analytics blocking
+```
+
+The first gap is bots and JavaScript-off traffic. The second is a standing
+estimate of how much of this developer-heavy audience blocks analytics — the
+bias alternative C raises and then declares unmeasurable. With both beacons
+running it becomes a number, and `/sawdust` can be judged on evidence rather
+than on the assumption that a neutral path works.
+
+Phase 4 survives, but becomes *reading* the baseline rather than establishing
+it.
+
+### Keep-or-retire rule for the second beacon
+
+Open decision 2 asked whether Web Analytics earns a second browser beacon and a
+CSP edit made in two places. It does — to start. Whether it keeps earning it is
+a question for production data, settled by this rule after the first few weeks:
+
+**Keep it if** the Cloudflare-to-PostHog pageview ratio is a number worth
+watching — it is, if it is either large or moving — **or** if PostHog's own
+vitals arrive sparse, since `$pageleave` is best effort and browser coverage for
+the underlying entry types is uneven.
+
+**Retire it if** the ratio settles somewhere stable and uninteresting and the
+duplicated vitals have become two numbers that disagree with no way to
+adjudicate. Retiring means removing the `script-src` host from **both** the `/*`
+and `/viz/*` blocks — C3 cuts in both directions.
+
+Three honest costs, so the decision is not made on the upside alone: a second
+beacon on every page, including the ones this design works hardest to keep
+light; a CSP host that must be added in two places and removed from two places;
+and sampling that degrades the cross-check with age — read the ratio weekly
+while the 7-day unsampled window still holds it, not retrospectively against a
+10% aggregate.
+
+### What the free tier does not change
+
+**Quota was never the constraint.** PostHog free is 1M events/month. Workers
+Free is 100k requests/day, and static-asset requests are free, unlimited and
+excluded from that count, so under the selective `run_worker_first` in the
+*Worker proxy* section only `/sawdust/*` consumes it. Analytics Engine free is
+100k data points/day. At this site's scale none of them binds. The real
+constraints stay what the design already optimises for — CSP surface, page
+weight and what has to be disclosed. Choose on capability and weight, not on
+limits.
+
+**Alternative H's cost estimate improves; its verdict does not.** Analytics
+Engine at 100k data points/day is roughly 8,300 visits/day at this event shape:
+free, retained three months, first-party, with no processor to disclose. The
+objection was never ingest cost — it was that Analytics Engine ships a SQL API
+and expects you to bring Grafana. That is still a second product to maintain,
+and C5 still says no.
+
+**Bottom line.** Use both, in this order. Zone analytics is already the R5
+baseline and stays. Web Analytics goes on in Phase 0 as a free R6 baseline and
+blocked-rate probe, and is reviewed against the rule above once there is data.
+PostHog is what buys R1, R3, R4 and R7 — the questions this document exists to
+answer — and nothing in Cloudflare's free tier substitutes for it at any tier.
+
 ## References
 
 - [PostHog JavaScript configuration](https://posthog.com/docs/libraries/js/config)
@@ -801,7 +996,7 @@ substitute for the other.
 - [PostHog Web Analytics dashboard](https://posthog.com/docs/web-analytics/dashboard)
 - [Cloudflare static asset bindings and selective worker-first routing](https://developers.cloudflare.com/workers/static-assets/binding/)
 - [Cloudflare Web Analytics setup](https://developers.cloudflare.com/web-analytics/get-started/)
-- [Cloudflare Web Analytics CSP and automatic-injection FAQ](https://developers.cloudflare.com/web-analytics/faq/)
+- [Cloudflare Web Analytics CSP and automatic-injection FAQ](https://developers.cloudflare.com/web-analytics/faq/) — also the source for beacon blocking, the 7-day unsampled window and dynamic sampling
 - [Cloudflare Web Analytics SPA tracking](https://developers.cloudflare.com/web-analytics/get-started/web-analytics-spa/)
 - [PostHog web vitals and performance capture](https://posthog.com/docs/web-analytics/web-vitals)
 - [`web-vitals` metric definitions](https://web.dev/articles/vitals) — what TTFB, FCP, LCP, CLS and INP mean, and what they do not
@@ -809,3 +1004,13 @@ substitute for the other.
 - [MDN: `HTMLImageElement.decode()`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/decode)
 - [Astro ClientRouter lifecycle events](https://docs.astro.build/en/guides/view-transitions/#lifecycle-events)
 - [Cloudflare Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/) — alternative H
+- [Cloudflare Web Analytics changelog](https://developers.cloudflare.com/changelog/product/web-analytics/) — the 2026-08-21 soft-navigation measurement entry
+- [Cloudflare Web Analytics high-level metrics](https://developers.cloudflare.com/web-analytics/data-metrics/high-level-metrics/) — how visits and page views are defined
+- [Cloudflare Web Analytics dimensions](https://developers.cloudflare.com/web-analytics/data-metrics/dimensions/) — including navigation type and the exclude-bots filter
+- [Cloudflare Web Analytics data origin and collection](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/)
+- [Cloudflare zone analytics](https://developers.cloudflare.com/analytics/account-and-zone-analytics/zone-analytics/) — what a Free zone gets, and where Pro begins
+- [Cloudflare analytics FAQ](https://developers.cloudflare.com/analytics/faq/about-analytics/) — the 24-hour delay on Free, and why edge counts differ from browser counts
+- [Workers Analytics Engine limits](https://developers.cloudflare.com/analytics/analytics-engine/limits/) and [pricing](https://developers.cloudflare.com/analytics/analytics-engine/pricing/) — the free write and read allowances behind alternative H
+- [Workers platform limits](https://developers.cloudflare.com/workers/platform/limits/) and [pricing](https://developers.cloudflare.com/workers/platform/pricing/) — static-asset requests are excluded from the free request count
+- [Cloudflare Zaraz pricing](https://developers.cloudflare.com/zaraz/pricing-info/)
+- [PostHog pricing and free-tier allowances](https://posthog.com/pricing)
