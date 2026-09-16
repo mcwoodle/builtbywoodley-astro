@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.0",
-    "@astrojs/mdx": "^8.0.0",
+    "@astrojs/mdx": "^8.0.1",
     "@studio-freight/lenis": "^1.0.42",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.1",
