@@ -107,8 +107,14 @@ as unexplained:
   Removing it means removing it from both places.
 - **Enablement is explicit**: `PUBLIC_ANALYTICS_ENABLED === 'true'` plus a
   `PUBLIC_POSTHOG_KEY`, both documented in `.env.example`. Never suppress by
-  hostname — it makes local and preview verification impossible. Point non-
-  production builds at a **separate PostHog project**, never the real one.
+  hostname **in code** — it makes local and preview verification impossible.
+  There is only one PostHog project (the free tier allows one per
+  organisation), so a deliberate local test does land in the real project; it
+  is excluded from every insight by a `$host` filter configured PostHog-side —
+  which must name **both** `builtbywoodley.ca` and `www.builtbywoodley.ca`, or
+  it silently discards real `www` traffic.
+  Filtering at analysis time is not the same as suppressing at runtime — see
+  "Environment separation on one project" in the design doc.
 
 ## Security & CI
 

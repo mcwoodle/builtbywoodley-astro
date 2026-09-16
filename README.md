@@ -144,7 +144,8 @@ the switch.
 
 It is off unless a build says otherwise: `PUBLIC_ANALYTICS_ENABLED` and
 `PUBLIC_POSTHOG_KEY`, both documented in `.env.example`. Local runs and PR previews stay
-off, and a test build points at a separate PostHog project rather than the real one.
+off, so neither reaches the project at all; a deliberate local test does, and is filtered
+out of every insight by hostname on PostHog's side.
 
 `docs/front-end-analytics-design.md` is the design of record — what is collected, what
 was rejected and why, and what still has to be switched on by hand.

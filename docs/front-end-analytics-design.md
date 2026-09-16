@@ -114,7 +114,7 @@ IDs.
 | P2 | No personal data and no page content in event payloads. In particular the `mailto:` address must never travel as an event property, and no visible text, class list or element ancestry is sent. |
 | P3 | Global Privacy Control and best-effort Do Not Track are honoured, and a discoverable site opt-out works **mid-visit**, not only after a hard reload. |
 | P4 | The processor, its region, retention period and the transient use of IP/user-agent are documented in the repository and disclosed on the site. |
-| P5 | Local development and PR previews never enter production data, and there is a documented way to run a real end-to-end test that does not. |
+| P5 | Local development and PR previews never enter production data, and there is a documented way to run a real end-to-end test that does not. **Amended at implementation** — see [Environment separation on one project](#environment-separation-on-one-project). PostHog's free tier allows a single project per organisation, so the second half of this is met by labelling and filtering rather than by isolation. |
 | P6 | Timing payloads carry no URLs and no image paths beyond a build-stable basename, are rounded to whole milliseconds, and describe device shape only in coarse buckets. |
 
 P6 is where the performance requirements press hardest on the privacy ones.
@@ -518,9 +518,10 @@ in `connect-src` — a different CSP change, not to be committed speculatively.
   is a publishable `phc_…` project token that ships in the bundle, and masking
   it only makes CI logs harder to read.
 - `PUBLIC_ANALYTICS_ENABLED` (or equivalent) is the explicit production switch.
-- Normal previews stay disabled. A documented test build points at a **separate
-  PostHog test project** so end-to-end verification is possible before
-  production (P5).
+- Normal previews stay disabled, and local development is off unless a `.env`
+  turns it on. That default is what actually keeps test traffic out of the data
+  (P5) — the project-side filter below is only for the deliberate end-to-end
+  test, which is the one time analytics run anywhere but production.
 - `.env.example` documents both variables with no real values.
 - `AGENTS.md` gains a short section describing the analytics layer, `/sawdust`,
   the region, the event dictionary, the cookieless project setting and the
@@ -530,7 +531,9 @@ in `connect-src` — a different CSP change, not to be committed speculatively.
 ### Implementation phases
 
 **Phase 0 — Privacy and project decisions (no code).** Choose the US or EU
-PostHog region. Create separate production and test projects. Enable
+PostHog region. Create the project — one is all the free tier allows, so see
+[Environment separation on one project](#environment-separation-on-one-project)
+rather than planning a second. Enable
 **Cookieless server hash mode in each project** — PostHog drops cookieless
 events if the project-side setting is absent. Set retention, disable session
 replay and surveys, decide on GeoIP. Draft the analytics disclosure and the
@@ -629,8 +632,13 @@ keep-or-retire rule is applied.
 2. GPC, DNT and the site opt-out each prevent `/sawdust` requests entirely.
 3. Opting out **mid-visit** stops collection in the same ClientRouter session,
    not only after a reload.
-4. Local development and PR previews produce no production data.
-5. The documented test mode works and is visibly separated from production.
+4. Local development and PR previews produce no production data — verified by
+   the absence of the build-time variables rather than by anything at runtime.
+5. A deliberate local test build reaches the project, and every event it
+   produces is excluded by the `$host` filter described in
+   [Environment separation on one project](#environment-separation-on-one-project).
+   Check the filter is applied by confirming the test events are visible with
+   it off and absent with it on.
 
 ### CSP, Cloudflare and performance
 
@@ -1030,9 +1038,12 @@ account work, and none of it can be done from the repository.
 
 **Phase 0 — PostHog (blocks any real data).**
 
-1. Create the production project on PostHog's **US** cloud, and a second,
-   separate project for test builds (P5).
-2. **Turn on cookieless server hash mode in each project.** Without the
+1. Create the project on PostHog's **US** cloud. The free tier allows one per
+   organisation, so there is no separate test project; configure the `$host`
+   filter under
+   [Environment separation on one project](#environment-separation-on-one-project)
+   instead.
+2. **Turn on cookieless server hash mode in the project.** Without the
    project-side setting PostHog *drops every cookieless event*, so until this is
    done the site will appear to send data and none of it will land.
 3. Set retention to one year, confirm session replay and surveys are off, and
@@ -1055,6 +1066,66 @@ project. Everything around it has been verified locally; see below.
 
 **Phase 4.** Read the dashboards once there is a day of data, and apply the
 keep-or-retire rule to the Web Analytics beacon.
+
+### Environment separation on one project
+
+Added 2026-09-16, after the account existed. P5 assumed a separate PostHog
+project for test builds. **PostHog's free tier allows one project per
+organisation**, so that is not available, and this records what replaces it —
+along with what the replacement gives up, because it is genuinely weaker.
+
+**What still does the real work is the default, not the filter.** Analytics run
+only when `PUBLIC_ANALYTICS_ENABLED` is `true` *and* a key is present. The
+preview workflow passes neither, and a local build has neither unless someone
+writes a `.env`. So local development and PR previews reach the project **not at
+all** — the first half of P5 holds exactly as designed, and holds because the
+data is never sent rather than because it is filtered afterwards.
+
+That leaves one case: the deliberate end-to-end test, where the point is to send
+real events from a machine that is not production.
+
+**The mitigation.** `posthog-js` stamps every event with `$host`, taken from
+`$current_url`, with no configuration. In PostHog, *Project settings → Filter
+out internal and test users*:
+
+```text
+$host  is not  builtbywoodley.ca
+$host  is not  www.builtbywoodley.ca
+```
+
+**Both hostnames, or the filter is worse than useless.** `wrangler.jsonc` routes
+production on the apex *and* on `www`, so a filter naming only the apex marks
+every `www` visitor as a test user and quietly deletes a slice of real traffic
+from every chart — the exact failure this is meant to prevent, pointed the wrong
+way. PostHog's `is not` takes multiple values; a regex over
+`^(www\.)?builtbywoodley\.ca$` does the same job if the list form is
+inconvenient. Whichever is used, check it against a real `www` pageview before
+trusting a single number.
+
+With both listed, every insight excludes `localhost:*` and `*.workers.dev` by
+default, with a per-insight toggle to see them when that is the question being
+asked.
+
+**This is not the hostname check the design rejected.** Decision *Enablement*
+rules out suppressing collection by hostname **in code**, because that makes the
+thing you are shipping impossible to verify — the first draft asked for a local
+click test its own code could never allow. Filtering at analysis time is the
+opposite: the events are sent, the code path is exercised end to end, and the
+only decision made by hostname is whether to count them. The rejection stands;
+this is a different mechanism at a different layer.
+
+**What it gives up, stated plainly.** Labelling is not isolation. Test events
+live in the same table as real ones and are excluded by a setting someone can
+forget to apply, or that a direct query can bypass. On a personal portfolio,
+where the test traffic is a handful of events from one deliberate run, that is
+an acceptable trade. It would not be acceptable anywhere the numbers carried
+weight, and if this site's ever do, the fix is a second project.
+
+**The escape hatch, if isolation is ever needed.** PostHog's free tier is per
+*organisation*, not per account: a second organisation under a different email
+gets its own project and its own allowance. It costs another login and some
+account sprawl, and it is the only route to genuine separation without paying.
+Worth it if test traffic ever stops being occasional; not worth it today.
 
 ### What was verified locally, and how
 
