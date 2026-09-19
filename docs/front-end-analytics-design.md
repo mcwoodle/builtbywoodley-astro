@@ -1086,25 +1086,58 @@ real events from a machine that is not production.
 
 **The mitigation.** `posthog-js` stamps every event with `$host`, taken from
 `$current_url`, with no configuration. In PostHog, *Project settings → Filter
-out internal and test users*:
+out internal and test users*, as a **single** condition:
 
 ```text
-$host  is not  builtbywoodley.ca
-$host  is not  www.builtbywoodley.ca
+$host  matches regex  (localhost|127\.0\.0\.1|\.workers\.dev$)
 ```
 
-**Both hostnames, or the filter is worse than useless.** `wrangler.jsonc` routes
-production on the apex *and* on `www`, so a filter naming only the apex marks
-every `www` visitor as a test user and quietly deletes a slice of real traffic
-from every chart — the exact failure this is meant to prevent, pointed the wrong
-way. PostHog's `is not` takes multiple values; a regex over
-`^(www\.)?builtbywoodley\.ca$` does the same job if the list form is
-inconvenient. Whichever is used, check it against a real `www` pageview before
-trusting a single number.
-
-With both listed, every insight excludes `localhost:*` and `*.workers.dev` by
+Every insight then excludes local builds and `*.workers.dev` preview URLs by
 default, with a per-insight toggle to see them when that is the question being
 asked.
+
+**Name the test hosts, never the production ones.** The tempting form is `$host
+is not <production domain>`, and it is a trap. This site serves **four**
+production hostnames (see below), so that form needs four exclusions to be
+correct today — and the day a fifth domain is added, that domain's real traffic
+is silently reclassified as test and disappears from every chart. Nothing
+errors; the numbers just quietly get smaller. Enumerating the *test* hosts fails
+the safe way round: a new production domain is simply counted, and the worst a
+stale entry can do is hide traffic from a host nobody is using.
+
+**One condition, not several.** Written as one regex, the alternation is
+unambiguous. Several separate rows depend on how PostHog combines them, and if
+they are ANDed then `$host contains localhost` **and** `$host contains
+workers.dev` is never simultaneously true — the filter would silently match
+nothing at all. Verify either way: with the filter on, a local test event should
+vanish; with it off, it should reappear.
+
+### Production hostnames
+
+One Worker serves four custom domains, each with a direct `200` and no redirect
+between them, so a visitor stays on whichever one they arrived at and the
+traffic genuinely splits four ways:
+
+```text
+builtbywoodley.ca        www.builtbywoodley.ca
+mattwoodley.ca           www.mattwoodley.ca
+```
+
+All four are declared as `custom_domain` routes in `wrangler.jsonc`, so Wrangler
+provisions them on deploy and the repository is the record of what is served.
+
+`$host` distinguishes all four with no code, so "differentiate production
+traffic by domain" is a breakdown on `$host` and nothing more. What `$host`
+alone does not give is the *brand* grouping — `mattwoodley` versus
+`builtbywoodley` with each one's apex and `www` summed — which needs either a
+saved cohort or an explicit property stamped at capture time.
+
+Two consequences for the filter above. Four hostnames is already twice the
+number an "is not production" filter has to enumerate, and the set is clearly
+one that grows — which is the argument for naming the test hosts instead. And
+because `mattwoodley.ca` was added to the routes after this design was written,
+any dashboard, cohort or filter that names production domains explicitly has to
+be revisited whenever that list changes. Nothing does, as written.
 
 **This is not the hostname check the design rejected.** Decision *Enablement*
 rules out suppressing collection by hostname **in code**, because that makes the
