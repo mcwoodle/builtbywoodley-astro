@@ -134,11 +134,12 @@ npx wrangler deploy
 
 ## Analytics
 
-The site measures how it is read, and deliberately not who reads it: no cookies, no
-visitor ID, nothing durable in the browser but the reader's own opt-out preference.
-PostHog is the processor, in cookieless server-hash mode with autocapture off, reached
-through a same-origin Worker path so no request leaves the site's own domain and the
-`connect-src 'self'` policy is untouched. Global Privacy Control and Do Not Track are
+The site measures how it is read, and deliberately not who reads it: one first-party
+anonymous identifier so a returning reader is not counted as a new one, no person
+profiles, and nothing identifying attached to it. Turning the switch off deletes that
+identifier rather than muting it. PostHog is the processor, with autocapture off,
+reached through a same-origin Worker path so no request leaves the site's own domain and
+the `connect-src 'self'` policy is untouched. Global Privacy Control and Do Not Track are
 honoured before the SDK is even downloaded, and `/privacy` explains the rest and holds
 the switch.
 
