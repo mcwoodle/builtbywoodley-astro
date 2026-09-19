@@ -99,6 +99,11 @@ as unexplained:
   not at all, both free; `site` — the hostname minus any leading `www.`,
   stamped by `before_send` — splits them two ways. Prefer `$pathname` to
   `$current_url` for page analysis, or every page shows up as four rows.
+  `mattwoodley.ca` is an **alias** serving byte-identical content, so the merged
+  number is the site's real traffic and the split is an acquisition hint, not a
+  product comparison. **A redirect between the domains would silently end the
+  split** — there is no `rel="canonical"` today, so if duplicate content is ever
+  addressed that way, the trade is real. See the design doc.
 - **`src/lib/image-cost.ts` is shared** between the `?stats=true` probe and the
   `image_cost` event so the two cannot disagree. The analytics chunk must
   **never** import `src/scripts/image-perf.ts` — `check-asset-sizes.mjs` fails

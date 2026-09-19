@@ -1165,6 +1165,49 @@ that makes the test-host filter above safe to leave alone.
 It adds no privacy surface. `site` is strictly less information than the
 `$host` and `$current_url` PostHog already sends, computed from them.
 
+#### What the per-domain split actually means
+
+`mattwoodley.ca` is an **alias**, not a second site. The two domains serve
+byte-identical HTML from the same Worker — verified by hashing both responses —
+so nothing about the content differs between them. Recording this because the
+distinction changes how the numbers should be read, and the data itself will not
+say so.
+
+**The merged number is the site's real traffic.** Level 1 in the table above is
+the honest answer to "how is the site doing". Reading the four `$host` rows as
+though they were four properties, or the two `site` rows as two products, would
+be inventing a difference the bytes do not contain.
+
+**The split is an acquisition signal.** It is worth having because the two URLs
+are marketed in different places, so the domain a visitor arrived on is a hint
+about where they heard of it. That hint is most valuable exactly where nothing
+else is available: a domain printed on a card, said out loud, or typed from
+memory arrives with **no referrer at all**, and the hostname is then the only
+attribution there is. Where `$referrer` or a UTM parameter exists, it is the
+stronger signal and `site` adds little.
+
+**It is a hint, not attribution, and it decays.** A link shared onward carries
+its domain with it, so a `mattwoodley.ca` URL forwarded by someone who found it
+via `builtbywoodley.ca` attributes the recipient to the wrong channel. The split
+is directionally useful for "is the thing I printed on that card working at
+all"; it will not survive being treated as a conversion path.
+
+**Do not compare engagement between the domains.** Identical bytes means any
+difference in dwell, scroll depth or chapter progression is about *who was sent
+there*, not what they found. That is still interesting — it says something about
+the audiences — but it is a statement about the marketing, not about the site.
+
+**The coupling nobody will remember later.** This measurement exists only
+because the four hostnames each serve a direct `200` with no redirect between
+them. Collapsing them — a redirect from one domain to the other, or to a
+canonical host — would silently end the split, with `site` quietly reporting one
+value from then on. That is a live possibility rather than a hypothetical: the
+pages carry **no `rel="canonical"` and no `og:url`** today, so four hostnames
+serve duplicate content, and the usual SEO answer to that is exactly the
+redirect that would destroy this. If that trade comes up, it is a real trade —
+decide it deliberately rather than discovering afterwards that a chart went
+flat. A canonical tag alone costs nothing here; a redirect costs the signal.
+
 Two consequences for the filter above. Four hostnames is already twice the
 number an "is not production" filter has to enumerate, and the set is clearly
 one that grows — which is the argument for naming the test hosts instead. And
