@@ -304,6 +304,7 @@ function startClient(): Promise<void> {
       });
 
       client = posthog;
+      (window as unknown as Record<string, unknown>).__phDebug = posthog;
       for (const [event, properties, options] of queue.splice(0)) {
         posthog.capture(event, properties, options);
       }

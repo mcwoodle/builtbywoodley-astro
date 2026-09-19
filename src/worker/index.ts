@@ -62,10 +62,21 @@ const ASSET_PREFIXES = ['/static/', '/array/'] as const;
  *
  * `host` is dropped so `fetch()` derives it from the upstream URL — setting it
  * by hand is how a proxy ends up sending the wrong SNI.
+ *
+ * `accept-encoding` is dropped for the reason given beside it below: relaying
+ * it is what made every response double-encoded.
  */
 const STRIP_REQUEST_HEADERS = [
   'cookie',
   'host',
+  // Let the runtime negotiate compression with the upstream instead of
+  // relaying the browser's preference. Forwarded, the upstream answers with an
+  // encoded body that this script then hands on verbatim while the edge
+  // compresses it a second time — the browser decodes one layer, finds gzip
+  // magic where JavaScript should be, and `init()` dies on a SyntaxError.
+  // Dropped, the body reaching the handler is plain and the edge encodes it
+  // exactly once on the way out.
+  'accept-encoding',
   'forwarded',
   'x-forwarded-for',
   'x-forwarded-host',
@@ -177,6 +188,18 @@ export default {
       // be made here rather than one inherited silently from a vendor.
       const headers = new Headers(response.headers);
       headers.delete('set-cookie');
+
+      // The runtime decodes a compressed upstream body before this line, so
+      // upstream's `content-encoding` and `content-length` describe bytes that
+      // no longer exist. Forwarding them makes the edge compress an already
+      // decoded body and declare it encoded once — the browser decodes a single
+      // layer, finds gzip magic where JavaScript should be, and throws
+      // `SyntaxError: Invalid or unexpected token` before `init()` completes.
+      // Nothing is logged and no request fails; analytics are simply silent.
+      // curl only sees it with `--compressed`, which is why this survived a
+      // round of verification.
+      headers.delete('content-encoding');
+      headers.delete('content-length');
 
       return new Response(response.body, {
         status: response.status,
