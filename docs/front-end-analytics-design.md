@@ -1,11 +1,20 @@
 # Front-end analytics design
 
-Status: **implemented** — Phases 1, 2, 3, 3b and the code half of Phase 5 are in
-the tree. Phase 0 (the PostHog account, projects and project-side settings) and
-Phase 4 (reading the Cloudflare dashboards) are account work that has to be done
-by hand; see [What is left](#what-is-left) at the end.
+Status: **implemented** — Phases 1, 2, 3, 3b and the code half of Phase 5 are
+in the tree. Phase 0 (the PostHog
+account, projects and project-side settings) and Phase 4 (reading the Cloudflare
+dashboards) are account work that has to be done by hand; see
+[What is left](#what-is-left) at the end.
 
-Last reviewed: 2026-09-10 · Implemented: 2026-09-10
+**The storage decision changed on 2026-09-19**, and the code changed with it in
+the same edit. R8–R10 and the rewritten P1 below adopt a durable first-party
+identifier in place of cookieless server-hash mode; `src/scripts/analytics.ts`
+and `/privacy` implement it. R10 alone is **not** implemented and remains
+conditional — see
+[First-touch attribution without profiles](#first-touch-attribution-without-profiles).
+
+Last reviewed: 2026-09-19 · Implemented: 2026-09-10 · Storage decision revised:
+2026-09-19
 
 This is the design of record for adding analytics to builtbywoodley.ca. It
 supersedes the first draft plan
@@ -46,12 +55,16 @@ repository already maintains.
 
 ### Non-goals
 
-- Per-person identity, person profiles, funnels tied to individuals, or any
-  cross-session stitching.
+- Per-person identity in the sense of knowing *who* someone is: real names,
+  person profiles carrying attributes, or funnels presented per individual.
+  **Amended 2026-09-19** — cross-session stitching by an anonymous first-party
+  identifier is now in scope (R8, R10). What stays out is attaching anything
+  identifying to that identifier, or ever presenting one visitor's path.
 - Session replay, heatmaps, dead-click/rageclick detection, exception capture,
   surveys, feature flags, or A/B testing.
-- Marketing attribution beyond whatever referrer the platform records by
-  default.
+- Marketing attribution beyond referrer and campaign parameters. **Amended
+  2026-09-19** — R10 brings first-touch referrer into scope. Multi-touch
+  models, ad-network integrations and conversion pixels stay out.
 - Instrumenting `/viz/gta-crime-map.html` beyond the edge request baseline. It
   is a hand-written file in `public/`, not an Astro page, and it has its own
   CSP block; instrumenting it is deliberately out of scope.
@@ -78,12 +91,60 @@ repository already maintains.
 | R5 | A traffic baseline that does not depend on a browser script | Something to sanity-check R1–R4 against when a visitor blocks JavaScript analytics. |
 | R6 | How fast the page rendered and finished loading | Server response, first render, largest paint, layout stability, interaction latency, "fully loaded", and the long tasks the Home reveal spends — per pageview, with hard loads and ClientRouter soft navigations kept apart. |
 | R7 | What images cost and how fast the photo viewer responded | Which srcset rung this device actually chose and what it transferred; the latency of opening the photo viewer, and of entering the 1:1 zoom — including whether the master was already warm. |
+| R8 | Whether a visitor has been here before | New versus returning, and how many distinct people a multi-day date range actually represents. Requires an identifier that outlives one visit; see P1. |
+| R9 | Roughly where visitors are, and whether they are human | Country and region enrichment on PostHog events, and PostHog's server-side IP-reputation bot filtering. Both are IP-derived; see [Why R9 was previously impossible](#why-r9-was-previously-impossible). |
+| R10 | How someone first arrived, across visits | The referrer and campaign parameters of a visitor's **first** visit, still attached to the visit where they click the contact CTA. |
 
 R6 and R7 are the reason the analytics layer has to justify its own weight
 twice over: it is measuring a page whose whole argument is that it feels fast,
 so the measurement must be small enough not to be the thing that slows it down.
 Acceptance criterion 4 under *CSP, Cloudflare and performance* exists for
 exactly that, and R6 is what tells us afterwards whether it held in the field.
+
+R8–R10 were added on 2026-09-19, together with the P1 rewrite that makes them
+reachable. They are not new questions — R8 and R10 were previously listed as
+non-goals and R9 as an open Phase 0 decision — so the [Non-goals](#non-goals)
+section above was amended in the same edit rather than left to contradict them.
+
+The three are ranked by what they are worth here, and the ranking matters
+because only R8 is free:
+
+- **R8 is the one that fixes an existing number rather than adding one.** Under
+  cookieless server-hash mode PostHog's salt rotates daily, so a visitor who
+  returns on three days counts as three people. Every "unique users" figure over
+  a window longer than 24 hours was therefore *unique user-days*, silently. R8
+  is as much a correctness fix for R2's audience denominator as it is a new
+  capability.
+- **R9 costs nothing extra once P1 changes** — it is enrichment PostHog applies
+  during ingestion, with no client code at all.
+- **R10 is the weakest and the only one with a design cost**, and it is the one
+  that may not survive verification; see
+  [First-touch attribution without profiles](#first-touch-attribution-without-profiles).
+
+#### Why R9 was previously impossible
+
+Worth recording, because it looks like a project setting and is not. In
+cookieless server-hash mode the visitor's IP address *is* the identity input:
+PostHog hashes it together with the user agent, a daily-rotating salt and
+project scoping to synthesise a `distinct_id`, then strips the raw IP **before
+the transformation stage of the ingestion pipeline runs**. GeoIP enrichment and
+IP-reputation bot detection are transformations. By the time they execute there
+is no IP left to read, so they enrich nothing.
+
+That is why "decide on GeoIP" sat unresolved in Phase 0 for as long as it did:
+under the old P1 it was not a decision to make. It became one the moment the
+identifier stopped being derived from the IP.
+
+Two consequences survive the change and should not be forgotten. The Worker's
+`X-Forwarded-For` forwarding from `CF-Connecting-IP` stays **required** — it is
+now what GeoIP reads instead of what the hash consumed, so removing it still
+breaks the feature, just a different one. And the client-side bot filter in
+`posthog-js` is a *separate* mechanism from the server-side one R9 restores: it
+matches user agents in the browser and has been working throughout, which is why
+the Playwright verification in
+[What was verified locally](#what-was-verified-locally-and-how) needed
+`opt_out_useragent_filter`. R9 adds IP-reputation filtering underneath it; it
+does not replace it.
 
 ### Constraints from this codebase
 
@@ -110,12 +171,21 @@ IDs.
 
 | ID | Requirement |
 | --- | --- |
-| P1 | A normal visit leaves no analytics identifier in cookies, `localStorage` or `sessionStorage`. Only a site-owned opt-out preference may persist, and it must be named in the disclosure. |
-| P2 | No personal data and no page content in event payloads. In particular the `mailto:` address must never travel as an event property, and no visible text, class list or element ancestry is sent. |
+| P1 | Analytics identity is a **first-party, anonymous** durable identifier, written by `posthog-js` to this origin only. No third-party cookie, no identifier shared with or readable by another domain, and nothing identifying ever attached to it. Its storage key is named in the disclosure. **Revised 2026-09-19**; this requirement previously read *"a normal visit leaves no analytics identifier in cookies, `localStorage` or `sessionStorage`"*, and that wording is what R8 and R10 trade away. |
+| P2 | No personal data and no page content in event payloads. In particular the `mailto:` address must never travel as an event property, and no visible text, class list or element ancestry is sent. **The IP address is inside this requirement, not outside it:** R9 makes it an ingestion-time input to GeoIP, so it must be discarded at ingestion rather than retained on events. Coarse derived location may be stored; the address it came from may not. |
 | P3 | Global Privacy Control and best-effort Do Not Track are honoured, and a discoverable site opt-out works **mid-visit**, not only after a hard reload. |
-| P4 | The processor, its region, retention period and the transient use of IP/user-agent are documented in the repository and disclosed on the site. |
+| P4 | The processor, its region, retention period, **the durable identifier and its storage key**, and the use of IP and user-agent are documented in the repository and disclosed on the site. |
 | P5 | Local development and PR previews never enter production data, and there is a documented way to run a real end-to-end test that does not. **Amended at implementation** — see [Environment separation on one project](#environment-separation-on-one-project). PostHog's free tier allows a single project per organisation, so the second half of this is met by labelling and filtering rather than by isolation. |
 | P6 | Timing payloads carry no URLs and no image paths beyond a build-stable basename, are rounded to whole milliseconds, and describe device shape only in coarse buckets. |
+| P7 | The visitor can erase the identifier from the site itself. The opt-out control **deletes** it rather than merely stopping transmission, and does so mid-visit (P3). Added 2026-09-19: under the old P1 there was nothing to erase, so this obligation did not exist. |
+| P8 | No consent banner, as a recorded decision rather than an omission. The reasoning and the conditions that would reverse it live under [Jurisdiction and the no-banner position](#jurisdiction-and-the-no-banner-position). Added 2026-09-19. |
+
+P7 is the requirement that carries the most weight after the P1 change. The old
+design could claim that nothing about a visitor persisted; the new one cannot,
+so the honest substitute is that whatever persists is first-party, anonymous,
+disclosed by name, and removable by the person it describes without leaving the
+site. An opt-out that stops collection but leaves the identifier in place would
+satisfy the letter of P3 and miss the point of P1.
 
 P6 is where the performance requirements press hardest on the privacy ones.
 Viewport width and device pixel ratio are what make R7 answerable at all — the
@@ -124,14 +194,71 @@ those two axes — but they are also fingerprinting surface. The design records
 them **bucketed** (viewport rounded to the nearest 160 px, DPR to 1/2/3) and
 records nothing else about the device: no `deviceMemory`, no
 `hardwareConcurrency`, no `navigator.connection` unless a specific question
-later needs it. The mitigation that matters most is structural: cookieless
-server-hash mode means there is no stable identifier for that entropy to
-accumulate against.
+later needs it.
 
-P1–P4 are a product and privacy decision, not a legal conclusion. This design
-avoids analytics storage and identification, which is the reason no consent
-banner is proposed; that is a position to confirm against the site's actual
-obligations before launch, not something the architecture proves.
+**The 2026-09-19 change costs P6 its best mitigation, and the replacement is
+weaker.** The old argument was structural: under cookieless server-hash mode
+there was no stable identifier for that entropy to accumulate against, so
+bucketed viewport and DPR could not compound into anything. R8 creates exactly
+such an identifier. What remains is three narrower defences, stated plainly
+because they are genuinely a step down from the one they replace:
+
+1. The buckets stay coarse, and the device-property list stays closed. Nothing
+   is added to it to take advantage of the new identifier.
+2. The identifier is first-party and anonymous, so the entropy accumulates
+   against a token that describes a browser on this one origin — not a profile
+   joinable with anything else.
+3. The visitor can delete it (P7), which is the difference between a stored
+   identifier and a fingerprint. A fingerprint is precisely the thing that
+   survives deletion, and this design must never acquire one as a fallback.
+
+Point 3 is the one to defend hardest. The moment anything in this layer tries
+to *recover* a deleted identifier — from entropy, from the IP, from anything —
+the trade made here stops being a trade and becomes a different product.
+
+### Jurisdiction and the no-banner position
+
+Recorded 2026-09-19, so that a future reader finds a decision here rather than
+an oversight. This section is a statement of the site's position and the
+reasoning behind it. **It is not legal advice and was not written by a
+lawyer.**
+
+The site is a personal, non-commercial portfolio. It sells nothing, runs no
+advertising, has no customers and no payment flow, and its audience is
+Canadian. On that basis:
+
+- **PIPEDA** binds organizations that collect personal information *"in the
+  course of commercial activities"*. A personal site with no commercial
+  activity is plausibly outside its scope entirely — which is a stronger
+  position than complying with it would be.
+- **Quebec Law 25** is the one worth naming rather than waving past, because
+  its §8.1 requires that technology with **identification, location or
+  profiling** functions be deactivated by default. That clause is the reason
+  `person_profiles: 'never'` is retained in [Key decisions](#key-decisions)
+  even though R10 would be easier with profiles on. The identifier this design
+  adds is a session-joining token, not a profile, and keeping it that way is
+  deliberate.
+- **GDPR and ePrivacy** are not treated as governing. The consent obligation
+  for cookies under ePrivacy attaches to storage on the device regardless of
+  whether the value is personal data, so if the site were targeting the EU this
+  design would need a banner. It is not, and it does not.
+
+**No consent banner (P8).** The trade is stated openly: the site keeps a
+first-party anonymous identifier without asking, and in exchange it honours
+Global Privacy Control and Do Not Track without asking either (P3), discloses
+the identifier by name (P4), and lets anyone delete it in one click (P7). For
+this site, that is a better deal for the visitor than a dismissable banner,
+which most people click through without reading.
+
+**What would reverse this.** Any one of these, and the position has to be
+re-argued rather than assumed:
+
+- the site starts selling anything, taking payment, or running advertising;
+- EU or UK traffic becomes a segment the site is written for, rather than
+  incidental — R9's country data is, usefully, exactly what will show this;
+- person profiles are switched on, or any identifying attribute is attached to
+  the identifier;
+- the identifier stops being deletable, or a fingerprinting fallback appears.
 
 ### Operational
 
@@ -143,7 +270,8 @@ obligations before launch, not something the architecture proves.
 
 ## Recommendation
 
-**PostHog Cloud (free tier) in cookieless server-hash mode, reached through a
+**PostHog Cloud (free tier) with a durable first-party anonymous identifier and
+no person profiles, reached through a
 same-origin Cloudflare Worker proxy at `/sawdust/*`, with `posthog-js` bundled
 from npm, explicit `data-analytics-*` annotations consumed by one delegated
 click handler, a leading-edge chapter observer on Home, and Cloudflare's
@@ -188,7 +316,8 @@ Analytics beacon.
 
 | Decision | Chosen | Rejected alternative | Why |
 | --- | --- | --- | --- |
-| Storage/identity | PostHog **cookieless server hash mode** (`cookieless_mode: 'always'`, `person_profiles: 'never'`, no `persistence` setting) | `persistence: 'localStorage'` + `person_profiles: 'identified_only'` (the first draft) | localStorage persistence stores a durable visitor ID; it is not cookieless, and `person_profiles` governs profile processing, not storage. Server-hash mode is the only configuration that satisfies P1. |
+| Storage/identity | **Durable first-party identifier, no person profiles** (`persistence: 'localStorage+cookie'`, `person_profiles: 'never'`, no `cookieless_mode`) | Cookieless server-hash mode (`cookieless_mode: 'always'`), which this design used from 2026-09-10 to 2026-09-19 | Server-hash mode rotates its salt daily, so returning visitors were uncountable (R8) and the IP was consumed as hash input before GeoIP and bot detection could read it (R9). Revised 2026-09-19 under the rewritten P1; the reasoning is in [Jurisdiction and the no-banner position](#jurisdiction-and-the-no-banner-position). |
+| Person profiles | `person_profiles: 'never'` — **retained** | `'identified_only'` or `'always'`, which is the straightforward way to satisfy R10 | Profiles are what Quebec Law 25 §8.1 names, they cost more per event, and they turn an anonymous token into a record with attributes. R10 is the weakest of the three new requirements and does not justify that; see [First-touch attribution without profiles](#first-touch-attribution-without-profiles). |
 | Click capture | Explicit `data-analytics-*` annotations read by one delegated handler | PostHog autocapture | Autocapture collects link text, class lists, element hierarchy and `href` — including the `mailto:` address, violating P2. The delegated handler sends a fixed allowlist and nothing else. |
 | SDK delivery | Bundled from npm | Proxying `array.js` from the vendor | Keeps `script-src 'self'`, removes a runtime dependency on the proxy for the SDK itself, and makes the payload visible to the build. |
 | Ingest path | Same-origin `/sawdust/*` via Worker | Direct `us.i.posthog.com` | Direct ingest needs a `connect-src` exception (C3) and is on every common blocklist, for a developer-heavy audience. |
@@ -200,6 +329,34 @@ Analytics beacon.
 | Image cost (R7) | One bucketed `image_cost` summary per pageview, sampled | A resource-timing event per image | Ten images per gallery page per visitor is a volume and cardinality problem for no extra insight. The ladder question is answered by the summary plus viewport and DPR. |
 | Init timing | Dynamic import promptly after the first `astro:page-load`, then measure the cost | `requestIdleCallback` with a 2s timeout | Up to two seconds of idle delay undercounts short visits, early clicks, initial dwell and quickly-passed chapters. If a delay is reinstated after measurement, annotated clicks must be queued synchronously and the timing bias documented. |
 | Enablement | Explicit build-time switch (`PUBLIC_ANALYTICS_ENABLED`) plus key presence | Hostname sniffing (`localhost`/`*.workers.dev` always suppressed) | Hostname suppression makes local and preview verification impossible — the first draft asked for a local click test that its own code could never allow. |
+
+#### First-touch attribution without profiles
+
+R10 is the one new requirement that does not fall out of the P1 change for
+free, and it is worth being precise about why.
+
+PostHog's `$initial_referrer` and `$initial_utm_*` are **person properties**.
+They are written once against a person record, which means the obvious route to
+R10 is `person_profiles: 'identified_only'` — and that is exactly the setting
+the Law 25 §8.1 argument above asks this design not to reach for.
+
+The intended way out is to keep profiles off and carry first-touch data as
+**event** properties instead. `posthog-js` already persists initial campaign
+information in its own storage (`set_initial_person_info`, and the
+`initial_person_info` config), so the value exists in the browser whether or
+not a person record is ever created. The `before_send` hook that already stamps
+`site` on every event is the natural place to stamp a first-touch referrer
+alongside it.
+
+**This is unverified vendor surface and must be proven before R10 is claimed.**
+The specific question is whether the initial referrer is readable from the
+installed SDK (`posthog-js@1.429.5`) via `get_property` or an equivalent when
+`person_profiles: 'never'` is set — the config and method both exist in the
+installed typings, but "exists" is not "returns a value under this
+configuration". Confirm it against a real payload, exactly as the
+`capture_performance` object form was confirmed. If it turns out to be
+unreachable without profiles, the correct outcome is to **drop R10**, not to
+turn profiles on: R8 and R9 are what this change was worth making for.
 
 ### Measurement contract
 
@@ -215,6 +372,9 @@ What each requirement means, decided before any dashboard card is built:
 | R6 page load | PostHog web vitals + `page_load_timing` | TTFB, FCP, LCP, CLS and INP as the `web-vitals` library defines them, for **hard loads only**. `load_ms`, `dom_content_loaded_ms`, `long_task_ms` and, for soft navigations, `render_ms` come from the custom event. A metric the browser did not report is **missing**, never zero. |
 | R7 image cost | PostHog `image_cost` | For one sampled pageview: how many `<img>` elements resolved, the total transferred kilobytes (bucketed), the slowest single image, how many came from cache, and the viewport/DPR bucket that explains which rung was chosen. Mirrors what `?stats=true` shows on the device and what `measure:images` models from `dist/`. |
 | R7 viewer latency | PostHog `photo_viewer_opened`, `photo_zoom_used` | Milliseconds from the activating input to the frame that shows the decoded image. Zoom is two numbers — stand-in painted, then master swapped — because the code is two stages (C9). Cancelled interactions are dropped, not recorded as fast. |
+| R8 returning visitors | PostHog Web Analytics | Distinct identifiers seen in the range, and the new/returning split. A person who clears storage, opts out and back in, or uses a second browser counts twice — this is a **lower bound on people and an upper bound on devices**, and the dashboard card should say so. Unlike the cookieless numbers it replaces, it no longer resets daily. |
+| R9 geography, bots | PostHog `$geoip_*` properties; PostHog bot filtering | Country and region, derived at ingestion from an IP that is then discarded (P2). City is available and deliberately **not** used: it adds nothing this site would act on and is the most identifying rung of the ladder. Cross-check country against Cloudflare zone analytics, which counts requests rather than pageviews and will not reconcile exactly. |
+| R10 first touch | PostHog event property, stamped in `before_send` | The referrer of the visitor's first recorded visit, carried on later events without creating a person profile. **Conditional on the verification under [First-touch attribution without profiles](#first-touch-attribution-without-profiles);** if that fails, R10 is dropped rather than bought with profiles. |
 | Optional performance view | Cloudflare Web Analytics | Browser RUM and SPA navigation metrics. A cross-check, not a baseline: redundant with PostHog on the vitals themselves, but **not** on the blocked-rate cross-check described under [Cloudflare's free tier](#cloudflares-free-tier-what-it-already-covers). |
 
 ### Event dictionary
@@ -328,7 +488,7 @@ posthog.init(KEY, {
   api_host: '/sawdust',
   ui_host: POSTHOG_UI_HOST,
   defaults: '2026-05-30',
-  cookieless_mode: 'always',
+  persistence: 'localStorage+cookie',
   person_profiles: 'never',
   capture_pageview: 'history_change',
   capture_pageleave: true,
@@ -529,9 +689,10 @@ in `connect-src` — a different CSP change, not to be committed speculatively.
   test, which is the one time analytics run anywhere but production.
 - `.env.example` documents both variables with no real values.
 - `AGENTS.md` gains a short section describing the analytics layer, `/sawdust`,
-  the region, the event dictionary, the cookieless project setting and the
-  opt-out key — so a future agent does not "clean up" an unexplained Worker or
-  CSP host.
+  the region, the event dictionary, the identifier and its storage key, the
+  GeoIP and discard-IP project settings, and the opt-out key — so a future
+  agent does not "clean up" an unexplained Worker or CSP host, or "restore
+  privacy" by re-enabling cookieless mode and silently breaking R8 and R9.
 
 ### Implementation phases
 
@@ -539,12 +700,15 @@ in `connect-src` — a different CSP change, not to be committed speculatively.
 PostHog region. Create the project — one is all the free tier allows, so see
 [Environment separation on one project](#environment-separation-on-one-project)
 rather than planning a second. Enable
-**Cookieless server hash mode in each project** — PostHog drops cookieless
-events if the project-side setting is absent. Set retention, disable session
-replay and surveys, decide on GeoIP. Draft the analytics disclosure and the
-opt-out control. **Enable Cloudflare Web Analytics now**, with the CSP edits
-under *Cloudflare layer*, so a field baseline is accumulating before
-`posthog-js` ships — see [Cloudflare's free
+**GeoIP enrichment** and confirm PostHog's **bot filtering** is active (R9), and
+turn on **"discard client IP data"** so the address is dropped after enrichment
+(P2) — verify that the derived `$geoip_*` properties survive that setting, as
+the two interact. Cookieless server hash mode must be **off**; leaving it on
+would strip the IP before GeoIP runs and defeat R9. Set retention, disable
+session replay and surveys. Draft the analytics disclosure, the opt-out control
+and the identifier-deletion behaviour P7 requires. **Enable Cloudflare Web
+Analytics now**, with the CSP edits under *Cloudflare layer*, so a field
+baseline is accumulating before `posthog-js` ships — see [Cloudflare's free
 tier](#cloudflares-free-tier-what-it-already-covers). Set the `image_cost`
 sampling rate and confirm that bucketed viewport and DPR are acceptable to
 record (P6).
@@ -632,14 +796,26 @@ keep-or-retire rule is applied.
 
 ### Privacy and environment isolation
 
-1. A normal visit leaves no PostHog identity in cookies, `localStorage` or
-   `sessionStorage`; only the named site opt-out preference may persist.
-2. GPC, DNT and the site opt-out each prevent `/sawdust` requests entirely.
-3. Opting out **mid-visit** stops collection in the same ClientRouter session,
+1. A normal visit stores exactly one PostHog identifier, on this origin only,
+   under the key named in the disclosure — and nothing else beyond the site
+   opt-out preference. No third-party cookie is set, and nothing is written to
+   or readable from any other domain (P1).
+2. The site opt-out **deletes** that identifier rather than only suppressing
+   requests (P7): after opting out, the key is absent from both `localStorage`
+   and `document.cookie`, verified by inspection rather than by the absence of
+   network traffic.
+3. A second visit in a later browser session is attributed to the same
+   identifier, and a visit after clearing site data is not (R8).
+4. Events carry `$geoip_country_name` and no `$ip` property (R9, P2). Both
+   halves must hold: geography present *and* the address absent. Check this on
+   real ingested events, because it is a property of the project settings, not
+   of anything in this repository.
+5. GPC, DNT and the site opt-out each prevent `/sawdust` requests entirely.
+6. Opting out **mid-visit** stops collection in the same ClientRouter session,
    not only after a reload.
-4. Local development and PR previews produce no production data — verified by
+7. Local development and PR previews produce no production data — verified by
    the absence of the build-time variables rather than by anything at runtime.
-5. A deliberate local test build reaches the project, and every event it
+8. A deliberate local test build reaches the project, and every event it
    produces is excluded by the `$host` filter described in
    [Environment separation on one project](#environment-separation-on-one-project).
    Check the filter is applied by confirming the test events are visible with
@@ -698,7 +874,7 @@ counts and vendor quota consumption before calling the work done.
 | **A.** Cloudflare zone/edge Analytics alone | Zero — no code, no script | R5 only | Rejected as the whole answer; **adopted as a component**. |
 | **B.** Cloudflare Web Analytics alone | One beacon, one CSP host | Partial R2 and R6, no R1/R3/R4/R7 | Rejected; optional add-on at most. |
 | **C.** PostHog direct to vendor hosts, no proxy | Two CSP exceptions, no Worker | R1–R4 | Rejected on measurement validity for this audience. |
-| **D.** PostHog with autocapture + localStorage (the first draft) | Lowest build cost | R1–R4, fails P1/P2 | Rejected. |
+| **D.** PostHog with autocapture + localStorage (the first draft) | Lowest build cost | R1–R4, R8–R10; fails P2 | **Half-adopted 2026-09-19** — the persistence half is now the design; autocapture is still rejected. |
 | **E.** Self-hosted (Umami, Plausible CE, Matomo) | A service, a database, backups, patching | R1–R5, best privacy story | Rejected against C5. |
 | **F.** Paid hosted privacy analytics (Plausible, Fathom) | ~$9–14/month | R1–R3, R4 with the same instrumentation work | Rejected on cost for a personal site; the natural upgrade if PostHog's free tier stops fitting. |
 | **G.** Minimal free hosted (GoatCounter, Counter.dev) | Tiny script | R2 partially, not R3/R4 | Rejected on capability. |
@@ -736,15 +912,25 @@ turns out to be operationally painful and the bias is measured as small
 against the edge baseline.
 
 **D. PostHog with autocapture and localStorage persistence.** This was the
-first draft, and its appeal is real: instrumentation becomes attribute edits
-with no handler code, and PostHog's bounce metric comes free. It is rejected
-because it fails two stated requirements rather than because it is
-unattractive. `persistence: 'localStorage'` stores a durable visitor ID (P1),
-and autocapture ships link text, class lists, element ancestry and `href`
-values — including the `mailto:` address that is the site's only conversion
-(P2). **Revisit narrowly:** autocapture scoped to clicks on annotated anchors
-and buttons is an acceptable addition if the bounce card proves valuable and
-real payloads are inspected first.
+first draft, and it is the entry this document has been least fair to. It was
+rejected wholesale for failing two requirements, and only one of those
+rejections has survived.
+
+*The persistence half is now the design.* `persistence: 'localStorage'` stores
+a durable visitor ID, which failed P1 as originally written — and P1 was
+rewritten on 2026-09-19 precisely because R8 and R9 are worth more to this site
+than the claim that wording protected. The first draft was not wrong about the
+mechanism; the design simply valued the trade differently then. Recorded here
+rather than quietly amended, because being able to see a decision reverse is
+most of what this document is for.
+
+*The autocapture half is still rejected, and for the untouched requirement.*
+Autocapture ships link text, class lists, element ancestry and `href` values —
+including the `mailto:` address that is the site's only conversion (P2). P2 was
+not relaxed and is not up for relaxation; nothing about the storage change
+bears on it. **Revisit narrowly:** autocapture scoped to clicks on annotated
+anchors and buttons is an acceptable addition if the bounce card proves
+valuable and real payloads are inspected first.
 
 **E. Self-hosted open-source analytics.** Umami, Plausible CE or Matomo on our
 own infrastructure gives complete data ownership, no third-party processor and
@@ -754,9 +940,11 @@ contradiction of C5, and it is the clearest rejection in this list.
 
 **F. Paid hosted privacy analytics.** Plausible or Fathom are cookieless by
 default, ship a much smaller script than `posthog-js`, and have a simpler
-privacy story to disclose. Three reasons they lose here: monthly cost for a
-personal site; custom events with structured properties are the weaker part of
-their product, and R4 depends entirely on custom events; and blocker resistance
+privacy story to disclose — a point that got *stronger* on 2026-09-19, since
+this design no longer has cookielessness to claim against them. Three reasons
+they lose here: monthly cost for a personal site; custom events with structured
+properties are the weaker part of their product, and R4 depends entirely on
+custom events; and blocker resistance
 still needs the same proxy work, so the Worker is not avoided. **Revisit if**
 PostHog's free tier changes, or if the SDK's measured weight (see acceptance
 criterion 4 under performance) turns out to hurt the landing animation.
@@ -790,7 +978,8 @@ substitute for the other.
 
 ## Risks and open questions
 
-**Open decisions — all five settled at implementation, 2026-09-10.**
+**Open decisions — the original five were settled at implementation on
+2026-09-10; three more opened with the storage change on 2026-09-19.**
 
 1. ~~PostHog **US or EU** region.~~ **US.** The project cannot be migrated
    between PostHog's clouds later, so this is effectively permanent. Recorded in
@@ -813,8 +1002,34 @@ substitute for the other.
    nearest 160 px and DPR clamped to 1/2/3, in `src/lib/image-cost.ts`. The rate
    is one constant (`IMAGE_COST_SAMPLE` in `src/scripts/perf.ts`) and is the
    first thing to turn down if volume ever matters.
+6. **Whether R10 is reachable at all without person profiles.** The open
+   question is stated under
+   [First-touch attribution without profiles](#first-touch-attribution-without-profiles);
+   the answer decides whether R10 ships or is struck. It must not be answered
+   by turning profiles on.
+7. **Whether PostHog's "discard client IP data" setting preserves the derived
+   `$geoip_*` properties.** P2 and R9 both depend on the answer being yes. If
+   it is no, the requirements collide and P2 wins — geography is worth less
+   than not storing addresses.
+8. **Whether R8 was worth the P1 trade.** Decidable only with data. Review it
+   after a full month: if the returning-visitor share is small enough that
+   nothing about the site would change, the honest response is to revert to
+   cookieless mode rather than keep an identifier that earns nothing. Put this
+   on the same review as the Web Analytics keep-or-retire rule in item 2.
 
 **Risks.**
+
+- **The privacy disclosure is now load-bearing in a way it was not.** Under the
+  old P1 the page described an absence, and an absence cannot drift out of
+  date. It now describes a specific mechanism — one identifier, one key, one
+  deletion path — and every one of those can be falsified by a later config
+  change nobody thinks to read the page about. Treat `/privacy` as a file that
+  must be re-read whenever `analytics.ts` changes.
+- **Cookieless mode is a tempting-looking "privacy improvement" for a future
+  reader.** It is one line, it reads as strictly better, and turning it on
+  silently destroys R8 and R9 with no error and no failing test — the data just
+  quietly becomes wrong. This is why it is called out in `AGENTS.md` under
+  *Configuration and environments* as well as here.
 
 - **Vendor free-tier limits are external state.** Record them at implementation
   time and set a usage alert; do not encode them as repository facts.
@@ -1000,6 +1215,12 @@ watching — it is, if it is either large or moving — **or** if PostHog's own
 vitals arrive sparse, since `$pageleave` is best effort and browser coverage for
 the underlying entry types is uneven.
 
+**Amended 2026-09-19.** While the design was cookieless, Web Analytics held two
+things PostHog structurally could not — a country dimension and IP-based bot
+exclusion — and that was a strong independent reason to keep it. R9 gives both
+back to PostHog, so that argument is gone and the rule above is the whole case
+again. The ratio is now the only thing the second beacon uniquely provides.
+
 **Retire it if** the ratio settles somewhere stable and uninteresting and the
 duplicated vitals have become two numbers that disagree with no way to
 adjudicate. Retiring means removing the `script-src` host from **both** the `/*`
@@ -1048,11 +1269,14 @@ account work, and none of it can be done from the repository.
    filter under
    [Environment separation on one project](#environment-separation-on-one-project)
    instead.
-2. **Turn on cookieless server hash mode in the project.** Without the
-   project-side setting PostHog *drops every cookieless event*, so until this is
-   done the site will appear to send data and none of it will land.
-3. Set retention to one year, confirm session replay and surveys are off, and
-   decide on GeoIP.
+2. **Leave cookieless server hash mode off**, and confirm it is off. This
+   reverses the instruction that stood here until 2026-09-19. Turning it on now
+   would strip the IP before enrichment and silently cost R9, while the daily
+   salt rotation would cost R8 — both without any error to notice.
+3. **Turn on GeoIP enrichment, confirm bot filtering is active, and turn on
+   "discard client IP data"** (R9, P2), then verify that `$geoip_*` properties
+   still arrive with the IP discarded. Set retention to one year and confirm
+   session replay and surveys are off.
 4. Put the `phc_…` key in the GitHub repository **variable**
    `PUBLIC_POSTHOG_KEY` (a variable, not a secret — it ships in the bundle), and
    set `PUBLIC_ANALYTICS_ENABLED` to `true`.
@@ -1063,6 +1287,18 @@ both blocks of `public/_headers`, so this is one switch in the Cloudflare
 dashboard. Turn it on **before** the first deploy that carries `posthog-js`:
 the pre-PostHog field LCP baseline that acceptance criterion 4 wants cannot be
 collected retrospectively.
+
+**The storage change is implemented** (2026-09-19).
+`src/scripts/analytics.ts` carries `persistence: 'localStorage+cookie'` with
+`person_profiles: 'never'` unchanged, and its opt-out path now deletes the
+identifier rather than only muting it. `/privacy` was rewritten around what P1,
+P4 and P7 actually promise: one named first-party anonymous identifier,
+deletable from the page itself, with the old "no cookies, no visitor ID"
+opening replaced and the IP sentence corrected — it previously claimed a coarse
+location *and* a daily session hash were derived, which was wrong in both
+halves. R10 is the one part **not** built; it stays conditional on the
+verification under
+[First-touch attribution without profiles](#first-touch-attribution-without-profiles).
 
 **Verification that needs a real key.** Acceptance criterion 5 under *Build and
 Worker* — a browser-generated `/sawdust/e/` POST arriving in the PostHog project
@@ -1265,9 +1501,18 @@ repointed:
 Against the built site in Chromium, with `/sawdust` stubbed:
 
 - GPC and the stored opt-out each stop the SDK being **downloaded at all** —
-  zero `/sawdust` requests, and the chunk is never fetched.
-- A normal visit leaves **no cookies and no `localStorage`**; only `theme` and
-  `analytics-opt-out`, both the site's own, ever appear.
+  zero `/sawdust` requests, the chunk is never fetched, and nothing is written
+  to storage.
+- A normal visit writes exactly one PostHog key, `ph_<token>_posthog`, to both
+  `localStorage` and a cookie on this origin. Nothing else appears beyond the
+  site's own `theme` and `analytics-opt-out`. **Re-verified 2026-09-19** under
+  the new P1; this bullet previously read "no cookies and no `localStorage`"
+  and was true of the cookieless design it described.
+- The identifier is **stable across a reload** — same `distinct_id` before and
+  after — which is R8 working rather than being asserted.
+- Opting out **deletes** it (P7): after one click, both the `localStorage`
+  entry and the cookie are gone and only `analytics-opt-out` remains. Opting
+  back in mints a **fresh** identifier rather than resurrecting the old one.
 - One `$pageview` per direct load; Home → Software → Back gives three, with one
   `nav_type: 'hard'` and two `nav_type: 'soft'` `page_load_timing` events.
 - All five chapters emit exactly once on a full Home traversal — on desktop,
@@ -1284,7 +1529,7 @@ Against the built site in Chromium, with `/sawdust` stubbed:
 - Across every captured payload: no email address, no `mailto:`, no visible
   copy, no class lists, no image paths.
 
-Three defects were found this way and fixed:
+Four defects were found this way and fixed:
 
 1. `render_ms` was missing from every soft navigation. `astro:page-load` fires
    *before* the frame the swap paints, so reading the measurement there always
@@ -1295,14 +1540,29 @@ Three defects were found this way and fixed:
    network fetch of the SDK — so the listener did not exist yet. Those two
    listeners moved to `analytics.ts`, which is attached during the same tick as
    the viewer.
-3. `image_cost` reported `bytes_kb: 0` for light pages, because rounding to the
+3. **Opting out did not actually delete the identifier**, found on the first
+   run of the P7 check and invisible to reading the code. Deleting the
+   `localStorage` entry and the cookie worked, and then PostHog's persistence
+   layer wrote itself straight back — the key reappeared within a second, so
+   the page kept its promise for about as long as it took to look away. The fix
+   is ordering: `set_config({ disable_persistence: true })` **before**
+   `reset()` and the manual sweep, using the SDK's own consent-management hook
+   rather than racing it. Opting back in re-enables persistence explicitly.
+   This is the clearest argument in the document for why P7 has an acceptance
+   criterion that inspects storage rather than network traffic: every
+   network-level check passed the whole time.
+4. `image_cost` reported `bytes_kb: 0` for light pages, because rounding to the
    nearest 100 KB sends anything under 50 KB to zero — which reads as "this page
    has no images". A non-zero total now floors at 100.
 
 ## References
 
 - [PostHog JavaScript configuration](https://posthog.com/docs/libraries/js/config)
-- [PostHog cookieless tracking](https://posthog.com/tutorials/cookieless-tracking)
+- [PostHog cookieless tracking](https://posthog.com/tutorials/cookieless-tracking) — the mode this design used until 2026-09-19, and the source for the IP-stripped-before-transformations behaviour behind R9
+- [PostHog persistence and `person_profiles`](https://posthog.com/docs/data/persons) — anonymous versus identified events, and what a person profile adds
+- [PostHog GeoIP enrichment](https://posthog.com/docs/cdp/transformations/geoip-enrichment) — an ingestion transformation, which is why cookieless mode defeats it
+- [Office of the Privacy Commissioner of Canada: PIPEDA in brief](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/pipeda_brief/) — the "commercial activities" scope test cited under Jurisdiction
+- [Commission d'accès à l'information du Québec: Law 25](https://www.cai.gouv.qc.ca/protection-renseignements-personnels/) — §8.1 on identification, location and profiling technologies, the reason `person_profiles: 'never'` is retained
 - [PostHog Cloudflare reverse proxy](https://posthog.com/docs/advanced/proxy/cloudflare)
 - [PostHog Web Analytics dashboard](https://posthog.com/docs/web-analytics/dashboard)
 - [Cloudflare static asset bindings and selective worker-first routing](https://developers.cloudflare.com/workers/static-assets/binding/)

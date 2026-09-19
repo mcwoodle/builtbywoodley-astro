@@ -79,11 +79,25 @@ as unexplained:
 - **`/sawdust` is deliberately a nonsense name.** PostHog's own proxy guide
   names `/analytics`, `/track` and `/posthog` as the strings blocklists match.
   Renaming it to something descriptive would defeat its purpose.
-- **PostHog is cookieless server-hash mode**, `person_profiles: 'never'`, and
-  **autocapture is off**. A normal visit stores no identifier of any kind. The
-  only key the site persists for analytics is `analytics-opt-out`, and it is
-  named on `/privacy`. Autocapture must stay off: it ships link text, class
-  lists, element ancestry and `href` values — including the `mailto:` address.
+- **PostHog stores one durable first-party identifier**
+  (`persistence: 'localStorage+cookie'`), with `person_profiles: 'never'` and
+  **autocapture off**. The site persists two analytics keys and no others: the
+  PostHog identifier and `analytics-opt-out`, both named on `/privacy`.
+  Autocapture must stay off: it ships link text, class lists, element ancestry
+  and `href` values — including the `mailto:` address.
+- **Do not "restore privacy" by reinstating `cookieless_mode`.** It replaced
+  persistence until 2026-09-19 and reads as strictly better, but it rotates its
+  salt daily and consumes the IP as hash input before PostHog's GeoIP and
+  bot-filter transformations can read it — so it silently breaks R8 and R9 with
+  no error and no failing test. `person_profiles: 'never'` and autocapture-off
+  are separate decisions and stay.
+- **Opting out deletes the identifier, it does not just mute it** (P7), and the
+  ordering in `setOptedOut()` is load-bearing:
+  `set_config({ disable_persistence: true })` has to come *before* `reset()` and
+  the manual storage sweep, or PostHog's persistence layer writes the key
+  straight back and the promise on `/privacy` silently stops being true. Every
+  network-level check still passes when this regresses; only a storage
+  inspection catches it.
 - **`src/scripts/analytics.ts` is a gate, not the SDK.** It is ~3 KB on every
   page; `posthog-js` (≈90 KB gzip) sits behind a dynamic import that only runs
   after the GPC / DNT / opt-out checks pass, so a visitor who refuses never
