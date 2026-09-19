@@ -141,7 +141,9 @@ as unexplained:
   hostnames, and a filter written as "is not <production domain>" reclassifies
   a newly added domain's real traffic as test the day it is added.
   Filtering at analysis time is not the same as suppressing at runtime — see
-  "Environment separation on one project" in the design doc.
+  "Environment separation on one project" in the design doc. See `README.md`
+  for the exact steps to enable and disable local real-event testing.
+
 
 ## Security & CI
 

@@ -148,6 +148,21 @@ It is off unless a build says otherwise: `PUBLIC_ANALYTICS_ENABLED` and
 off, so neither reaches the project at all; a deliberate local test does, and is filtered
 out of every insight by hostname on PostHog's side.
 
+### Deliberate local testing
+
+To test event delivery against the real PostHog project locally:
+
+1. **Enable**:
+   - In `.env`, set `PUBLIC_ANALYTICS_ENABLED=true` and `PUBLIC_POSTHOG_KEY=phc_...`.
+   - Build and serve through the Worker: `npm run preview:worker` (or pass a port: `npm run preview:worker -- --port 4331`).
+     *Do not use `npm run dev` (`astro dev`), as it does not run the Cloudflare Worker and returns 404 on `/sawdust/*`.*
+   - Test in a browser session with Global Privacy Control (GPC) and Do Not Track (DNT) disabled (or disable tracking protection for `localhost`). `signalsRefusal()` in `src/scripts/analytics.ts` silently aborts before loading if either signal is sent.
+   - Inspect events in PostHog under **Activity / Live Events** (default insight dashboards filter out `localhost` by design).
+2. **Disable**:
+   - In `.env`, set `PUBLIC_ANALYTICS_ENABLED=false` (or delete `.env`).
+   - Run `npm run build` to clear the inlined variables from `dist/`.
+   - Clear browser cookies/localStorage for `localhost` (or click "Turn analytics off" on `/privacy`).
+
 `docs/front-end-analytics-design.md` is the design of record — what is collected, what
 was rejected and why, and what still has to be switched on by hand.
 
