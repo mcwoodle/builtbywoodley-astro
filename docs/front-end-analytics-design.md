@@ -243,6 +243,11 @@ vitals themselves are **not** in this table — they arrive under PostHog's own
 `$web_vitals_*` properties, and duplicating them into custom events would
 create two numbers that disagree.
 
+One property sits outside this table because it is stamped on *every* event
+rather than declared per event: `site`, the hostname with any leading `www.`
+removed. See [Production hostnames](#production-hostnames) for why, and for the
+three levels of domain granularity it completes.
+
 PostHog supplies timestamps. Project slugs are derived at render time; titles
 and full URLs are not sent. The theme value is captured from the resulting
 `themechange`, because a raw button click does not reveal which of the three
@@ -1126,11 +1131,39 @@ mattwoodley.ca           www.mattwoodley.ca
 All four are declared as `custom_domain` routes in `wrangler.jsonc`, so Wrangler
 provisions them on deploy and the repository is the record of what is served.
 
-`$host` distinguishes all four with no code, so "differentiate production
-traffic by domain" is a breakdown on `$host` and nothing more. What `$host`
-alone does not give is the *brand* grouping — `mattwoodley` versus
-`builtbywoodley` with each one's apex and `www` summed — which needs either a
-saved cohort or an explicit property stamped at capture time.
+Four hostnames is four rows in every breakdown, and that is only sometimes the
+question being asked. Three different ones are worth answering, so three levels
+of granularity exist:
+
+| Breakdown | Values | Question | Costs |
+| --- | --- | --- | --- |
+| *(none)*, or `$pathname` for pages | 1 | How is the site doing? | nothing |
+| `site` | 2 | How is each domain doing? | one property |
+| `$host` | 4 | Which hostname did they arrive on? | nothing |
+
+`$host` and `$pathname` are PostHog's own, set from `$current_url` with no
+configuration. Only the middle row needed anything: `site` is the hostname with
+a leading `www.` stripped, stamped on every event by a `before_send` hook in
+`src/scripts/analytics.ts`.
+
+```text
+visited                   $host                   site
+mattwoodley.ca            mattwoodley.ca          mattwoodley.ca
+www.mattwoodley.ca        www.mattwoodley.ca      mattwoodley.ca
+builtbywoodley.ca         builtbywoodley.ca       builtbywoodley.ca
+www.builtbywoodley.ca     www.builtbywoodley.ca   builtbywoodley.ca
+localhost:4331            localhost:4331          localhost
+```
+
+Two notes on using it. **For page-level analysis prefer `$pathname` to
+`$current_url`** — the latter carries the hostname, so it splits a single page
+into four rows and quietly makes every page look less visited than it is. And
+`site` is **derived, not looked up**: a domain added to `wrangler.jsonc`
+tomorrow gets a correct value with no code change, which is the same property
+that makes the test-host filter above safe to leave alone.
+
+It adds no privacy surface. `site` is strictly less information than the
+`$host` and `$current_url` PostHog already sends, computed from them.
 
 Two consequences for the filter above. Four hostnames is already twice the
 number an "is not production" filter has to enumerate, and the set is clearly

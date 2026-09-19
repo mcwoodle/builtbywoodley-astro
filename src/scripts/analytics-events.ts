@@ -47,6 +47,24 @@ export function isClickEvent(name: string): name is ClickEvent {
 }
 
 /**
+ * Properties stamped on EVERY event rather than declared per event.
+ *
+ * `site` is the only one this site adds; the `$`-prefixed ones alongside it are
+ * PostHog's own. Together they give three levels of granularity over the four
+ * production hostnames, which is why none of them is in the table above:
+ *
+ * | Breakdown   | Values | Question |
+ * | ----------- | ------ | -------- |
+ * | *(none)*    | 1      | How is the site doing? |
+ * | `site`      | 2      | How is each domain doing? |
+ * | `$host`     | 4      | Which hostname did they arrive on? |
+ *
+ * For page-level analysis prefer `$pathname` over `$current_url`: the latter
+ * carries the hostname, so it splits every page into four rows.
+ */
+export const GLOBAL_PROPERTIES = ['site'] as const;
+
+/**
  * The capture surface shared by this module's consumers.
  *
  * `perf.ts` is handed one of these rather than importing the client directly,

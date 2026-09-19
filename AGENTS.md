@@ -93,6 +93,12 @@ as unexplained:
   properties. The allowlist is `src/scripts/analytics-events.ts`, and a
   property not declared there is dropped rather than sent. Never send DOM
   content — no text, no classes, no hierarchy, no `href`.
+- **Four production hostnames, three levels of breakdown.** The Worker serves
+  the apex and `www` of both `builtbywoodley.ca` and `mattwoodley.ca`, each a
+  direct 200 with no redirect. `$host` splits them four ways and `$pathname`
+  not at all, both free; `site` — the hostname minus any leading `www.`,
+  stamped by `before_send` — splits them two ways. Prefer `$pathname` to
+  `$current_url` for page analysis, or every page shows up as four rows.
 - **`src/lib/image-cost.ts` is shared** between the `?stats=true` probe and the
   `image_cost` event so the two cannot disagree. The analytics chunk must
   **never** import `src/scripts/image-perf.ts` — `check-asset-sizes.mjs` fails

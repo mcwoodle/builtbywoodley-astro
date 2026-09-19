@@ -46,6 +46,29 @@ const CHAPTER_BAND = '0px 0px -25% 0px';
 const KEY = import.meta.env.PUBLIC_POSTHOG_KEY;
 const ENABLED = import.meta.env.PUBLIC_ANALYTICS_ENABLED === 'true';
 
+/**
+ * The domain this page was served from, with any leading `www.` removed.
+ *
+ * One Worker serves four hostnames — the apex and `www` of two domains — each
+ * with a direct 200 and no redirect, so a visitor stays wherever they arrived
+ * and the traffic splits four ways. That gives three different questions, and
+ * this property exists to answer the middle one:
+ *
+ *   how is the site doing        no breakdown at all, or $pathname for pages
+ *   how is each domain doing     `site`            — 2 values, this function
+ *   which hostname did they use  `$host`           — 4 values, PostHog's own
+ *
+ * Derived rather than looked up in a table, so a domain added to
+ * wrangler.jsonc tomorrow gets a correct value with no code change here —
+ * which is the same reason the test-host filter is written the way it is.
+ *
+ * No new privacy surface: this is strictly less information than the `$host`
+ * and `$current_url` that PostHog already sends, computed from them.
+ */
+function siteOf(hostname: string): string {
+  return hostname.replace(/^www\./, '');
+}
+
 // ── Consent ────────────────────────────────────────────────────────────────
 
 /**
@@ -202,6 +225,14 @@ function startClient(): Promise<void> {
         // On a gallery page that is both a privacy problem and most of the
         // free-tier event budget.
         capture_performance: { web_vitals: true, network_timing: false },
+
+        // Stamped on every event — pageviews, pageleaves and web vitals
+        // included — so the domain breakdown works everywhere rather than only
+        // on the events this site defines itself.
+        before_send: (event) => {
+          if (event) event.properties.site = siteOf(location.hostname);
+          return event;
+        },
       });
 
       client = posthog;
