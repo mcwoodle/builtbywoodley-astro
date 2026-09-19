@@ -20,6 +20,8 @@ const { frames } = Astro.props;
       class="photo-viewer-button photo-viewer-close"
       data-photo-close
       aria-label="Close viewer"
+      data-analytics-event="control_used"
+      data-analytics-control="photo-close"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="m6 6 12 12M18 6 6 18"></path>
@@ -36,6 +38,9 @@ const { frames } = Astro.props;
         class="photo-viewer-button photo-viewer-step"
         data-photo-step="-1"
         aria-label="Previous photograph"
+        data-analytics-event="control_used"
+        data-analytics-control="photo-step"
+        data-analytics-value="previous"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="m14.5 5-7 7 7 7"></path>
@@ -57,6 +62,9 @@ const { frames } = Astro.props;
         class="photo-viewer-button photo-viewer-step"
         data-photo-step="1"
         aria-label="Next photograph"
+        data-analytics-event="control_used"
+        data-analytics-control="photo-step"
+        data-analytics-value="next"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="m9.5 5 7 7-7 7"></path>
@@ -92,6 +100,8 @@ const { frames } = Astro.props;
       class="photo-viewer-button photo-zoom-close"
       data-photo-zoom-close
       aria-label="Close full-resolution view"
+      data-analytics-event="control_used"
+      data-analytics-control="photo-zoom-close"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="m6 6 12 12M18 6 6 18"></path>

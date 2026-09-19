@@ -48,12 +48,26 @@ const { project } = Astro.props;
           {(project.data.repoUrl || project.data.liveUrl) && (
             <div class="detail-actions">
               {project.data.repoUrl && (
-                <a class="button button--primary" href={project.data.repoUrl} target="_blank" rel="noopener">
+                <a
+                  class="button button--primary"
+                  href={project.data.repoUrl}
+                  target="_blank"
+                  rel="noopener"
+                  data-analytics-event="project_link_clicked"
+                  data-analytics-project={project.id}
+                  data-analytics-kind="repo"
+                >
                   Repository <span aria-hidden="true">↗</span>
                 </a>
               )}
               {project.data.liveUrl && (
-                <a class="button" href={project.data.liveUrl}>
+                <a
+                  class="button"
+                  href={project.data.liveUrl}
+                  data-analytics-event="project_link_clicked"
+                  data-analytics-project={project.id}
+                  data-analytics-kind="live"
+                >
                   Live project <span aria-hidden="true">↗</span>
                 </a>
               )}

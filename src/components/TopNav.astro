@@ -5,12 +5,15 @@ const isHome = path === '/';
 const isSoftware = path === '/software' || path.startsWith('/software/');
 const isPhotography = path === '/photography' || path.startsWith('/photography/');
 
+// `destination` is the analytics slug for this crumb — a fixed, low-cardinality
+// string chosen here rather than derived from the label, so the event name can
+// never pick up display copy.
 const crumb = path.startsWith('/software/')
-  ? { label: 'Software Projects', href: '/software' }
+  ? { label: 'Software Projects', href: '/software', destination: 'software' }
   : path.startsWith('/blog/')
-    ? { label: 'Workshop Journal', href: '/blog' }
+    ? { label: 'Workshop Journal', href: '/blog', destination: 'blog' }
     : path.startsWith('/mocked/blog/')
-      ? { label: 'Workshop Journal', href: '/mocked/blog' }
+      ? { label: 'Workshop Journal', href: '/mocked/blog', destination: 'blog' }
       : null;
 ---
 
@@ -24,6 +27,9 @@ const crumb = path.startsWith('/software/')
         aria-current={isHome ? 'page' : undefined}
         data-tooltip={isHome ? "You're home" : undefined}
         data-scroll-top={isHome ? '' : undefined}
+        data-analytics-event="navigation_clicked"
+        data-analytics-destination="home"
+        data-analytics-placement="top-nav"
       >
         <span class="brand-mark" aria-hidden="true">
           <svg
@@ -44,7 +50,12 @@ const crumb = path.startsWith('/software/')
       {crumb && (
         <div class="breadcrumb" aria-label="Breadcrumb">
           <span aria-hidden="true"></span>
-          <a href={crumb.href}>{crumb.label}</a>
+          <a
+            href={crumb.href}
+            data-analytics-event="navigation_clicked"
+            data-analytics-destination={crumb.destination}
+            data-analytics-placement="breadcrumb"
+          >{crumb.label}</a>
         </div>
       )}
     </div>
@@ -55,12 +66,18 @@ const crumb = path.startsWith('/software/')
         class:list={{ active: isSoftware }}
         aria-current={isSoftware ? 'page' : undefined}
         data-direction="right"
+        data-analytics-event="navigation_clicked"
+        data-analytics-destination="software"
+        data-analytics-placement="top-nav"
       >Software</a>
       <a
         href="/photography"
         class:list={{ active: isPhotography }}
         aria-current={isPhotography ? 'page' : undefined}
         data-direction="left"
+        data-analytics-event="navigation_clicked"
+        data-analytics-destination="photography"
+        data-analytics-placement="top-nav"
       >Photography</a>
     </div>
 
@@ -72,6 +89,9 @@ const crumb = path.startsWith('/software/')
         class="about-link"
         aria-label="About me"
         data-tooltip="About me"
+        data-analytics-event="navigation_clicked"
+        data-analytics-destination="about"
+        data-analytics-placement="top-nav"
       >
         <!-- Drawn to the same box and weight as the house at the other end,
              so the two tiles carry the same amount of ink. -->

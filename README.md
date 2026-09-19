@@ -6,7 +6,9 @@ case studies, a project log of woodworking and renovation builds, and a photogra
 archive.
 
 Static, built with [Astro](https://astro.build), Tailwind CSS v4, GSAP and Lenis, and
-served from Cloudflare's edge. No server runtime, no origin to keep online.
+served from Cloudflare's edge. No origin to keep online: every page is a static asset.
+A small Worker sits alongside them and handles exactly one path — the analytics proxy
+described below — and nothing else.
 
 ## Quick start
 
@@ -35,6 +37,9 @@ pinned release, install `gitleaks` yourself and the hook will find it on `PATH`.
 | `npm run measure:images` | Report image bytes per page, by screen size |
 | `npm run audit:assets` | List full-size originals Astro emits but never references |
 | `npm run photo:master` | Resize and strip EXIF from a photograph before import |
+| `npm run preview:worker` | Build, then serve through the real Worker — the only way to exercise `/sawdust/*` |
+| `npm run typegen:worker` | Regenerate the Worker's binding types after a `wrangler.jsonc` change |
+| `npm run check:worker` | Bundle the Worker without deploying (`wrangler deploy --dry-run`) |
 
 Two guards run after every build, locally and in CI: one fails the build if a file
 approaches Cloudflare's per-asset size limit, the other reports unreferenced originals.
@@ -82,12 +87,13 @@ src/
 ├── lib/, utils/    shared helpers
 ├── pages/          file-based routes
 ├── plugins/        remark / rehype plugins
-├── scripts/        client-side scripts (navigation transitions)
-└── styles/         global.css — design tokens and page styles
+├── scripts/        client-side scripts (navigation transitions, analytics)
+├── styles/         global.css — design tokens and page styles
+└── worker/         the Cloudflare Worker — analytics proxy only
 public/             static passthrough, including the response-headers file
 scripts/            Node tooling: build guards, image measurement, hook setup
 tests/              Playwright smoke suite (smoke/) and its helpers (support/)
-docs/               deep dives on image delivery and view transitions
+docs/               deep dives on image delivery, view transitions and analytics
 ```
 
 Content is authored as MDX under `src/content/` and validated by Zod schemas in
@@ -99,6 +105,12 @@ rather than one file per entry.
 `astro build` emits `dist/`, and Cloudflare serves it as Worker static assets. Routing,
 asset handling and the custom domains are declared in `wrangler.jsonc`, so Wrangler
 provisions DNS and TLS on deploy instead of anyone editing the dashboard.
+
+A Worker script (`src/worker/index.ts`) is deployed with those assets, but selective
+routing (`run_worker_first`) means only `/sawdust/*` ever reaches it. Every page and
+asset request is served by the asset router exactly as before, without waking the
+script — so static-asset requests stay free and unmetered, and a bug in the Worker
+cannot take the site down with it.
 
 - **Production** — a push to `mainline` runs install, build, `wrangler deploy`. That is
   the only path to production.
@@ -119,6 +131,40 @@ To deploy by hand, from a machine with Wrangler already authenticated:
 npm run build
 npx wrangler deploy
 ```
+
+## Analytics
+
+The site measures how it is read, and deliberately not who reads it: one first-party
+anonymous identifier so a returning reader is not counted as a new one, no person
+profiles, and nothing identifying attached to it. Turning the switch off deletes that
+identifier rather than muting it. PostHog is the processor, with autocapture off,
+reached through a same-origin Worker path so no request leaves the site's own domain and
+the `connect-src 'self'` policy is untouched. Global Privacy Control and Do Not Track are
+honoured before the SDK is even downloaded, and `/privacy` explains the rest and holds
+the switch.
+
+It is off unless a build says otherwise: `PUBLIC_ANALYTICS_ENABLED` and
+`PUBLIC_POSTHOG_KEY`, both documented in `.env.example`. Local runs and PR previews stay
+off, so neither reaches the project at all; a deliberate local test does, and is filtered
+out of every insight by hostname on PostHog's side.
+
+### Deliberate local testing
+
+To test event delivery against the real PostHog project locally:
+
+1. **Enable**:
+   - In `.env`, set `PUBLIC_ANALYTICS_ENABLED=true` and `PUBLIC_POSTHOG_KEY=phc_...`.
+   - Build and serve through the Worker: `npm run preview:worker` (or pass a port: `npm run preview:worker -- --port 4331`).
+     *Do not use `npm run dev` (`astro dev`), as it does not run the Cloudflare Worker and returns 404 on `/sawdust/*`.*
+   - Test in a browser session with Global Privacy Control (GPC) and Do Not Track (DNT) disabled (or disable tracking protection for `localhost`). `signalsRefusal()` in `src/scripts/analytics.ts` silently aborts before loading if either signal is sent.
+   - Inspect events in PostHog under **Activity / Live Events** (default insight dashboards filter out `localhost` by design).
+2. **Disable**:
+   - In `.env`, set `PUBLIC_ANALYTICS_ENABLED=false` (or delete `.env`).
+   - Run `npm run build` to clear the inlined variables from `dist/`.
+   - Clear browser cookies/localStorage for `localhost` (or click "Turn analytics off" on `/privacy`).
+
+`docs/front-end-analytics-design.md` is the design of record — what is collected, what
+was rejected and why, and what still has to be switched on by hand.
 
 ## Security
 
@@ -159,6 +205,8 @@ run. The security checks still run.
 
 ## Further reading
 
+- `docs/front-end-analytics-design.md` — what the site measures, the alternatives that
+  were rejected, and the account work still outstanding.
 - `docs/photography-image-delivery.md` — the responsive image pipeline, width ladders,
   and how delivery is measured.
 - `docs/whole-page-navigation-animation-plan.md` — cross-document navigation transitions.
