@@ -11,8 +11,13 @@
 // Read docs/front-end-analytics-design.md for the requirements this satisfies
 // and the alternatives it rejects. The short version:
 //
-//   - Cookieless server-hash mode. No cookie, no localStorage, no visitor ID.
-//     The only thing this site persists is the opt-out preference below.
+//   - One first-party, anonymous identifier, and nothing else about the
+//     visitor. It exists so that a second visit is not counted as a second
+//     person (R8) and so PostHog can enrich events with a coarse location and
+//     filter datacentre bots (R9) — neither of which is possible when the
+//     identifier is derived from the IP, as it was until 2026-09-19.
+//     Opting out deletes it outright, which is the promise that replaced the
+//     old "nothing is stored at all" one (P7).
 //   - No autocapture. Every click that is measured is one a component was
 //     explicitly annotated for, and only allowlisted properties travel.
 //   - Same-origin ingest through /sawdust, so `connect-src 'self'` is unchanged
@@ -109,6 +114,51 @@ export function isAvailable(): boolean {
   return ENABLED && Boolean(KEY) && !signalsRefusal();
 }
 
+/**
+ * Every key PostHog may have written for this project: the persistence entry
+ * that holds the identifier, and the opt-out record the SDK writes when
+ * `opt_out_capturing()` is called. This site keeps its own opt-out preference,
+ * so neither should outlive a visitor asking to be forgotten.
+ */
+function posthogKeys(): string[] {
+  return [`ph_${KEY}_posthog`, `__ph_opt_in_out_${KEY}`];
+}
+
+/**
+ * Delete the stored identity from this browser (P7).
+ *
+ * Runs whether or not the SDK ever loaded on this page: a visitor who reaches
+ * /privacy on their second page still has a key written on their first, and
+ * `client?.reset()` alone cannot help when `client` is null.
+ *
+ * The cookie half needs the domain sweep. `localStorage+cookie` persistence
+ * writes both halves, and PostHog's `cross_subdomain_cookie` default puts the
+ * cookie on the registrable domain rather than the exact host — this site
+ * serves four hostnames across two domains, so a delete that assumed the host
+ * would leave the identifier able to walk back in on the next page.
+ */
+function clearStoredIdentity(): void {
+  const names = posthogKeys();
+
+  try {
+    for (const name of names) localStorage.removeItem(name);
+  } catch {
+    // Storage blocked, so there was nothing of ours in it to remove.
+  }
+
+  const labels = location.hostname.split('.');
+  const scopes = ['', `; domain=${location.hostname}`];
+  for (let i = 1; i < labels.length - 1; i += 1) {
+    scopes.push(`; domain=.${labels.slice(i).join('.')}`);
+  }
+
+  for (const name of names) {
+    for (const scope of scopes) {
+      document.cookie = `${name}=; max-age=0; path=/${scope}`;
+    }
+  }
+}
+
 let client: PostHog | null = null;
 let stopped = false;
 
@@ -131,19 +181,30 @@ export function setOptedOut(optedOut: boolean): void {
   if (optedOut) {
     queue.length = 0;
     client?.opt_out_capturing();
-    // Server-hash mode writes nothing, but a build that once ran with a
-    // different configuration might have. Clearing costs nothing and makes the
-    // promise at /privacy true regardless of what came before.
-    try {
-      localStorage.removeItem('ph_' + KEY + '_posthog');
-    } catch {
-      // Nothing to clear, or no storage to clear it from.
-    }
+    // Erase the identifier, don't just stop sending it (P7). Under the old
+    // cookieless design there was nothing to erase and this was defensive
+    // housekeeping; now it is the requirement, and it is what /privacy
+    // promises in as many words.
+    //
+    // The order is load-bearing and was found by testing, not by reading:
+    // PostHog's persistence layer writes itself back after a delete, so
+    // clearing without disabling it first loses the race and the identifier
+    // reappears within a second. `disable_persistence` is the SDK's own hook
+    // for consent management, which is exactly what this is.
+    client?.set_config({ disable_persistence: true });
+    client?.reset();
+    clearStoredIdentity();
     return;
   }
 
-  if (client) client.opt_in_capturing();
-  else if (isAvailable()) void startClient();
+  if (client) {
+    // Undo the opt-out's persistence lock, or opting back in would run with
+    // an identity that never survives the page.
+    client.set_config({ disable_persistence: false });
+    client.opt_in_capturing();
+  } else if (isAvailable()) {
+    void startClient();
+  }
 }
 
 // ── Capture ────────────────────────────────────────────────────────────────
@@ -192,11 +253,18 @@ function startClient(): Promise<void> {
         defaults: '2026-05-30',
 
         // ── The privacy-critical four ──
-        // Identity is a hash PostHog computes server-side and rotates; nothing
-        // durable is written to this browser. `person_profiles: 'never'`
-        // governs profile processing, which is a separate question from
-        // storage — both answers are needed.
-        cookieless_mode: 'always',
+        // A durable first-party identifier, on this origin only. Changed from
+        // `cookieless_mode: 'always'` on 2026-09-19: server-hash mode rotated
+        // its salt daily, so returning visitors were uncountable, and it
+        // consumed the IP as hash input before PostHog's GeoIP and bot-filter
+        // transformations could read it. Do not "restore privacy" by putting
+        // it back — it is one line, it looks strictly better, and it silently
+        // breaks R8 and R9 with no error and no failing test.
+        //
+        // `person_profiles: 'never'` is NOT part of that change and stays:
+        // profile processing is a separate question from storage, and an
+        // anonymous token is not a profile.
+        persistence: 'localStorage+cookie',
         person_profiles: 'never',
         // Autocapture would ship link text, class lists, element ancestry and
         // href values — including the mailto: address that is this site's only

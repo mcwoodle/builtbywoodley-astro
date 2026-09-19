@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import HumanWrittenMark from "../components/HumanWrittenMark.astro";
 
-// The analytics disclosure, and the control that turns it off (P3, P4).
+// The analytics disclosure, and the control that turns it off (P3, P4, P7).
 //
 // The design that produced this is docs/front-end-analytics-design.md. This
 // page is the visitor-facing half of it: what is measured, who processes it,
@@ -29,9 +29,16 @@ import HumanWrittenMark from "../components/HumanWrittenMark.astro";
     <div class="prose privacy-prose">
       <h2>The short version</h2>
       <p>
-        No cookies. No visitor ID. Nothing about you is stored in your browser
-        except the one preference you set yourself, on this page. There is no
-        consent banner because there is nothing to consent to storing.
+        One anonymous identifier is stored in your browser, so that coming back
+        tomorrow is not counted as a different person arriving. It belongs to
+        this site only — no third-party cookies, nothing shared with anywhere
+        else, and nothing attached to it that says who you are.
+      </p>
+      <p>
+        There is no consent banner. Instead: the switch further down deletes
+        that identifier outright rather than merely muting it, and if your
+        browser already asks not to be tracked, this site listens without you
+        having to click anything.
       </p>
 
       <h2>What gets measured</h2>
@@ -48,15 +55,33 @@ import HumanWrittenMark from "../components/HumanWrittenMark.astro";
           How fast the page loaded and rendered on your device, what its images
           cost to fetch, and how quickly the photo viewer responded.
         </li>
+        <li>
+          Whether this browser has been here before — as a count, not a history.
+          "Forty people came back this month" is the question; "here is what
+          you did last time" is not.
+        </li>
+        <li>
+          Roughly where the visit came from: a country, sometimes a province or
+          state. Derived from your IP address, which is then discarded — see
+          below.
+        </li>
       </ul>
 
       <h2>What does not</h2>
       <ul>
         <li>
-          <strong>No identifier.</strong> No cookie, no <code>localStorage</code>
-          entry, no fingerprint. Sessions are grouped by a hash our processor
-          computes on its own servers and rotates daily; nothing durable is
-          written to your browser and nothing links one day to the next.
+          <strong>No fingerprint, and no profile.</strong> The identifier
+          described above is a random value with nothing attached to it: no
+          name, no account, no email, no list of what you looked at. It is
+          readable only by this site, and if you delete it, it is gone — this
+          site will not try to recognise you some other way, which is the
+          whole difference between storing an identifier and fingerprinting
+          you.
+        </li>
+        <li>
+          <strong>No precise location.</strong> Country and region only. Not
+          your city, not coordinates, and never your IP address itself — that
+          is used to work out the country and then dropped at the door.
         </li>
         <li>
           <strong>No page content.</strong> Link text, headings, class names and
@@ -84,10 +109,12 @@ import HumanWrittenMark from "../components/HumanWrittenMark.astro";
       </p>
       <p>
         Your IP address and browser user-agent are sent to that proxy, as they
-        are with any web request, and used transiently: PostHog derives a coarse
-        location and the daily session hash from them, then discards them. They
-        are not stored against you and never reach me. Event data is retained for
-        one year.
+        are with any web request. PostHog uses the address for two things as the
+        event arrives — working out an approximate country, and recognising
+        traffic from datacentres so that scrapers are not counted as readers —
+        and then discards it. The coarse location is kept; the number it came
+        from is not, and neither of them ever reaches me. Event data is retained
+        for one year.
       </p>
       <p>
         Cloudflare, who serve this site, additionally count requests at their
@@ -104,10 +131,12 @@ import HumanWrittenMark from "../components/HumanWrittenMark.astro";
         here.
       </p>
       <p>
-        Otherwise, this switch decides. It takes effect immediately — no reload
-        — and is remembered on this device under the key
-        <code>analytics-opt-out</code>, which is the only thing this site
-        persists about analytics.
+        Otherwise, this switch decides. It takes effect immediately — no
+        reload — and turning analytics <em>off</em> also deletes the identifier
+        from this browser rather than leaving it sitting there unused. Your
+        choice itself is remembered on this device under the key
+        <code>analytics-opt-out</code>, so that the site does not start
+        measuring again the next time you visit.
       </p>
 
       <div class="privacy-optout" data-analytics-optout hidden>
