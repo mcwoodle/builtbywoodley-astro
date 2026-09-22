@@ -2739,15 +2739,6 @@ html[data-motion-armed] [data-hero-tail] {
   outline-offset: 4px;
 }
 
-/* The one word in the sign-off's right-hand group that is text rather than a
-   glyph. Colour and hover come from `.site-footer a`; this is only the focus
-   ring, so it matches the icons it sits beside. */
-.site-footer-link:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-
 /* ─────────────────────────────────────────────
    Software portfolio
    ───────────────────────────────────────────── */
