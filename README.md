@@ -136,12 +136,10 @@ npx wrangler deploy
 
 The site measures how it is read, and deliberately not who reads it: one first-party
 anonymous identifier so a returning reader is not counted as a new one, no person
-profiles, and nothing identifying attached to it. Turning the switch off deletes that
-identifier rather than muting it. PostHog is the processor, with autocapture off,
+profiles, and nothing identifying attached to it. PostHog is the processor, with autocapture off,
 reached through a same-origin Worker path so no request leaves the site's own domain and
 the `connect-src 'self'` policy is untouched. Global Privacy Control and Do Not Track are
-honoured before the SDK is even downloaded, and `/privacy` explains the rest and holds
-the switch.
+honoured before the SDK is even downloaded. There is no on-site analytics toggle.
 
 It is off unless a build says otherwise: `PUBLIC_ANALYTICS_ENABLED` and
 `PUBLIC_POSTHOG_KEY`, both documented in `.env.example`. Local runs and PR previews stay
@@ -161,7 +159,7 @@ To test event delivery against the real PostHog project locally:
 2. **Disable**:
    - In `.env`, set `PUBLIC_ANALYTICS_ENABLED=false` (or delete `.env`).
    - Run `npm run build` to clear the inlined variables from `dist/`.
-   - Clear browser cookies/localStorage for `localhost` (or click "Turn analytics off" on `/privacy`).
+   - Clear browser cookies/localStorage for `localhost`.
 
 `docs/front-end-analytics-design.md` is the design of record — what is collected, what
 was rejected and why, and what still has to be switched on by hand.
