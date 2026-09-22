@@ -25,11 +25,9 @@ export type ViewerFrame = {
   sizes: string;
   /**
    * The master at its own size, for the magnified view. This is the
-   * full-resolution original Astro emits for every image() field and then
-   * references from nowhere — see docs/photography-image-delivery.md. It is
-   * already deployed whether or not anything points at it, so using it here
-   * costs no bytes at all and turns dead weight into the one thing it is
-   * actually good for.
+   * full-resolution original Astro emits for every image() field. Zoom fetches
+   * it on demand, so its dimensions and bytes are part of the import decision.
+   * See docs/photography-image-delivery.md.
    */
   full: string;
   /** Intrinsic size, so the panel reserves the frame's shape before it loads. */

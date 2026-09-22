@@ -21,8 +21,8 @@
 // Runs on `astro:config:setup`, so it covers dev, build and check alike rather
 // than only whichever one remembered to call a prebuild script.
 
-import { copyFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { copyFile, mkdir, readdir, readFile, rm, lstat } from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const CONTENT_DIR = 'src/content/photos';
@@ -81,19 +81,8 @@ export default function stagePhotoMasters() {
         const entries = readPairs(await readFile(manifestPath, 'utf8'));
         const staged = entries.filter((entry) => entry.master);
 
-        if (staged.length === 0) {
-          // Nothing declares a master, so nothing needs staging. Not an error:
-          // a manifest may legitimately point straight at its images.
-          await rm(stageDir, { recursive: true, force: true });
-          return;
-        }
-
-        // Rebuilt from scratch every run, so a photograph removed from the
-        // manifest cannot leave a stale file behind for Astro to emit.
-        await rm(stageDir, { recursive: true, force: true });
-        await mkdir(stageDir, { recursive: true });
-
         const seen = new Set();
+        const copies = [];
         for (const entry of staged) {
           if (!entry.src) {
             throw new Error(
@@ -117,20 +106,29 @@ export default function stagePhotoMasters() {
           // `src` is resolved relative to the manifest, so its directory has to
           // be the staging directory or the copy lands somewhere Astro is not
           // looking.
-          const srcDir = basename(dirname(entry.src));
-          if (srcDir !== basename(STAGE_DIR)) {
+          if (entry.src !== `./_deploy/${deployName}`) {
             throw new Error(
               `${MANIFEST}: "${entry.src}" must live in ./${basename(STAGE_DIR)}/ ` +
                 'when a master is declared.',
             );
           }
 
+          if (entry.master !== basename(entry.master) || /[\\/]/.test(entry.master)) {
+            throw new Error(`${MANIFEST}: master "${entry.master}" must be a filename in ${MASTERS_DIR}/.`);
+          }
           const from = join(root, MASTERS_DIR, entry.master);
-          if (!(await stat(from).catch(() => null))) {
+          if (!(await lstat(from).catch(() => null))?.isFile()) {
             throw new Error(`${MANIFEST}: master "${entry.master}" is not in ${MASTERS_DIR}/.`);
           }
 
-          await copyFile(from, join(stageDir, deployName));
+          copies.push({ from, to: join(stageDir, deployName) });
+        }
+
+        // Validate every entry before replacing the previous staged set.
+        await rm(stageDir, { recursive: true, force: true });
+        if (copies.length > 0) {
+          await mkdir(stageDir, { recursive: true });
+          for (const { from, to } of copies) await copyFile(from, to);
         }
 
         // Masters nobody references are dead weight in the repository, and the

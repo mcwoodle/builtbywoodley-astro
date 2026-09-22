@@ -7,8 +7,8 @@
 // a path forever, JPEGs do not delta-compress, so `git gc` can never merge or
 // reclaim them, and every future re-crop of a photograph costs another full
 // copy at whatever size the first one was. The master's dimensions are also the
-// only control over the full-size original Astro emits into dist/ and never
-// references (see scripts/audit-astro-assets.mjs).
+// control over the full-size original Astro emits into dist/ for viewer zoom
+// (see docs/photography-image-delivery.md).
 //
 // --max-long-edge has no default on purpose. The right cap is a delivery
 // decision, so it should be made and stated each time rather than inherited
@@ -17,9 +17,9 @@
 //
 //   node scripts/prepare-master.mjs --max-long-edge=2560 shot.jpg
 //
-// would feed every ladder exactly with nothing spare. Raise it if a ladder
-// grows a wider rung; do not raise it speculatively, because headroom in a
-// committed JPEG is just storage cost that never goes away.
+// caps the publishing copy for ordinary display. Ladders use width, not long
+// edge, and the zoom viewer uses the master itself: retain a larger export
+// when the extra zoom detail is worth the storage and download cost.
 //
 //   --out=<path>       write here (default: alongside, as <name>.prepared.jpg)
 //   --in-place         overwrite the input
@@ -149,9 +149,18 @@ for (const input of inputs) {
 
   if (stripOnly) {
     const { readFile, writeFile } = await import('node:fs/promises');
+    const meta = await sharp(source).metadata();
+    if (meta.orientation !== undefined && meta.orientation !== 1) {
+      console.error(
+        `prepare-master: ${basename(source)} has EXIF orientation ${meta.orientation}. ` +
+        'Normalize orientation in your editor or use --max-long-edge=<px> instead; ' +
+        '--strip-only cannot rotate pixels without re-encoding.',
+      );
+      process.exitCode = 1;
+      continue;
+    }
     const original = await readFile(source);
     const { data, removed } = stripJpegMetadata(original);
-    const meta = await sharp(source).metadata();
     const target = outPath ? resolve(outPath) : inPlace ? source : `${source}.stripped.jpg`;
 
     console.log(`\n  ${basename(source)}`);
@@ -191,8 +200,8 @@ for (const input of inputs) {
 
   const scaled = pipeline
     .resize({
-      width: meta.width >= meta.height ? maxLongEdge : null,
-      height: meta.height > meta.width ? maxLongEdge : null,
+      width: maxLongEdge,
+      height: maxLongEdge,
       fit: 'inside',
       // Never enlarge: a master smaller than the cap is left at its own size.
       withoutEnlargement: true,

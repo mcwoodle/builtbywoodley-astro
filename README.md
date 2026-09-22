@@ -207,8 +207,8 @@ run. The security checks still run.
 
 - `docs/front-end-analytics-design.md` — what the site measures, the alternatives that
   were rejected, and the account work still outstanding.
-- `docs/photography-image-delivery.md` — the responsive image pipeline, width ladders,
-  and how delivery is measured.
+- `docs/photography-image-delivery.md` — photo import commands, home hero selection,
+  responsive image delivery, and measurement.
 - `docs/whole-page-navigation-animation-plan.md` — cross-document navigation transitions.
 - `docs/chrome-view-transition-white-rectangle.md` — a browser-specific view transition
   bug and its workaround.
