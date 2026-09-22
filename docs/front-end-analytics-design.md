@@ -1,5 +1,11 @@
 # Front-end analytics design
 
+**2026-09-21 update:** The privacy page and its footer link were removed at the
+site owner's request, including the on-site opt-out control. Analytics collection
+and the existing GPC, DNT and stored opt-out checks are unchanged. References below
+to the page and its control describe the prior implementation; the on-site portions
+of P3, P4 and P7 are no longer implemented.
+
 Status: **implemented** — Phases 1, 2, 3, 3b and the code half of Phase 5 are
 in the tree. Phase 0 (the PostHog
 account, projects and project-side settings) and Phase 4 (reading the Cloudflare
