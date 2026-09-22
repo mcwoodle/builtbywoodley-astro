@@ -53,6 +53,13 @@ jobs:
 
       - name: Build site
         run: npm run build
+        env:
+          # Repository VARIABLES, not secrets. The PostHog key is a publishable
+          # `phc_…` project token that ships in the client bundle by design, so
+          # masking it would only make these logs harder to read. Analytics stay
+          # off until both are set — an unset key leaves the switch inert.
+          PUBLIC_ANALYTICS_ENABLED: ${{ vars.PUBLIC_ANALYTICS_ENABLED }}
+          PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY }}
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0

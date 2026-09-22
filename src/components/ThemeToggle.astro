@@ -144,6 +144,13 @@
     }
     syncButtons();
     flashTooltip(toggle);
+    // Which of the three modes the press landed on is not something a click on
+    // a cycling button reveals, so the toggle announces it. `source` separates
+    // this from the same event fired below when the OS switches underneath a
+    // visitor sitting in system mode — that is not a control anyone used.
+    window.dispatchEvent(
+      new CustomEvent('themechange', { detail: { mode: next, source: 'toggle' } }),
+    );
   });
 
   // The no-flash init dispatches `themechange` when it live-follows an OS/browser

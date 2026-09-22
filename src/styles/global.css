@@ -1637,6 +1637,10 @@ html[data-motion-armed] [data-hero-tail] {
   line-height: 1;
 }
 
+.archive-subtitle {
+  margin-top: 14px;
+}
+
 .chapter-lead {
   margin-bottom: 4px;
   color: var(--color-text-muted);
@@ -4549,6 +4553,19 @@ body.is-photo-viewing {
   .site-footer,
   .site-footer div {
     gap: 14px;
+  }
+
+  /* One nowrap row does not fit five items at this width. Folding is the only
+     alternative to a horizontally scrolling page, which the smoke suite checks
+     for and which would be worse than a two-line sign-off. */
+  .site-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .site-footer > p,
+  .site-footer > div {
+    flex: 0 1 auto;
   }
 
   .portfolio-card-body {

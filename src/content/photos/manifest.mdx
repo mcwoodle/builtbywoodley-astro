@@ -2,7 +2,7 @@
 # The photography archive. One entry per photo, newest first is applied at
 # render time so the order here does not matter.
 #
-# master   - the archival file under ./images/, committed exactly as exported.
+# master   - the archival file under ./images/, prepared for publication before committing.
 #            Its name carries the capture date and the camera's frame number,
 #            which is why it is worth keeping and why it is not what ships.
 # src      - relative to this file; resolved into Astro's asset pipeline.
@@ -11,22 +11,48 @@
 #            src/integrations/stage-photo-masters.mjs. _deploy/ is gitignored.
 #            Without a master it points straight at ./images/.
 # alt      - describes the image for screen readers; never repeat the title
+# hero     - true on at most one photo to pin the home hero; otherwise newest wins
 # note     - one short line of context shown in the viewer
 photos:
+  - master: "2019-05-21_08-51_costa_rica_ - hummingbird - DSC00074.jpg"
+    src: ./_deploy/costa-rica-hummingbird.jpg
+    title: Hummingbird Rest
+    alt: A hummingbird with iridescent green and blue feathers perched on a slender stem against a soft green background.
+    date: 2019-05-21
+    location: Costa Rica
+    note: It's a hummingbird
+
+  - master: "2018-03-13 - vietnam_son_doong cave _001_2018-03-13_04-23_DSC01218.jpg"
+    src: ./_deploy/son-doong-cave.jpg
+    title: Inside Sơn Đoòng Cave
+    alt: A person with a bright headlamp stands silhouetted on a rock beneath a vast cave opening, with daylight illuminating the steep walls beyond.
+    date: 2018-03-13
+    location: Vietnam
+    note: Camping through the world's largest cave passage (by m³) provided constant stunning views, like this one.
+
+  - master: "2016-06-10 - seattle_to_dallas_arches_leaving-DSC00532.jpg"
+    src: ./_deploy/arches-light-trails.jpg
+    title: Leaving Arches
+    alt: Red and golden vehicle light trails wind through a desert valley at dusk, behind a towering sandstone formation in the foreground.
+    date: 2016-06-10
+    location: Utah
+    note: A streak of taillights paints the road to the exit in arches national park. The Delicate Arch to my back.
+
   - src: ./images/toronto-skyline.jpg
+    hero: true
     title: Blue hour from the hill
     alt: The Toronto skyline at night, the CN Tower lit orange above the downtown towers and a last band of sunset burning low behind them, with a floodlit park in the dark foreground.
     date: 2015-09-21
-    location: Riverdale Park, Toronto
-    note: The city switching its lights on, seen from the top of the hill.
+    location: Toronto
+    note: I didn't love living in Toronto, but I do love this picture and edit of a view you don't always see.
 
   - master: "2015-08-31 - Kyoto Kinkaku-ji - IMG_20150831_005755.jpg"
     src: ./_deploy/kinkaku-ji.jpg
     title: Kinkaku-ji
     alt: The Golden Pavilion of Kinkaku-ji reflected in still green water, framed by pines and a small rock island.
-    date: 2015-08-31
-    location: Kyoto, Japan
-    note: Still water, no wind — so the pavilion got to sit there twice.
+    date: 2015-03-06
+    location: Japan
+    note: A peaceful late-winter day in Kyoto.
 
   - master: "2015-08-13 - Perseid Meteor - IMG_20150813_070819.jpg"
     src: ./_deploy/perseid-over-the-barn.jpg
@@ -34,29 +60,29 @@ photos:
     alt: A meteor with a green and white tail streaking across a dense field of stars, above the dark silhouette of a barn roof.
     date: 2015-08-13
     location: Rural Ontario
-    note: The shower peaked overnight. This one came in green.
+    note: Conditions were uniquely perfect this night where I watched meteor's streak through the sky ever couple minutes. Patience led to this long-exposure capture, as I watched them until the sun began to rise. Not an amazing photo, but the experience was incredible.
 
   - master: "2015-06-17 - Allium - IMG_20150617_134550.jpg"
     src: ./_deploy/allium.jpg
-    title: Allium, backlit
+    title: Allium in the Gardens
     alt: A purple allium flower head in silhouette against a bright overcast sky, its individual florets picked out by the light behind.
     date: 2015-06-17
-    location: Public Garden, Boston
-    note: Shot straight into the light to get the whole head to glow.
+    location: Boston
+    note: A random capture from a work trip to the Kiva System's HQ & test warehouse.
 
   - master: "2015-06-28 - Newfoundland Signal Hill Ship - IMG_20150628_073632.jpg"
     src: ./_deploy/fort-amherst.jpg
     title: The Narrows
     alt: A red and white supply vessel entering a narrow harbour channel below steep green headlands, with a white lighthouse on the rocks.
     date: 2015-06-28
-    location: St. John's, Newfoundland
-    note: Green hills, cold water, and a supply boat heading out past the light.
+    location: Newfoundland
+    note: A crisp early-summer morning (it snowed here a couple weeks prior), waited for this ship to sail into the frame, cropped for the gram in '15.
 
   - master: "2014-10-19 - Space Needle Plane - DSC04448_spaceneedle_seattle_plane_sunset (1).jpg"
     src: ./_deploy/space-needle-sunset.jpg
     title: Needle at last light
     alt: The Space Needle in full silhouette against a burning orange sunset sky, with a distant airliner passing at upper left.
     date: 2014-10-20
-    location: Seattle, Washington
-    note: The plane slid into frame just as the sky went copper.
+    location: Seattle
+    note: Taken from the Amazon 'Arizona' building's balcony, this view is now fully blocked -- one of my favourite pics ever, taken with a 200mm zoom and cropped down.
 ---

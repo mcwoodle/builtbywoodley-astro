@@ -73,6 +73,10 @@ jobs:
           # so skip the download rather than fetch a binary to leave unused.
           SKIP_GITLEAKS_INSTALL: "1"
 
+      # Deliberately WITHOUT the analytics variables. A preview build must never
+      # reach the production PostHog project: previews are throwaway URLs and
+      # their traffic is us, not visitors. To exercise analytics end to end, run
+      # a local build pointed at the separate test project — see .env.example.
       - name: Build site
         run: npm run build
 
@@ -185,7 +189,7 @@ jobs:
 
       - name: Restore Playwright browsers
         id: browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           # The browser build a given @playwright/test pins is fixed by the
@@ -202,7 +206,7 @@ jobs:
 
       - name: Upload the Playwright report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/

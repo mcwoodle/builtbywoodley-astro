@@ -136,6 +136,10 @@ const {
       import '../scripts/nav-scroll-visibility';
       import '../scripts/storyscroll';
       import '../scripts/home-scroll';
+      // A gate, not the SDK: posthog-js sits behind a dynamic import that only
+      // runs for a visitor who has not opted out and is not sending GPC or DNT.
+      // See src/scripts/analytics.ts and docs/front-end-analytics-design.md.
+      import '../scripts/analytics';
     </script>
   </body>
 </html>
