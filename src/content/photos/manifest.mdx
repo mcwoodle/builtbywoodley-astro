@@ -2,7 +2,7 @@
 # The photography archive. One entry per photo, newest first is applied at
 # render time so the order here does not matter.
 #
-# master   - the archival file under ./images/, committed exactly as exported.
+# master   - the archival file under ./images/, prepared for publication before committing.
 #            Its name carries the capture date and the camera's frame number,
 #            which is why it is worth keeping and why it is not what ships.
 # src      - relative to this file; resolved into Astro's asset pipeline.
@@ -11,9 +11,11 @@
 #            src/integrations/stage-photo-masters.mjs. _deploy/ is gitignored.
 #            Without a master it points straight at ./images/.
 # alt      - describes the image for screen readers; never repeat the title
+# hero     - true on at most one photo to pin the home hero; otherwise newest wins
 # note     - one short line of context shown in the viewer
 photos:
   - src: ./images/toronto-skyline.jpg
+    hero: true
     title: Blue hour from the hill
     alt: The Toronto skyline at night, the CN Tower lit orange above the downtown towers and a last band of sunset burning low behind them, with a floodlit park in the dark foreground.
     date: 2015-09-21

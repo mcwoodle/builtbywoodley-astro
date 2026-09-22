@@ -30,8 +30,9 @@ const photoFrames = withAnchors(sortPhotos(photoManifest.data.photos));
 // it, so stepping back off the first strip frame reaches the photograph above
 // rather than stopping at a wall.
 const viewerFrames = await buildViewerFrames(photoFrames);
-// The newest frame anchors the fold; the rest ride the horizontal strip.
-const [showcaseFrame, ...strip] = photoFrames;
+// An explicit hero stays put as the archive grows; otherwise use the newest.
+const showcaseFrame = photoFrames.find(({ photo }) => photo.hero) ?? photoFrames[0];
+const strip = photoFrames.filter((frame) => frame !== showcaseFrame);
 const showcase = showcaseFrame.photo;
 
 const [workManifest] = await getCollection("work");

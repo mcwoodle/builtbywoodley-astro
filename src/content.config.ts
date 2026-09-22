@@ -71,6 +71,8 @@ const photos = defineCollection({
             // stage-photo-masters integration materialises that file before
             // this schema resolves. See src/integrations/stage-photo-masters.mjs.
             master: z.string().optional(),
+            // Pin the home hero independently of capture date.
+            hero: z.boolean().default(false),
             src: image(),
             title: z.string().max(100, 'Title cannot exceed 100 characters.'),
             alt: z.string(),
@@ -80,7 +82,10 @@ const photos = defineCollection({
             note: z.string().optional(),
           }),
         )
-        .min(1),
+        .min(1)
+        .refine((photos) => photos.filter((photo) => photo.hero).length <= 1, {
+          message: 'Only one photograph may declare hero: true.',
+        }),
     }),
 });
 
